@@ -1,0 +1,247 @@
+Magic 271485
+Revision Verdi_T-2022.06
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 0 25 1920 418 252 65
+
+; File list:
+; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
+openDirFile -d / "" "/project/ztzhu/TPU-Lite-SoC/sim/build/waveform.fsdb"
+
+; file time scale:
+; fileTimeScale ### s|ms|us|ns|ps
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 225954.313578 1120070.524430
+cursor 674000.000000
+marker 0.000000
+
+; user define markers
+; userMarker time_pos marker_name color linestyle
+; visible top row signal index
+top 32
+; marker line index
+markerPos 35
+
+; Run Time Signal and Member
+; userBusMem member ...
+; saveRunSig name
+activeDirFile "" "/project/ztzhu/TPU-Lite-SoC/sim/build/waveform.fsdb"
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_region[0]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_region[1]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_region[2]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_region[3]
+saveRunSig "/tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_region[0:3]"
+
+; Run Time Signal and Member
+; userBusMem member ...
+; saveRunSig name
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[0]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[1]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[2]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[3]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[4]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[5]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[6]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[7]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[8]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[9]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[10]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[11]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[12]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[13]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[14]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[15]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[16]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[17]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[18]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[19]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[20]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[21]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[22]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[23]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[24]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[25]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[26]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[27]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[28]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[29]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[30]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[31]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[32]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[33]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[34]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[35]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[36]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[37]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[38]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[39]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[40]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[41]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[42]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[43]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[44]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[45]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[46]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[47]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[48]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[49]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[50]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[51]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[52]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[53]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[54]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[55]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[56]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[57]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[58]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[59]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[60]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[61]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[62]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[63]
+saveRunSig "/tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_addr[0:63]"
+
+; Run Time Signal and Member
+; userBusMem member ...
+; saveRunSig name
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[0]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[1]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[2]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[3]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[4]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[5]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[6]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[7]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[8]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[9]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[10]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[11]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[12]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[13]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[14]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[15]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[16]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[17]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[18]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[19]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[20]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[21]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[22]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[23]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[24]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[25]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[26]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[27]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[28]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[29]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[30]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[31]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[32]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[33]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[34]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[35]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[36]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[37]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[38]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[39]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[40]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[41]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[42]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[43]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[44]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[45]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[46]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[47]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[48]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[49]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[50]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[51]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[52]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[53]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[54]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[55]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[56]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[57]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[58]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[59]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[60]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[61]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[62]
+userBusMem /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[63]
+saveRunSig "/tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/aw_user[0:63]"
+
+; event list
+; addEvent event_name event_expression
+; curEvent event_name
+
+
+
+COMPLEX_EVENT_BEGIN
+
+
+COMPLEX_EVENT_END
+
+
+
+; toolbar current search type
+; curSTATUS search_type
+curSTATUS ByChange
+
+
+addGroup "G1"
+activeDirFile "" "/project/ztzhu/TPU-Lite-SoC/sim/build/waveform.fsdb"
+addSignal -h 15 /tpu_lite_soc_tb/i_tpu_lite_soc/i_tpu_lite/clk_i
+addSignal -h 15 -holdScope rst_ni
+addSignal -h 15 -holdScope req_i[0:0]
+addSignal -h 15 -holdScope we_i[0:0]
+addSignal -h 15 -holdScope addr_i[0:0]
+addSignal -h 15 -holdScope wdata_i[0:0]
+addSignal -h 15 -holdScope be_i[0:0]
+addSignal -h 15 -holdScope rdata_o[0:0]
+addGroup "G2"
+addSignal -h 15 -UNSIGNED -HEX /tpu_lite_soc_tb/i_tpu_lite_soc/i_main_mem_wrapper/axi_byte_en_i[7:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope axi_wdata_i[63:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope axi_rdata_o[63:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope axi_addr_i[63:0]
+addSignal -h 15 -holdScope axi_write_en_i
+addSignal -h 15 -holdScope axi_req_i
+addSignal -h 15 -holdScope clk_i
+addSignal -h 15 -holdScope rstn_i
+addGroup "G3"
+addSignal -h 15 -UNSIGNED -HEX /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/reg_req.addr[63:0]
+addSignal -h 15 -holdScope reg_req.write
+addSignal -h 15 -UNSIGNED -HEX -holdScope reg_req.wdata[63:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope reg_req.wstrb[7:0]
+addSignal -h 15 -holdScope reg_req.valid
+addSignal -h 15 -holdScope reg_rsp.ready
+addSignal -h 15 -holdScope reg_rsp.error
+addSignal -h 15 -UNSIGNED -HEX -holdScope reg_rsp.rdata[63:0]
+addSignal -h 15 -holdScope reg_rsp.ready
+addSignal -h 15 -holdScope reg_rsp.error
+addSignal -h 15 -UNSIGNED -HEX -holdScope reg_rsp.rdata[63:0]
+addGroup "G4"
+addSignal -h 15 /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/reg_launch
+addSignal -h 15 -UNSIGNED -HEX -holdScope master_req.ar.addr[63:0]
+addSignal -h 15 /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/ar_valid
+addSignal -h 15 -UNSIGNED -HEX -holdScope r_data[63:0]
+addSignal -h 15 -holdScope r_valid
+addSignal -h 15 /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master_req.ar_valid
+addSignal -h 15 -holdScope busy.r_dp_busy
+addSignal -h 15 -holdScope busy.w_dp_busy
+addSignal -h 15 -holdScope busy.r_leg_busy
+addSignal -h 15 -holdScope busy.w_leg_busy
+addSignal -h 15 -UNSIGNED -HEX -holdScope reg_length[63:0]
+addSignal -h 15 /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/i_dma_regs/busy_i
+addSignal -h 15 /tpu_lite_soc_tb/i_tpu_lite_soc/i_dma/master/w_valid
+addSignal -h 15 -holdScope w_ready
+addSignal -h 15 -UNSIGNED -HEX -holdScope w_data[63:0]
+addGroup "G5"
+
+; getSignalForm Scope Hierarchy Status
+; active file of getSignalForm
+

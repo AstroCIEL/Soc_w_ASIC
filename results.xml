@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1764302184" />
+    <testcase name="test_my_reg" classname="test_my_reg" file="/home/bwoah/my-projects/TPU-Lite-SoC/test/test_my_reg.py" lineno="6" time="0.002183675765991211" sim_time_ns="71.0" ratio_time="32513.98449612403" />
+  </testsuite>
+</testsuites>
