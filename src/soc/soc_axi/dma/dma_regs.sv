@@ -28,54 +28,54 @@ module dma_regs #(
     input logic ready_i
 );
 
-  logic [31:0] src_addr_lo, src_addr_hi;
-  logic [31:0] dst_addr_lo, dst_addr_hi;
-  logic [31:0] length_lo, length_hi;
-  logic [31:0] config_reg;
-  logic        launch_q;
+    logic [31:0] src_addr_lo, src_addr_hi;
+    logic [31:0] dst_addr_lo, dst_addr_hi;
+    logic [31:0] length_lo, length_hi;
+    logic [31:0] config_reg;
+    logic        launch_q;
 
-  assign src_addr_o = {src_addr_hi, src_addr_lo};
-  assign dst_addr_o = {dst_addr_hi, dst_addr_lo};
-  assign length_o   = {length_hi, length_lo};
-  assign config_o   = config_reg;
-  assign launch_o   = launch_q;
+    assign src_addr_o = {src_addr_hi, src_addr_lo};
+    assign dst_addr_o = {dst_addr_hi, dst_addr_lo};
+    assign length_o   = {length_hi, length_lo};
+    assign config_o   = config_reg;
+    assign launch_o   = launch_q;
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
+    always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      src_addr_lo <= '0;
-      src_addr_hi <= '0;
-      dst_addr_lo <= '0;
-      dst_addr_hi <= '0;
-      length_lo   <= '0;
-      length_hi   <= '0;
-      config_reg  <= '0;
-      launch_q    <= 1'b0;
+        src_addr_lo <= '0;
+        src_addr_hi <= '0;
+        dst_addr_lo <= '0;
+        dst_addr_hi <= '0;
+        length_lo   <= '0;
+        length_hi   <= '0;
+        config_reg  <= '0;
+        launch_q    <= 1'b0;
     end else begin
-      launch_q <= 1'b0;  // Auto-clear launch signal
+        launch_q <= 1'b0;  // Auto-clear launch signal
 
-      if (req_i.valid && req_i.write) begin
+        if (req_i.valid && req_i.write) begin
         unique case (req_i.addr[7:0])
-          8'h00:   src_addr_lo <= req_i.wdata[31:0];
-          8'h08:   src_addr_hi <= req_i.wdata[31:0];
-          8'h10:   dst_addr_lo <= req_i.wdata[31:0];
-          8'h18:   dst_addr_hi <= req_i.wdata[31:0];
-          8'h20:   length_lo <= req_i.wdata[31:0];
-          8'h28:   length_hi <= req_i.wdata[31:0];
-          8'h30:   config_reg <= req_i.wdata[31:0];
-          8'h38:   launch_q <= 1'b1;
-          default: ;
+            8'h00:   src_addr_lo <= req_i.wdata[31:0];
+            8'h08:   src_addr_hi <= req_i.wdata[31:0];
+            8'h10:   dst_addr_lo <= req_i.wdata[31:0];
+            8'h18:   dst_addr_hi <= req_i.wdata[31:0];
+            8'h20:   length_lo <= req_i.wdata[31:0];
+            8'h28:   length_hi <= req_i.wdata[31:0];
+            8'h30:   config_reg <= req_i.wdata[31:0];
+            8'h38:   launch_q <= 1'b1;
+            default: ;
         endcase
-      end
+        end
     end
-  end
+    end
 
-  always_comb begin
+    always_comb begin
     rsp_o.ready = 1'b1;
     rsp_o.error = 1'b0;
     rsp_o.rdata = '0;
 
     if (req_i.valid && !req_i.write) begin
-      unique case (req_i.addr[7:0])
+        unique case (req_i.addr[7:0])
         8'h00: rsp_o.rdata = {32'b0, src_addr_lo};
         8'h08: rsp_o.rdata = {32'b0, src_addr_hi};
         8'h10: rsp_o.rdata = {32'b0, dst_addr_lo};
@@ -85,11 +85,11 @@ module dma_regs #(
         8'h30: rsp_o.rdata = {32'b0, config_reg};
         8'h40:
         rsp_o.rdata = {
-          32'b0, 29'b0, ready_i, error_i, busy_i
+            32'b0, 29'b0, ready_i, error_i, busy_i
         };  // Status: [2]=Ready, [1]=Error, [0]=Busy
         default: rsp_o.error = 1'b1;
-      endcase
+        endcase
     end
-  end
+    end
 
 endmodule
