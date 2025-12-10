@@ -41,7 +41,7 @@ package soc_pkg;
   localparam logic[63:0] UARTLength     = 64'h1000;
   localparam logic[63:0] TimerLength    = 64'h1000;
   localparam logic[63:0] DMALength      = 64'h1000_0000;
-  localparam logic[63:0] TPULength      = 64'h1000_0000;
+  localparam logic[63:0] TPULength      = 64'h4000_0000;
   localparam logic[63:0] SRAMLength     = 64'h2000_0000;
   // Instantiate AXI protocol checkers
   localparam bit GenProtocolChecker = 1'b0;

@@ -190,7 +190,7 @@ assign addr_map = '{
 localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
     NoSlvPorts:         soc_pkg::NrSlaves      ,
     NoMstPorts:         soc_pkg::NB_PERIPHERALS,
-    MaxMstTrans:        1                      , // Probably requires update
+    MaxMstTrans:        3                      , // Probably requires update
     MaxSlvTrans:        1                      , // Probably requires update
     FallThrough:        1'b0                   ,
     LatencyMode:        axi_pkg::CUT_ALL_PORTS ,

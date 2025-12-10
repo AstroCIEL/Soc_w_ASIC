@@ -138,7 +138,8 @@ module dma_wrapper #(
         
         // Map Config Register bits to options if needed
         // Example: reg_config[0] -> decouple_aw
-        dma_req.opt.beo.decouple_aw = reg_config[0];
+        // dma_req.opt.beo.decouple_aw = reg_config[0];
+        dma_req.opt.beo.decouple_aw = 1'b0;
         dma_req.opt.beo.decouple_rw = reg_config[1];
         
         dma_req.opt.last = 1'b1; // Single transfer is always last
@@ -148,19 +149,19 @@ module dma_wrapper #(
 
     // Instantiate IDMA Backend
     idma_backend_rw_axi #(
-        .DataWidth        ( AXI_DATA_WIDTH               ),
-        .AddrWidth        ( AXI_ADDR_WIDTH               ),
-        .UserWidth        ( AXI_USER_WIDTH               ),
-        .AxiIdWidth       ( AXI_MASTER_ID_WIDTH          ),
-	.TFLenWidth	  ( AXI_ADDR_WIDTH		 ),
-        .idma_req_t       ( idma_req_t                   ),
-        .idma_rsp_t       ( idma_rsp_t                   ),
-        .idma_eh_req_t    ( idma_pkg::idma_eh_req_t      ),
-        .idma_busy_t      ( idma_pkg::idma_busy_t	 ),
-        .axi_req_t        ( dma_master_axi_req_t         ),
-        .axi_rsp_t        ( dma_master_axi_resp_t        ),
-        .read_meta_channel_t ( dma_master_axi_ar_chan_t  ),
-        .write_meta_channel_t ( dma_master_axi_aw_chan_t )
+        .DataWidth            ( AXI_DATA_WIDTH               ),
+        .AddrWidth            ( AXI_ADDR_WIDTH               ),
+        .UserWidth            ( AXI_USER_WIDTH               ),
+        .AxiIdWidth           ( AXI_MASTER_ID_WIDTH          ),
+	    .TFLenWidth	          ( AXI_ADDR_WIDTH		         ),
+        .idma_req_t           ( idma_req_t                   ),
+        .idma_rsp_t           ( idma_rsp_t                   ),
+        .idma_eh_req_t        ( idma_pkg::idma_eh_req_t      ),
+        .idma_busy_t          ( idma_pkg::idma_busy_t	     ),
+        .axi_req_t            ( dma_master_axi_req_t         ),
+        .axi_rsp_t            ( dma_master_axi_resp_t        ),
+        .read_meta_channel_t  ( dma_master_axi_ar_chan_t     ),
+        .write_meta_channel_t ( dma_master_axi_aw_chan_t     )
     ) i_idma_backend (
         .clk_i            ( clk_i           ),
         .rst_ni           ( rst_ni          ),
