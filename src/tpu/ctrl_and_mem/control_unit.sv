@@ -117,7 +117,7 @@ always_comb begin
         2'b00: sa_enable = {1'b0, 1'b0, 1'b0, 1'b0};
         2'b01: sa_enable = {1'b0, 1'b0, 1'b0, 1'b1};
         2'b10: sa_enable = {1'b0, 1'b0, 1'b1, 1'b1};
-        2'b00: sa_enable = {1'b1, 1'b1, 1'b1, 1'b1};
+        2'b11: sa_enable = {1'b1, 1'b1, 1'b1, 1'b1};
     endcase
 end
 
