@@ -55,22 +55,42 @@ localparam MMEM_END     = 20'h29FF;
 logic [10:0]    axi_imem_wr_addr;
 logic [10:0]    axi_imem_rd_addr;
 logic [12:0]    axi_wmem_wr_addr;
+logic [12:0]    axi_wmem_rd_addr;
 logic [8:0]     axi_mmem_wr_addr;
+logic [8:0]     axi_mmem_rd_addr;
 
 assign axi_imem_wr_addr = axi_ubuf_addr[10:0];
 assign axi_imem_rd_addr = axi_ubuf_addr[10:0];
 assign axi_wmem_wr_addr = axi_ubuf_addr[12:0];
+assign axi_wmem_rd_addr = axi_ubuf_addr[12:0];
 assign axi_mmem_wr_addr = axi_ubuf_addr[8:0];
+assign axi_mmem_rd_addr = axi_ubuf_addr[8:0];
 
 logic axi_imem_wr_en;
-logic axi_imem_rd_en;
+logic axi_imem_rd_en_d, axi_imem_rd_en_q;
 logic axi_wmem_wr_en;
+logic axi_wmem_rd_en_d, axi_wmem_rd_en_q;
 logic axi_mmem_wr_en;
+logic axi_mmem_rd_en_d, axi_mmem_rd_en_q;
 
 assign axi_imem_wr_en = ((axi_ubuf_addr >= IMEM_BASE) && (axi_ubuf_addr <= IMEM_END)) && axi_ubuf_en && axi_ubuf_we;
-assign axi_imem_rd_en = ((axi_ubuf_addr >= IMEM_BASE) && (axi_ubuf_addr <= IMEM_END)) && axi_ubuf_en && (!axi_ubuf_we);
+assign axi_imem_rd_en_d = ((axi_ubuf_addr >= IMEM_BASE) && (axi_ubuf_addr <= IMEM_END)) && axi_ubuf_en && (!axi_ubuf_we);
 assign axi_wmem_wr_en = ((axi_ubuf_addr >= WMEM_BASE) && (axi_ubuf_addr <= WMEM_END)) && axi_ubuf_en && axi_ubuf_we;
+assign axi_wmem_rd_en_d = ((axi_ubuf_addr >= WMEM_BASE) && (axi_ubuf_addr <= WMEM_END)) && axi_ubuf_en && (!axi_ubuf_we);
 assign axi_mmem_wr_en = ((axi_ubuf_addr >= MMEM_BASE) && (axi_ubuf_addr <= MMEM_END)) && axi_ubuf_en && axi_ubuf_we;
+assign axi_mmem_rd_en_d = ((axi_ubuf_addr >= MMEM_BASE) && (axi_ubuf_addr <= MMEM_END)) && axi_ubuf_en && (!axi_ubuf_we);
+
+always_ff @(posedge clk or posedge rst) begin
+    if (rst) begin
+        axi_imem_rd_en_q <= 1'b0;
+        axi_wmem_rd_en_q <= 1'b0;
+        axi_mmem_rd_en_q <= 1'b0;
+    end else begin
+        axi_imem_rd_en_q <= axi_imem_rd_en_d;
+        axi_wmem_rd_en_q <= axi_wmem_rd_en_d;
+        axi_mmem_rd_en_q <= axi_mmem_rd_en_d;
+    end
+end
 
 
 
@@ -183,17 +203,41 @@ generate
 endgenerate
 
 // AXI 读出逻辑
-logic [7:0]    axi_imem_rd_row;        // 解析AXI地址到input存储坐标
-logic [2:0]    axi_imem_rd_inrow_offset;
+logic [7:0]    axi_imem_rd_row_d, axi_imem_rd_row_q;        // 解析AXI地址到input存储坐标
+logic [2:0]    axi_imem_rd_inrow_offset_d, axi_imem_rd_inrow_offset_q;
 
-assign axi_imem_rd_row          = axi_imem_rd_addr[10:3];
-assign axi_imem_rd_inrow_offset = axi_imem_rd_addr[2:0];
-            
-always_comb begin
-    if (axi_imem_rd_en) begin
-        axi_ubuf_rdata = input_memory[axi_imem_rd_row][axi_imem_rd_inrow_offset*64 +: 64];
+assign axi_imem_rd_row_d          = axi_imem_rd_addr[10:3];
+assign axi_imem_rd_inrow_offset_d = axi_imem_rd_addr[2:0];
+
+// AXI 读出逻辑 (Weight)
+logic [9:0]     axi_wmem_rd_row_d, axi_wmem_rd_row_q;
+logic [2:0]     axi_wmem_rd_inrow_offset_d, axi_wmem_rd_inrow_offset_q;
+
+assign axi_wmem_rd_row_d          = axi_wmem_rd_addr[12:3];
+assign axi_wmem_rd_inrow_offset_d = axi_wmem_rd_addr[2:0];
+
+// AXI 读出逻辑 (Misc)
+logic [3:0]     axi_mmem_rd_row_d, axi_mmem_rd_row_q;
+logic [4:0]     axi_mmem_rd_inrow_offset_d, axi_mmem_rd_inrow_offset_q;
+
+assign axi_mmem_rd_row_d          = axi_mmem_rd_addr[8:5];
+assign axi_mmem_rd_inrow_offset_d = axi_mmem_rd_addr[4:0];
+
+always_ff @(posedge clk or posedge rst) begin
+    if (rst) begin
+        axi_imem_rd_row_q <= '0;
+        axi_imem_rd_inrow_offset_q <= '0;
+        axi_wmem_rd_row_q <= '0;
+        axi_wmem_rd_inrow_offset_q <= '0;
+        axi_mmem_rd_row_q <= '0;
+        axi_mmem_rd_inrow_offset_q <= '0;
     end else begin
-        axi_ubuf_rdata = 64'b0;
+        axi_imem_rd_row_q <= axi_imem_rd_row_d;
+        axi_imem_rd_inrow_offset_q <= axi_imem_rd_inrow_offset_d;
+        axi_wmem_rd_row_q <= axi_wmem_rd_row_d;
+        axi_wmem_rd_inrow_offset_q <= axi_wmem_rd_inrow_offset_d;
+        axi_mmem_rd_row_q <= axi_mmem_rd_row_d;
+        axi_mmem_rd_inrow_offset_q <= axi_mmem_rd_inrow_offset_d;
     end
 end
 
@@ -360,5 +404,16 @@ generate
     end
 endgenerate
 
+always_comb begin
+    if (axi_imem_rd_en_q) begin
+        axi_ubuf_rdata = input_memory[axi_imem_rd_row_q][axi_imem_rd_inrow_offset_q*64 +: 64];
+    end else if (axi_wmem_rd_en_q) begin
+        axi_ubuf_rdata = weight_memory[axi_wmem_rd_row_q][axi_wmem_rd_inrow_offset_q*64 +: 64];
+    end else if (axi_mmem_rd_en_q) begin
+        axi_ubuf_rdata = misc_memory[axi_mmem_rd_row_q][axi_mmem_rd_inrow_offset_q*64 +: 64];
+    end else begin
+        axi_ubuf_rdata = 64'b0;
+    end
+end
 
 endmodule
