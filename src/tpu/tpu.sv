@@ -4,7 +4,7 @@ module tpu (
     input  logic        rst,
     
     // ==================== AXI接口 ====================
-    input  logic        axi_en,
+    input  logic        axi_req,
     input  logic        axi_we,
     input  logic [63:0] axi_addr,
     input  logic [63:0] axi_wdata,
@@ -308,7 +308,7 @@ vpu #(
 
     .mode_select        (vpu_mode_select),
     .psum_clear         (vpu_psum_clear),
-    .psum_enable        (1'b0),         // TODO：暂时不支持 psum load
+    .psum_enable        (1'b1),         // TODO：暂时不支持 psum load
     .bias_enable        (vpu_bias_enable),
     .relu_enable        (vpu_relu_enable),
     .dequant_enable     (vpu_dequant_enable),
