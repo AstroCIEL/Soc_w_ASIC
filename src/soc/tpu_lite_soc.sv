@@ -508,19 +508,14 @@ always_comb begin
 end
 
 // Instantite TPU-Lite
-tc_sram #(
-    .NumWords  ( 1024         ),
-    .DataWidth ( AxiDataWidth ),
-    .NumPorts  ( 1            )
-) i_tpu_lite (
-    .clk_i   ( clk             ),
-    .rst_ni  ( ndmreset_n      ),
-    .req_i   ( tpu_req         ),
-    .we_i    ( tpu_we          ),
-    .addr_i  ( tpu_addr[3+:10] ),
-    .wdata_i ( tpu_wdata       ),
-    .be_i    ( tpu_be          ),
-    .rdata_o ( tpu_rdata       )
+tpu i_tpu_lite (
+    .clk_i     ( clk             ),
+    .rst       ( ~ndmreset_n     ),
+    .axi_req   ( tpu_req         ),
+    .axi_we    ( tpu_we          ),
+    .axi_addr  ( tpu_addr        ),
+    .axi_wdata ( tpu_wdata       ),
+    .axi_rdata ( tpu_rdata       )
 );
 
 

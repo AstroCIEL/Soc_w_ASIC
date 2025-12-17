@@ -248,10 +248,29 @@ module idma_transport_layer_rw_axi #(
     );
 
     //--------------------------------------
+    // Write Outstanding Counter
+    //--------------------------------------
+    logic [7:0] w_outstanding_cnt;
+
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if (!rst_ni) begin
+            w_outstanding_cnt <= '0;
+        end else begin
+            if (w_dp_ready_o && w_dp_valid_i) begin
+                if (!(w_dp_valid_o && w_dp_ready_i)) begin
+                    w_outstanding_cnt <= w_outstanding_cnt + 8'd1;
+                end
+            end else if (w_dp_valid_o && w_dp_ready_i) begin
+                w_outstanding_cnt <= w_outstanding_cnt - 8'd1;
+            end
+        end
+    end
+
+    //--------------------------------------
     // Module Control
     //--------------------------------------
     assign r_dp_busy_o   = r_dp_valid_i;
-    assign w_dp_busy_o   = w_dp_valid_i | w_dp_ready_o;
+    assign w_dp_busy_o   = w_dp_valid_i | w_dp_ready_o | (w_outstanding_cnt != '0);
     assign buffer_busy_o = |buffer_out_valid;
 
 endmodule

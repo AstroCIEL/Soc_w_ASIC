@@ -111,6 +111,13 @@ module dma_wrapper #(
     logic                                      dma_rsp_ready;
 
     idma_pkg::idma_busy_t                      busy;
+    
+    // Aggregated busy signal
+    logic                                      dma_busy_aggregated;
+    assign dma_busy_aggregated = busy.buffer_busy | busy.r_dp_busy | busy.w_dp_busy |
+                                 busy.r_leg_busy | busy.w_leg_busy |
+                                 busy.eh_fsm_busy | busy.eh_cnt_busy |
+                                 busy.raw_coupler_busy;
 
     // Signals from Custom Regs
     logic                 [AXI_ADDR_WIDTH-1:0] reg_src_addr;
@@ -134,11 +141,11 @@ module dma_wrapper #(
         .length_o(reg_length),
         .config_o(reg_config),
         .launch_o(reg_launch),
-        .busy_i(busy.buffer_busy | busy.r_dp_busy | busy.w_dp_busy),  // Simple busy aggregation
+        .busy_i(dma_busy_aggregated),
         .error_i(dma_rsp.error),
-        .ready_i(dma_req_ready)
+        .ready_i(dma_req_ready && !dma_busy_aggregated) // Gate ready: Registers only see ready if DMA is idle
     );
-
+    
     // Map Register Outputs to DMA Request
     always_comb begin
         dma_req = '0;
@@ -164,7 +171,7 @@ module dma_wrapper #(
         dma_req.opt.last = 1'b1; // Single transfer is always last
     end
 
-    assign dma_req_valid = reg_launch;
+    assign dma_req_valid = reg_launch && !dma_busy_aggregated;
 
     // Instantiate IDMA Backend
     idma_backend_rw_axi #(
