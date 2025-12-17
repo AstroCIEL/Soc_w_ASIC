@@ -8,6 +8,7 @@ module instruction_cache #(
     input  logic        axi_icache_we,      // AXI写使能
     input  logic [15:0] axi_icache_addr,    // AXI地址
     input  logic [63:0] axi_icache_wdata,   // AXI写数据
+    output logic [63:0] axi_icache_rdata,   // AXI读数据
     
     // 控制模块读出端口
     input  logic                icache_rd_ctrl_en,     // 控制模块使能
@@ -41,6 +42,31 @@ always_ff @(posedge clk or posedge rst) begin
         if (axi_icache_en && axi_icache_we) begin
             ins_memory[axi_insmem_wr_row] <= axi_icache_wdata[INS_LEN-1:0];
         end
+    end
+end
+
+// AXI 读出逻辑 (1 cycle latency)
+logic        axi_icache_rd_en_d, axi_icache_rd_en_q;
+logic [9:0]  axi_icache_rd_addr_d, axi_icache_rd_addr_q;
+
+assign axi_icache_rd_en_d   = axi_icache_en && !axi_icache_we;
+assign axi_icache_rd_addr_d = axi_icache_addr[9:0];
+
+always_ff @(posedge clk or posedge rst) begin
+    if (rst) begin
+        axi_icache_rd_en_q   <= 1'b0;
+        axi_icache_rd_addr_q <= '0;
+    end else begin
+        axi_icache_rd_en_q   <= axi_icache_rd_en_d;
+        axi_icache_rd_addr_q <= axi_icache_rd_addr_d;
+    end
+end
+
+always_comb begin
+    if (axi_icache_rd_en_q) begin
+        axi_icache_rdata = {{(64-INS_LEN){1'b0}}, ins_memory[axi_icache_rd_addr_q]};
+    end else begin
+        axi_icache_rdata = 64'b0;
     end
 end
 

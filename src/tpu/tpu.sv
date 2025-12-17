@@ -15,6 +15,7 @@ logic        axi_icache_en;
 logic        axi_icache_we;
 logic [15:0] axi_icache_addr;
 logic [63:0] axi_icache_wdata;
+logic [63:0] axi_icache_rdata;
 
 logic        axi_ubuf_en;
 logic        axi_ubuf_we;
@@ -44,6 +45,7 @@ axi_interface u_axi_interface (
     .icache_we      (axi_icache_we   ),
     .icache_addr    (axi_icache_addr ),
     .icache_wdata   (axi_icache_wdata),
+    .icache_rdata   (axi_icache_rdata),
     
     .ubuf_en        (axi_ubuf_en     ),
     .ubuf_we        (axi_ubuf_we     ),
@@ -96,6 +98,7 @@ instruction_cache #(
     .axi_icache_we      (axi_icache_we   ),
     .axi_icache_addr    (axi_icache_addr ),
     .axi_icache_wdata   (axi_icache_wdata),
+    .axi_icache_rdata   (axi_icache_rdata),
     
     // ==================== 控制模块读出接口 ====================
     .icache_rd_ctrl_en      (icache_rd_ctrl_en  ),
