@@ -41,7 +41,8 @@ ${SRC_DIR}/soc/misc/cf_math_pkg.sv
 // Testbench
 ///////////////////////////////////////////////////////////////////////////////
 
-${SRC_DIR}/../sim/tpu_lite_soc_tb.sv
+// ${SRC_DIR}/../sim/tpu_lite_soc_tb.sv
+${SRC_DIR}/../sim/tpu_tb.sv
 
 ///////////////////////////////////////////////////////////////////////////////
 // SoC
@@ -318,11 +319,11 @@ ${SRC_DIR}/tpu/systolic_array/pe.sv
 ${SRC_DIR}/tpu/systolic_array/systolic_array_4x16x16.sv
 ${SRC_DIR}/tpu/systolic_array/systolic.sv
 ${SRC_DIR}/tpu/vpu/pipe_register.sv
-${SRC_DIR}/tpu/vpu/vpe_addr.sv
+${SRC_DIR}/tpu/vpu/vpe_adder.sv
 ${SRC_DIR}/tpu/vpu/vpe_bias.sv
-${SRC_DIR}/tpu/vpu/vpe_dequantizer.sv
+${SRC_DIR}/tpu/vpu/vpe_dequanter.sv
 ${SRC_DIR}/tpu/vpu/vpe_psum_cache.sv
 ${SRC_DIR}/tpu/vpu/vpe_relu.sv
 ${SRC_DIR}/tpu/vpu/vpe.sv
-${SRC_DIR}/tpu/vpu/vpe_channel.sv
+${SRC_DIR}/tpu/vpu/vpu_channel.sv
 ${SRC_DIR}/tpu/vpu/vpu.sv

@@ -30,6 +30,7 @@ module axi_interface (
     output logic        icache_we,
     output logic [15:0] icache_addr,
     output logic [63:0] icache_wdata,
+    input  logic [63:0] icache_rdata,
     
     output logic        status_en,
     output logic        status_we,
@@ -130,6 +131,9 @@ module axi_interface (
             end
             else if ((addr_in_TPU_q >= STATUS_BASE) && (addr_in_TPU_q <= STATUS_END)) begin
                 axi_rdata = status_rdata;
+            end
+            else if ((addr_in_TPU_q >= ICACHE_BASE) && (addr_in_TPU_q <= ICACHE_END)) begin
+                axi_rdata = icache_rdata;
             end
         end
     end
