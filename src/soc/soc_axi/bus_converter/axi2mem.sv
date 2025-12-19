@@ -56,7 +56,7 @@ module axi2mem #(
     enum logic [2:0] { IDLE, READ, WRITE, SEND_B, WAIT_WVALID }  state_d, state_q;
     ax_req_t                   ax_req_d, ax_req_q;
     logic [AXI_ADDR_WIDTH-1:0] req_addr_d, req_addr_q;
-    logic [7:0]                cnt_d, cnt_q;
+    logic [8:0]                cnt_d, cnt_q;
 
     function automatic logic [AXI_ADDR_WIDTH-1:0] get_wrap_boundary (input logic [AXI_ADDR_WIDTH-1:0] unaligned_address, input logic [7:0] len);
         logic [AXI_ADDR_WIDTH-1:0] warp_address = '0;
