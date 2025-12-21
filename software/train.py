@@ -108,3 +108,4 @@ acc = correct / total
 
 torch.save(model.state_dict(), "mlp_fp32.pth")
 print("测试集准确率: {:.2f}%".format(acc * 100))
+
