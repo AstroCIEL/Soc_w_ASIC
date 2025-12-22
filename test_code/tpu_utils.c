@@ -13,11 +13,14 @@ void dma_transfer(uint64_t src, uint64_t dst, uint32_t length_bytes) {
     REG32(DMA_ENGINE_BASE_ADDR, DMA_LENGTH_LO_OFFSET) = length_bytes;
     REG32(DMA_ENGINE_BASE_ADDR, DMA_LENGTH_HI_OFFSET) = 0;
 
-    // 4. Configure DMA Options (Assuming 0x3 is standard config)
+    // 4. Configure DMA Options
     REG32(DMA_ENGINE_BASE_ADDR, DMA_CONFIG_OFFSET) = 0x3;
 
     // 5. Launch Transfer
     REG32(DMA_ENGINE_BASE_ADDR, DMA_LAUNCH_OFFSET) = 1;
+
+    // // Fence to ensure DMA launch is seen
+    asm volatile ("fence" ::: "memory");
 
     // 6. Poll for Completion
     while (REG32(DMA_ENGINE_BASE_ADDR, DMA_STATUS_OFFSET) & 0x1) {
