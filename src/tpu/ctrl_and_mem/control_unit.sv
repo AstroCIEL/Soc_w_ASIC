@@ -45,7 +45,7 @@ module control_unit (
 // 指令缓存控制
 always_ff @(posedge clk or posedge rst) begin
     if (rst) begin
-        icache_rd_ctrl_addr     <= 10'b0;
+        icache_rd_ctrl_addr     <= 10'h3FF;
         icache_rd_ctrl_en       <= 1'b0;
     end else begin
         if (global_en && !ctrl_finish_in) begin
