@@ -197,7 +197,7 @@ end
 
 genvar i_rd_input;
 generate
-    for (i_rd_input = 0; i_rd_input < 4; i_rd_input = i_rd_input+1) begin
+    for (i_rd_input = 0; i_rd_input < 16; i_rd_input = i_rd_input+1) begin
         assign ub_rd_input_data_out[15-i_rd_input] = ub_rd_input_data_out_temp[i_rd_input*8 +: 8];
     end
 endgenerate
