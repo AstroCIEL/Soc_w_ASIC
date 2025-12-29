@@ -266,10 +266,10 @@ assign axi_wmem_inrow_offset    = axi_wmem_wr_addr[2:0];
             
 always_ff @(posedge clk or posedge rst) begin
     if (rst) begin
-        // for (int i= 0; i < 1024; i=i+1) begin
-        //     weight_memory[i] <= 512'b0;
-        // end
-        $readmemh("/home/rjbao/workspace/xrun_workspace/src/tb/weight_hex.txt", weight_memory);
+        for (int i= 0; i < 1024; i=i+1) begin
+            weight_memory[i] <= 512'b0;
+        end
+        // $readmemh("/home/rjbao/workspace/xrun_workspace/src/tb/weight_hex.txt", weight_memory);
     end else begin
         if (axi_ubuf_en && axi_ubuf_we && axi_wmem_wr_en) begin
             weight_memory[axi_wmem_wr_row][axi_wmem_inrow_offset*64 +: 64] <= axi_ubuf_wdata;
