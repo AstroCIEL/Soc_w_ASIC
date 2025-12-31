@@ -45,7 +45,7 @@ module control_unit (
 // 指令缓存控制
 always_ff @(posedge clk or posedge rst) begin
     if (rst) begin
-        icache_rd_ctrl_addr     <= 10'h3FF;
+        icache_rd_ctrl_addr     <= 10'b0;
         icache_rd_ctrl_en       <= 1'b0;
     end else begin
         if (global_en && !ctrl_finish_in) begin
@@ -66,6 +66,7 @@ logic [11:0]    ins_weight_rd_addr;
 logic [3:0]     ins_bias_rd_addr;
 logic [3:0]     ins_scale_rd_addr;
 logic [1:0]     ins_sa_en_size;
+logic [1:0]     ins_VPU_en_size;
 logic           ins_sa_weight_valid;
 logic           ins_sa_switch_weight;
 logic           ins_sa_input_valid;
