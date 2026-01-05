@@ -1,5 +1,5 @@
 # ==============================================================================
-# tpu第一层mlp数据计算示例
+# TPU-Lite 第一层 MLP 数据计算示例
 # ==============================================================================
 VCS     = vcs
 VERDI   = verdi
@@ -28,30 +28,30 @@ SIM_FLAGS = -l sim.log
 # ==============================================================================
 # 假设你的新 SV Testbench 放在 test 目录下，名为 tb_tpu.sv
 DUT = tpu
-TB_SOURCE = ../test/$(DUT)_tb.sv
+TB_SOURCE = ../src/tb/$(DUT)_tb.sv
 
 # RTL 源文件 (保持原本的目录结构)
-RTL_SOURCES = ../src/ctrl_and_mem/axi_interface.sv \
-              ../src/ctrl_and_mem/control_unit.sv \
-              ../src/ctrl_and_mem/instruction_cache.sv \
-              ../src/ctrl_and_mem/status_reg.sv \
-              ../src/ctrl_and_mem/systolic_data_rearranger_FIFO.sv \
-              ../src/ctrl_and_mem/systolic_data_rearranger.sv \
-              ../src/ctrl_and_mem/unified_buffer.sv \
-              ../src/systolic_array/int.sv \
-              ../src/systolic_array/pe.sv \
-              ../src/systolic_array/systolic.sv \
-              ../src/systolic_array/systolic_array_4x16x16.sv \
-              ../src/vpu/vpu.sv \
-              ../src/vpu/pipe_register.sv \
-              ../src/vpu/vpe_adder.sv \
-              ../src/vpu/vpe_bias.sv \
-              ../src/vpu/vpe_dequanter.sv \
-              ../src/vpu/vpe_psum_cache.sv \
-              ../src/vpu/vpe_relu.sv \
-              ../src/vpu/vpe.sv \
-              ../src/vpu/vpu_channel.sv \
-              ../src/tpu.sv
+RTL_SOURCES = ../src/tpu/ctrl_and_mem/axi_interface.sv \
+              ../src/tpu/ctrl_and_mem/control_unit.sv \
+              ../src/tpu/ctrl_and_mem/instruction_cache.sv \
+              ../src/tpu/ctrl_and_mem/status_reg.sv \
+              ../src/tpu/ctrl_and_mem/systolic_data_rearranger_FIFO.sv \
+              ../src/tpu/ctrl_and_mem/systolic_data_rearranger.sv \
+              ../src/tpu/ctrl_and_mem/unified_buffer.sv \
+              ../src/tpu/systolic_array/int.sv \
+              ../src/tpu/systolic_array/pe.sv \
+              ../src/tpu/systolic_array/systolic.sv \
+              ../src/tpu/systolic_array/systolic_array_4x16x16.sv \
+              ../src/tpu/vpu/vpu.sv \
+              ../src/tpu/vpu/pipe_register.sv \
+              ../src/tpu/vpu/vpe_adder.sv \
+              ../src/tpu/vpu/vpe_bias.sv \
+              ../src/tpu/vpu/vpe_dequanter.sv \
+              ../src/tpu/vpu/vpe_psum_cache.sv \
+              ../src/tpu/vpu/vpe_relu.sv \
+              ../src/tpu/vpu/vpe.sv \
+              ../src/tpu/vpu/vpu_channel.sv \
+              ../src/tpu/tpu.sv
 
 # ==============================================================================
 # 伪目标 (Phony Targets)
