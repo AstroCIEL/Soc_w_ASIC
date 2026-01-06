@@ -18,18 +18,17 @@ def convert_dec_to_c_array(input_file, array_name):
             
         # Split line by spaces to get individual numbers
         numbers = line.split()
+        row_str = []
         
         for num_str in numbers:
             try:
                 val = int(num_str)
-                # Ensure value fits in int8_t (-128 to 127)
-                if val < -128 or val > 127:
-                     print(f"// Warning: Value {val} out of int8_t range")
-                
-                print(f"    {val},")
+                row_str.append(str(val))
             except ValueError:
-                print(f"// Warning: Skipping invalid number: {num_str}")
                 continue
+        
+        if row_str:
+            print(f"    {', '.join(row_str)},")
             
     print("};")
 
