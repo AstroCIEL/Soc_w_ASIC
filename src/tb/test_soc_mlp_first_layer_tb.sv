@@ -47,8 +47,18 @@ module tpu_lite_soc_tb;
         $display("Main memory initialized");
 
         // Wait for program execution
-        #100000000
+        #200000000
 
+        $display("\n=== Checking MLP Inference Results ===\n");
+        if (i_tpu_lite_soc.i_cpu.issue_stage_i.i_issue_read_operands.gen_asic_regfile.i_ariane_regfile.mem[18] === 64'hDEAD) begin
+            $display("Inference results mismatch!");
+        end
+        else if (i_tpu_lite_soc.i_cpu.issue_stage_i.i_issue_read_operands.gen_asic_regfile.i_ariane_regfile.mem[18] === 64'hBABE) begin
+            $display("Inference results match golden results!");
+        end
+        else begin
+            $display("Unexpected result code: 0x%h", i_tpu_lite_soc.i_cpu.issue_stage_i.i_issue_read_operands.gen_asic_regfile.i_ariane_regfile.mem[18]);
+        end
         $display("\n=== Test Complete ===\n");
         $finish;
     end
