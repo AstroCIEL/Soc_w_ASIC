@@ -1,6 +1,6 @@
 # TPU-Lite-SoC
 
-[完整项目报告 (PDF)](./Report.pdf) <!-- Placeholder for PROJECT_REPORT.pdf -->
+完整项目报告位于 [TPU_Lite_SoC.pdf](./TPU_Lite_SoC.pdf)，LaTeX 源代码位于 [TPU-Lite-SoC.zip](TPU-Lite-SoC.zip)。
 
 This project implements a lightweight TPU (Tensor Processing Unit) integrated into a RISC-V SoC (System on Chip).
 
