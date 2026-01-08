@@ -53,7 +53,7 @@ module tpu_lite_soc_tb;
         if (i_tpu_lite_soc.i_cpu.issue_stage_i.i_issue_read_operands.gen_asic_regfile.i_ariane_regfile.mem[18] === 64'hDEAD) begin
             $display("Inference results mismatch!");
         end
-        else if (i_tpu_lite_soc.i_cpu.issue_stage_i.i_issue_read_operands.gen_asic_regfile.i_ariane_regfile.mem[18] === 64'hBABE) begin
+        else if (i_tpu_lite_soc.i_cpu.issue_stage_i.i_issue_read_operands.gen_asic_regfile.i_ariane_regfile.mem[18] === 64'hABAB) begin
             $display("Inference results match golden results!");
         end
         else begin
