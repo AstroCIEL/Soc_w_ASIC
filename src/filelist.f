@@ -173,9 +173,9 @@ src/soc/misc/tc_sram.sv
 src/soc/tech_specific/tc_clk.v
 src/soc/tech_specific/tc_sram.v
 // src/soc/tech_specific/DCO.v
-src/soc/sram/TSMC_RF_BITMASK_128x128/VERILOG/FPGA/TSMC_RF_BITMASK_128x128.v
-src/soc/sram/TSMC_RF_BITMASK_128x46/VERILOG/FPGA/TSMC_RF_BITMASK_128x46.v
-src/soc/sram/TSMC_SRAM_BITMASK_1024x64/VERILOG/FPGA/TSMC_SRAM_BITMASK_1024x64.v
+// src/soc/sram/TSMC_RF_BITMASK_128x128/VERILOG/FPGA/TSMC_RF_BITMASK_128x128.v
+// src/soc/sram/TSMC_RF_BITMASK_128x46/VERILOG/FPGA/TSMC_RF_BITMASK_128x46.v
+// src/soc/sram/TSMC_SRAM_BITMASK_1024x64/VERILOG/FPGA/TSMC_SRAM_BITMASK_1024x64.v
 
 // DMA Engine
 src/soc/soc_axi/dma/dma_regs.sv

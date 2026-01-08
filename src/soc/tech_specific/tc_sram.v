@@ -28,17 +28,34 @@ module sram_be_1024x64 (
         .douta      ( read_data_o   )
     );
 `else
-    TSMC_SRAM_BITMASK_1024x64 sram_inst (
-        .CLK      ( clk_i           ),
-        .CEB      ( ~chip_enable_i  ),
-        .WEB      ( ~write_enable_i ),
-        .BWEB     ( ~bit_enable_i   ),
-        .A        ( addr_i          ),
-        .D        ( write_data_i    ),
-        .Q        ( read_data_o     ),
-        .WTSEL    ( 2'b00           ),
-        .RTSEL    ( 2'b01           )
+    tc_sram #(
+        .NumWords    ( 1024 ),
+        .DataWidth   ( 64   ),
+        .ByteWidth   ( 1   ),
+        .NumPorts    ( 1    ),
+    ) sram_inst (
+        .clk_i       ( clk_i          ),
+        .rst_ni      ( 1'b1           ),
+        .req_i       ( chip_enable_i  ),
+        .we_i        ( write_enable_i ),
+        .addr_i      ( addr_i         ),
+        .wdata_i     ( write_data_i   ),
+        .be_i        ( bit_enable_i   ),
+        .rdata_o     ( read_data_o    )
     );
+
+    // TSMC_SRAM_BITMASK_1024x64 sram_inst (
+    //     .CLK      ( clk_i           ),
+    //     .CEB      ( ~chip_enable_i  ),
+    //     .WEB      ( ~write_enable_i ),
+    //     .BWEB     ( ~bit_enable_i   ),
+    //     .A        ( addr_i          ),
+    //     .D        ( write_data_i    ),
+    //     .Q        ( read_data_o     ),
+    //     .WTSEL    ( 2'b00           ),
+    //     .RTSEL    ( 2'b01           )
+    // );
+
 `endif
 
 endmodule
@@ -63,17 +80,33 @@ module rf_be_128x46 (
       .douta  ( read_data_o    )        // output wire [45 : 0] douta
     );
 `else
-    TSMC_RF_BITMASK_128x46 rf_inst (
-        .CLK      ( clk_i           ),
-        .BWEB     ( ~bit_enable_i   ),
-        .CEB      ( ~chip_enable_i  ),
-        .WEB      ( ~write_enable_i ),
-        .A        ( addr_i          ),
-        .D        ( write_data_i    ),
-        .Q        ( read_data_o     ),
-        .WTSEL    ( 2'b01           ),
-        .RTSEL    ( 2'b01           )
+    tc_sram #(
+        .NumWords    ( 128 ),
+        .DataWidth   ( 46  ),
+        .ByteWidth   ( 1   ),
+        .NumPorts    ( 1   )
+    ) rf_inst (
+        .clk_i       ( clk_i          ),
+        .rst_ni      ( 1'b1           ),
+        .req_i       ( chip_enable_i  ),
+        .we_i        ( write_enable_i ),
+        .addr_i      ( addr_i         ),
+        .wdata_i     ( write_data_i   ),
+        .be_i        ( bit_enable_i   ),
+        .rdata_o     ( read_data_o    )
     );
+
+    // TSMC_RF_BITMASK_128x46 rf_inst (
+    //     .CLK      ( clk_i           ),
+    //     .BWEB     ( ~bit_enable_i   ),
+    //     .CEB      ( ~chip_enable_i  ),
+    //     .WEB      ( ~write_enable_i ),
+    //     .A        ( addr_i          ),
+    //     .D        ( write_data_i    ),
+    //     .Q        ( read_data_o     ),
+    //     .WTSEL    ( 2'b01           ),
+    //     .RTSEL    ( 2'b01           )
+    // );
 `endif
 
 endmodule
@@ -98,17 +131,33 @@ module rf_be_128x128 (
       .douta  ( read_data_o    )        // output wire [127 : 0] douta
     );
 `else
-    TSMC_RF_BITMASK_128x128 rf_inst (
-        .CLK      ( clk_i           ),
-        .BWEB     ( ~bit_enable_i   ),
-        .CEB      ( ~chip_enable_i  ),
-        .WEB      ( ~write_enable_i ),
-        .A        ( addr_i          ),
-        .D        ( write_data_i    ),
-        .Q        ( read_data_o     ),
-        .WTSEL    ( 2'b01           ),
-        .RTSEL    ( 2'b01           )
+    tc_sram #(
+        .NumWords    ( 128 ),
+        .DataWidth   ( 128 ),
+        .ByteWidth   ( 1   ),
+        .NumPorts    ( 1   )
+    ) rf_inst (
+        .clk_i       ( clk_i          ),
+        .rst_ni      ( 1'b1           ),
+        .req_i       ( chip_enable_i  ),
+        .we_i        ( write_enable_i ),
+        .addr_i      ( addr_i         ),
+        .wdata_i     ( write_data_i   ),
+        .be_i        ( bit_enable_i   ),
+        .rdata_o     ( read_data_o    )
     );
+
+    // TSMC_RF_BITMASK_128x128 rf_inst (
+    //     .CLK      ( clk_i           ),
+    //     .BWEB     ( ~bit_enable_i   ),
+    //     .CEB      ( ~chip_enable_i  ),
+    //     .WEB      ( ~write_enable_i ),
+    //     .A        ( addr_i          ),
+    //     .D        ( write_data_i    ),
+    //     .Q        ( read_data_o     ),
+    //     .WTSEL    ( 2'b01           ),
+    //     .RTSEL    ( 2'b01           )
+    // );
 `endif
 
 endmodule
