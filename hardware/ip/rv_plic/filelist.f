@@ -1,0 +1,9 @@
+../hardware/ip/rv_plic/rtl/top_pkg.sv
+../hardware/ip/rv_plic/rtl/tlul_pkg.sv
+../hardware/ip/rv_plic/rtl/prim_subreg.sv
+../hardware/ip/rv_plic/rtl/prim_subreg_ext.sv
+../hardware/ip/rv_plic/rtl/rv_plic_gateway.sv
+../hardware/ip/rv_plic/rtl/rv_plic_target.sv
+../hardware/ip/rv_plic/rtl/rv_plic_reg_pkg.sv
+../hardware/ip/rv_plic/rtl/rv_plic_reg_top.sv
+../hardware/ip/rv_plic/rtl/rv_plic.sv
