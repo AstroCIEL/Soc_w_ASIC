@@ -20,6 +20,7 @@
 ../hardware/ip/axi/src/axi_lite_demux.sv
 ../hardware/ip/axi/src/axi_lite_dw_converter.sv
 ../hardware/ip/axi/src/axi_lite_from_mem.sv
+../hardware/ip/axi/src/axi_lite_interface.sv
 ../hardware/ip/axi/src/axi_lite_join.sv
 ../hardware/ip/axi/src/axi_lite_lfsr.sv
 ../hardware/ip/axi/src/axi_lite_mailbox.sv
