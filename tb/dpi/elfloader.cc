@@ -1,23 +1,27 @@
-#include <fesvr/elf.h>
-#include <fesvr/memif.h>
-
+#include <elf.h>
 #include <svdpi.h>
 
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <assert.h>
+#include <cassert>
 #include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <vector>
 #include <map>
 #include <iostream>
 
-#define SHT_PROGBITS 0x1
-#define SHT_GROUP 0x11
+typedef uint64_t reg_t;
+
+#define IS_ELF(hdr) \
+  ((hdr).e_ident[EI_MAG0] == ELFMAG0 && (hdr).e_ident[EI_MAG1] == ELFMAG1 && \
+   (hdr).e_ident[EI_MAG2] == ELFMAG2 && (hdr).e_ident[EI_MAG3] == ELFMAG3)
+#define IS_ELF32(hdr) (IS_ELF(hdr) && (hdr).e_ident[EI_CLASS] == ELFCLASS32)
+#define IS_ELF64(hdr) (IS_ELF(hdr) && (hdr).e_ident[EI_CLASS] == ELFCLASS64)
 
 // address and size
 std::vector<std::pair<reg_t, reg_t>> sections;

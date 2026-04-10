@@ -117,7 +117,7 @@ VCS_FLAGS := -full64 \
   +define+NR_LANES=$(NR_LANES) +define+VLEN=$(VLEN) \
   -top $(VCS_TOP) \
   -CFLAGS "-I$(TB_DIR)/dpi" \
-  -LDFLAGS "-lfesvr -lelf" \
+  -LDFLAGS "-lelf" \
   $(DPI_SRCS) \
   -Mdir=$(VCS_BUILD)/csrc \
   -o $(VCS_BIN)
