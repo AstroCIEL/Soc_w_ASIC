@@ -38,7 +38,7 @@ module tc_sram_wrapper_cache_techno #(
   output data_t [NumPorts-1:0] rdata_o     // read data
 );
 
-  tc_sram #(
+  tc_sram_wrapper #(
     .NumWords(NumWords),
     .DataWidth(DataWidth),
     .ByteWidth(ByteWidth),
@@ -46,7 +46,7 @@ module tc_sram_wrapper_cache_techno #(
     .Latency(Latency),
     .SimInit(SimInit),
     .PrintSimCfg(PrintSimCfg)
-  ) i_tc_sram (
+  ) i_tc_sram_wrapper (
       .clk_i    ( clk_i   ),
       .rst_ni   ( rst_ni  ),
       .req_i    ( req_i   ),

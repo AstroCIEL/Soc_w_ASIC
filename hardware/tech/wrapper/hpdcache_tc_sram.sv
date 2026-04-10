@@ -4,7 +4,7 @@
 //
 // Paul Scheffler <paulsc@iis.ee.ethz.ch>
 
-// Wrappers mapping HPDcache SRAMs to PULP `tc_sram`.
+// Wrappers mapping HPDcache SRAMs to PULP `tc_sram_wrapper`.
 
 /// SRAM with one R/W port and no write mask
 module hpdcache_sram_1rw #(
@@ -20,13 +20,13 @@ module hpdcache_sram_1rw #(
     input  logic [DATA_SIZE-1:0] wdata,
     output logic [DATA_SIZE-1:0] rdata
 );
-  tc_sram #(
+  tc_sram_wrapper #(
       .NumWords (DEPTH),
       .DataWidth(DATA_SIZE),
       .ByteWidth(DATA_SIZE),
       .NumPorts (1),
       .Latency  (1)
-  ) i_tc_sram (
+  ) i_tc_sram_wrapper (
       .clk_i  (clk),
       .rst_ni (rst_n),
       .req_i  (cs),
@@ -53,13 +53,13 @@ module hpdcache_sram_wbyteenable_1rw #(
     input  logic [DATA_SIZE/8-1:0] wbyteenable,
     output logic [  DATA_SIZE-1:0] rdata
 );
-  tc_sram #(
+  tc_sram_wrapper #(
       .NumWords (DEPTH),
       .DataWidth(DATA_SIZE),
       .ByteWidth(8),
       .NumPorts (1),
       .Latency  (1)
-  ) i_tc_sram (
+  ) i_tc_sram_wrapper (
       .clk_i  (clk),
       .rst_ni (rst_n),
       .req_i  (cs),
@@ -86,13 +86,13 @@ module hpdcache_sram_wmask_1rw #(
     input  logic [DATA_SIZE-1:0] wmask,
     output logic [DATA_SIZE-1:0] rdata
 );
-  tc_sram #(
+  tc_sram_wrapper #(
       .NumWords (DEPTH),
       .DataWidth(DATA_SIZE),
       .ByteWidth(1),
       .NumPorts (1),
       .Latency  (1)
-  ) i_tc_sram (
+  ) i_tc_sram_wrapper (
       .clk_i  (clk),
       .rst_ni (rst_n),
       .req_i  (cs),

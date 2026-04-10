@@ -2,14 +2,13 @@
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51
 //
-// L2 main memory wrapper — single-port SRAM with byte-enable.
-// Provides a clean boundary between SoC integration and the
+// VRF bank memory wrapper — single-port SRAM with byte-enable.
+// Provides a clean boundary between Ara vector register file and the
 // technology-dependent tc_sram implementation.
 
-module l2_mem_wrapper #(
+module vrf_mem_wrapper #(
   parameter int unsigned NumWords  = 0,
   parameter int unsigned DataWidth = 0,
-  parameter              SimInit   = "random",
   // Dependent parameters
   localparam int unsigned AddrWidth = (NumWords > 1) ? $clog2(NumWords) : 1,
   localparam int unsigned BeWidth   = (DataWidth + 7) / 8
@@ -26,9 +25,8 @@ module l2_mem_wrapper #(
 
   tc_sram_wrapper #(
     .NumWords (NumWords ),
-    .NumPorts (1        ),
     .DataWidth(DataWidth),
-    .SimInit  (SimInit  )
+    .NumPorts (1        )
   ) i_tc_sram_wrapper (
     .clk_i  (clk_i  ),
     .rst_ni (rst_ni ),

@@ -14,3 +14,4 @@
 ../hardware/tech/wrapper/sram_cache.sv
 ../hardware/tech/wrapper/hpdcache_tc_sram.sv
 ../hardware/tech/wrapper/l2_mem_wrapper.sv
+../hardware/tech/wrapper/vrf_mem_wrapper.sv

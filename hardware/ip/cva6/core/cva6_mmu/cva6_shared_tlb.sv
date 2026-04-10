@@ -458,7 +458,7 @@ module cva6_shared_tlb #(
   for (genvar i = 0; i < SHARED_TLB_WAYS; i++) begin : gen_sram
     if (CVA6Cfg.UseSharedTlb) begin
       // Tag RAM
-      sram #(
+      paired_sram_wrapper #(
           .DATA_WIDTH($bits(shared_tag_t)),
           .NUM_WORDS (CVA6Cfg.SharedTlbDepth)
       ) tag_sram (
@@ -478,7 +478,7 @@ module cva6_shared_tlb #(
 
       for (genvar a = 0; a < HYP_EXT + 1; a++) begin : g_content_sram
         // PTE RAM
-        sram #(
+        paired_sram_wrapper #(
             .DATA_WIDTH(CVA6Cfg.XLEN),
             .NUM_WORDS (CVA6Cfg.SharedTlbDepth)
         ) pte_sram (

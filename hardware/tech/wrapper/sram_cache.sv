@@ -103,7 +103,7 @@ module sram_cache #(
       );
     end
   end else begin
-    sram #(
+    paired_sram_wrapper #(
           .USER_WIDTH (USER_WIDTH),
           .DATA_WIDTH (DATA_WIDTH),
           .USER_EN    (USER_EN),

@@ -19,7 +19,7 @@
 // inferrable RAMS with byte enable. define `FPGA_TARGET_XILINX or
 // `FPGA_TARGET_ALTERA in your build environment (default is ALTERA)
 
-module sram #(
+module paired_sram_wrapper #(
     parameter DATA_WIDTH = 64,
     parameter BYTE_WIDTH = 8,
     parameter USER_WIDTH = 1,
@@ -40,7 +40,7 @@ module sram #(
    output logic [DATA_WIDTH-1:0]         rdata_o
 );
 
-  tc_sram #(
+  tc_sram_wrapper #(
     .NumWords    ( NUM_WORDS  ),
     .DataWidth   ( DATA_WIDTH ),
     .ByteWidth   ( BYTE_WIDTH ),
@@ -48,7 +48,7 @@ module sram #(
     .Latency     ( 32'd1      ),
     .SimInit     ( SIM_INIT   ),
     .PrintSimCfg ( 1'b0       )
-  ) i_tc_sram (
+  ) i_tc_sram_wrapper (
     .clk_i   ( clk_i   ),
     .rst_ni  ( rst_ni  ),
     .req_i   ( req_i   ),
@@ -60,7 +60,7 @@ module sram #(
   );
 
   if (USER_EN > 0) begin : gen_mem_user
-    tc_sram #(
+    tc_sram_wrapper #(
       .NumWords    ( NUM_WORDS  ),
       .DataWidth   ( DATA_WIDTH ),
       .ByteWidth   ( BYTE_WIDTH ),
@@ -68,7 +68,7 @@ module sram #(
       .Latency     ( 32'd1      ),
       .SimInit     ( SIM_INIT   ),
       .PrintSimCfg ( 1'b0       )
-    ) i_tc_sram_user (
+    ) i_tc_sram_wrapper_user (
       .clk_i   ( clk_i   ),
       .rst_ni  ( rst_ni  ),
       .req_i   ( req_i   ),
@@ -93,4 +93,4 @@ module sram #(
     end
     // synthesis translate_on
   end
-endmodule : sram
+endmodule : paired_sram_wrapper

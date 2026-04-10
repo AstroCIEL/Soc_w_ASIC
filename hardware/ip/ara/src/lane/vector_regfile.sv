@@ -79,10 +79,9 @@ module vector_regfile import ara_pkg::*; #(
     assign vrf_clk = clk_i;
 `endif
 
-    tc_sram #(
+    vrf_mem_wrapper #(
       .NumWords (NumWords ),
-      .DataWidth(DataWidth),
-      .NumPorts (1        )
+      .DataWidth(DataWidth)
     ) data_sram (
       .clk_i  (vrf_clk                           ),
       .rst_ni (rst_ni                            ),

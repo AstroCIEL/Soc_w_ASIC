@@ -210,7 +210,7 @@ module std_nbdcache
   // Memory Arrays
   // --------------
   for (genvar i = 0; i < CVA6Cfg.DCACHE_SET_ASSOC; i++) begin : sram_block
-    sram #(
+    paired_sram_wrapper #(
         .DATA_WIDTH(CVA6Cfg.DCACHE_LINE_WIDTH),
         .NUM_WORDS (CVA6Cfg.DCACHE_NUM_WORDS)
     ) data_sram (
@@ -226,7 +226,7 @@ module std_nbdcache
         .*
     );
 
-    sram #(
+    paired_sram_wrapper #(
         .DATA_WIDTH(CVA6Cfg.DCACHE_TAG_WIDTH),
         .NUM_WORDS (CVA6Cfg.DCACHE_NUM_WORDS)
     ) tag_sram (
@@ -258,7 +258,7 @@ module std_nbdcache
     assign be_valid_dirty_ram[i].dirty = be_ram.vldrty[i].dirty;
   end
 
-  sram #(
+  paired_sram_wrapper #(
       .USER_WIDTH(1),
       .DATA_WIDTH(CVA6Cfg.DCACHE_SET_ASSOC * $bits(vldrty_t)),
       .BYTE_WIDTH(1),
