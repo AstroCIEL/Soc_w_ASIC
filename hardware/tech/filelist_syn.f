@@ -2,9 +2,6 @@
 ../hardware/tech/src/rtl/tc_sram_syn.sv
 ../hardware/tech/src/rtl/tc_clk.sv
 ../hardware/tech/src/tc_pwr.sv
-../hardware/tech/src/deprecated/pulp_clock_gating_async.sv
-../hardware/tech/src/deprecated/cluster_clk_cells.sv
-../hardware/tech/src/deprecated/pulp_clk_cells.sv
 
 // Technology wrappers 
 ../hardware/tech/wrapper/fpga-support-stubs.sv
