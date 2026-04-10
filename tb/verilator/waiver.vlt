@@ -1,0 +1,17 @@
+// Copyright 2021 ETH Zurich and University of Bologna.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+`verilator_config
+
+// Ignore duplicate modules
+lint_off -rule MODDUP
+
+// Ignore missing pins on Ariane
+lint_off -rule PINMISSING -file "*/cva6/*" -match "*"
+
+// Ignore missing pins on the axi_cdc_src
+lint_off -rule PINMISSING -file "*/axi/*" -match "*"
+
+// Ignore usage of reserved words on Ariane
+lint_off -rule SYMRSVDWORD -file "*/cva6/*" -match "*"
