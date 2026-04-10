@@ -116,14 +116,14 @@ VCS_FLAGS := -full64 \
   -f $(FILELIST) \
   +define+NR_LANES=$(NR_LANES) +define+VLEN=$(VLEN) \
   -top $(VCS_TOP) \
-  -CFLAGS "-I$(TB_DIR)/dpi" \
+  -CFLAGS "-std=c++11 -I$(TB_DIR)/dpi" \
   -LDFLAGS "-lelf" \
   $(DPI_SRCS) \
   -Mdir=$(VCS_BUILD)/csrc \
   -o $(VCS_BIN)
 
 VCS_RUN_FLAGS := +vcs+lic+wait \
-  +FIRMWARE=$(app_path)/$(app)
+  +PRELOAD=$(app_path)/$(app)
 
 .PHONY: vcs vcs-run wave
 
