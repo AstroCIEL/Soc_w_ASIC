@@ -5,7 +5,7 @@ Default config: NR_LANES=4, VLEN=4096, cv64a6_imafdcv_sv39 (WT dcache, TechnoCut
 Instantiation Hierarchy
 -----------------------
 ara_soc
- ├── i_dram: l2_mem_wrapper → tc_sram (262144×128)        ← L2 main memory
+ ├── i_dram: l2_mem_wrapper → tc_sram (1048576×128)       ← L2 main memory
  │
  ├── CVA6 core
  │   ├── cva6_icache (×4 way)
@@ -24,7 +24,7 @@ Unique Shapes
 -------------
   Shape (Depth×Width)  | Usage        | Count | Total Capacity
   ---------------------+--------------+-------+---------------
-  262144 × 128b        | L2 memory    |     1 | 4 MiB
+  1048576 × 128b       | L2 memory    |     1 | 16 MiB
       64 × 256b        | D$ data bank |     4 | 8 KiB
       64 × 128b        | I$ data      |     4 | 4 KiB
       64 ×  64b        | Ara VRF bank |    32 | 16 KiB
