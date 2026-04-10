@@ -129,5 +129,3 @@
 ../hardware/ip/cva6/core/pmp/src/pmp_data_if.sv
 ../hardware/ip/cva6/core/include/instr_tracer_pkg.sv
 ../hardware/ip/cva6/common/local/util/instr_tracer.sv
-../hardware/ip/cva6/common/local/util/instr_trace_item.svh
-../hardware/ip/cva6/common/local/util/ex_trace_item.svh
