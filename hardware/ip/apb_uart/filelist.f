@@ -1,3 +1,14 @@
-../hardware/ip/apb_uart/src/apb_uart.sv
-// ../hardware/ip/apb_uart/src/apb_uart_wrap.sv
 ../hardware/ip/apb_uart/src/reg_uart_wrap.sv
+../hardware/ip/apb_uart/src/slib_edge_detect.sv
+../hardware/ip/apb_uart/src/slib_input_filter.sv
+../hardware/ip/apb_uart/src/uart_interrupt.sv
+../hardware/ip/apb_uart/src/uart_baudgen.sv
+../hardware/ip/apb_uart/src/apb_uart_wrap.sv
+../hardware/ip/apb_uart/src/slib_fifo.sv
+../hardware/ip/apb_uart/src/slib_counter.sv
+../hardware/ip/apb_uart/src/slib_clock_div.sv
+../hardware/ip/apb_uart/src/slib_input_sync.sv
+../hardware/ip/apb_uart/src/apb_uart.sv
+../hardware/ip/apb_uart/src/uart_receiver.sv
+../hardware/ip/apb_uart/src/uart_transmitter.sv
+../hardware/ip/apb_uart/src/slib_mv_filter.sv
