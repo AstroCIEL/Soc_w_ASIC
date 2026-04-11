@@ -20,6 +20,7 @@
 ../hardware/ip/cva6/core/cvxif_compressed_if_driver.sv
 ../hardware/ip/cva6/core/cvxif_example/cvxif_example_coprocessor.sv
 ../hardware/ip/cva6/core/cvxif_example/instr_decoder.sv
+../hardware/ip/cva6/core/cva6_rvfi.sv
 ../hardware/ip/cva6/core/cva6_rvfi_probes.sv
 ../hardware/ip/cva6/core/cva6_fifo_v3.sv
 ../hardware/ip/cva6/core/cva6.sv
