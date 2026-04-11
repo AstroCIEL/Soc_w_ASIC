@@ -16,13 +16,13 @@
 /// This speeds up simulation significantly.
 module lzc #(
   /// The width of the input vector.
-  parameter int unsigned WIDTH = 2,
+  parameter int WIDTH = 2,
   /// Mode selection: 0 -> trailing zero, 1 -> leading zero
-  parameter bit          MODE  = 1'b0,
+  parameter bit MODE  = 1'b0,
   /// Dependent parameter. Do **not** change!
   ///
   /// Width of the output signal with the zero count.
-  parameter int unsigned CNT_WIDTH = cf_math_pkg::idx_width(WIDTH)
+  parameter int CNT_WIDTH = cf_math_pkg::idx_width(WIDTH)
 ) (
   /// Input vector to be counted.
   input  logic [WIDTH-1:0]     in_i,

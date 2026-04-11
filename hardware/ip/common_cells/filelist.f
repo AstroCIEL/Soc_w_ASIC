@@ -52,6 +52,7 @@
 ../hardware/ip/common_cells/src/cdc_reset_ctrlr_pkg.sv
 ../hardware/ip/common_cells/src/cdc_4phase.sv
 ../hardware/ip/common_cells/src/ecc_encode.sv
+../hardware/ip/common_cells/src/cb_filter_pkg.sv
 ../hardware/ip/common_cells/src/cb_filter.sv
 ../hardware/ip/common_cells/src/cdc_fifo_gray_clearable.sv
 ../hardware/ip/common_cells/src/fall_through_register.sv
@@ -67,7 +68,6 @@
 ../hardware/ip/common_cells/src/cdc_reset_ctrlr.sv
 ../hardware/ip/common_cells/src/stream_demux.sv
 ../hardware/ip/common_cells/src/onehot_to_bin.sv
-../hardware/ip/common_cells/src/cb_filter_pkg.sv
 ../hardware/ip/common_cells/src/rr_arb_tree.sv
 ../hardware/ip/common_cells/src/multiaddr_decode.sv
 ../hardware/ip/common_cells/src/ring_buffer.sv
