@@ -56,3 +56,5 @@
 ../hardware/ip/axi/src/axi_to_mem_split.sv
 ../hardware/ip/axi/src/axi_xbar.sv
 ../hardware/ip/axi/src/axi_xp.sv
+
+../hardware/ip/axi/src/axi2mem.sv

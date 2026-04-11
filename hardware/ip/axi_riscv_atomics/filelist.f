@@ -1,0 +1,9 @@
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_atomics_structs.sv
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_lrsc_wrap.sv
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_atomics_wrap.sv
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_amos.sv
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_amos_alu.sv
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_amos_wrap.sv
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_lrsc.sv
+../hardware/ip/axi_riscv_atomics/src/axi_riscv_atomics.sv
+../hardware/ip/axi_riscv_atomics/src/axi_res_tbl.sv
