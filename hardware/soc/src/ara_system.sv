@@ -28,6 +28,10 @@ module ara_system import axi_pkg::*; import ara_pkg::*; #(
     parameter type                              acc_mmu_resp_t     = logic,
     parameter type                              cva6_to_acc_t      = logic,
     parameter type                              acc_to_cva6_t      = logic,
+    // RVFI probe types (for rvfi_probes_o port)
+    parameter type                              rvfi_probes_instr_t = logic,
+    parameter type                              rvfi_probes_csr_t   = logic,
+    parameter type                              rvfi_probes_t       = logic,
     // AXI Interface
     parameter int                      unsigned AxiAddrWidth       = 64,
     parameter int                      unsigned AxiIdWidth         = 6,
@@ -63,6 +67,13 @@ module ara_system import axi_pkg::*; import ara_pkg::*; #(
     input  logic                    scan_enable_i,
     input  logic                    scan_data_i,
     output logic                    scan_data_o,
+    // Interrupt and debug ports (previously tied to '0 / unused)
+    input  logic              [1:0] irq_i,
+    input  logic                    ipi_i,
+    input  logic                    time_irq_i,
+    input  logic                    debug_req_i,
+    // RVFI probes output (previously unused)
+    output rvfi_probes_t            rvfi_probes_o,
     // AXI Interface
     output system_axi_req_t         axi_req_o,
     input  system_axi_resp_t        axi_resp_i
@@ -128,10 +139,10 @@ module ara_system import axi_pkg::*; import ara_pkg::*; #(
     .rst_ni           (rst_ni                  ),
     .boot_addr_i      (boot_addr_i             ),
     .hart_id_i        (hart_id                 ),
-    .irq_i            ('0                      ),
-    .ipi_i            ('0                      ),
-    .time_irq_i       ('0                      ),
-    .debug_req_i      ('0                      ),
+    .irq_i            (irq_i                   ),
+    .ipi_i            (ipi_i                   ),
+    .time_irq_i       (time_irq_i              ),
+    .debug_req_i      (debug_req_i             ),
     .clic_irq_valid_i ('0                      ),
     .clic_irq_id_i    ('0                      ),
     .clic_irq_level_i ('0                      ),
@@ -140,7 +151,7 @@ module ara_system import axi_pkg::*; import ara_pkg::*; #(
     .clic_irq_ready_o (/* empty */             ),
     .clic_kill_req_i  ('0                      ),
     .clic_kill_ack_o  (/* empty */             ),
-    .rvfi_probes_o    (/* empty */             ),
+    .rvfi_probes_o    (rvfi_probes_o           ),
     // Accelerator ports
     .cvxif_req_o      (acc_req                 ),
     .cvxif_resp_i     (acc_resp_pack           ),
