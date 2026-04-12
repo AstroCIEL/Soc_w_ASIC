@@ -19,17 +19,19 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef SPIKE
-#include "util.h"
-#include <stdio.h>
-#elif defined ARA_LINUX
-#include <stdio.h>
-#else
+#include "serial.h"
 #include "printf.h"
-#endif
+
+
+#define SYS_CLK_HZ  500000000UL   /* 500 MHz — matches tb.sv */
+#define BAUD_RATE   6250000UL     /* 500 MHz / (16*5) = 6.25 Mbaud; divisor=5 exact */
+
 
 int main() {
-  printf("Ariane says Hello!\n");
+  uart_init(SYS_CLK_HZ, BAUD_RATE);
+  // printf("Ariane says Hello!\n");
+  uart_puts("Ariane says Hello!\n");
+  uart_flush_safe(SYS_CLK_HZ, BAUD_RATE);   
 
   return 0;
 }
