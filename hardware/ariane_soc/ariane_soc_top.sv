@@ -413,7 +413,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .DATA_WIDTH ( AXI_DATA_WIDTH ),
     .USER_WIDTH ( AXI_USER_WIDTH ),
     .USER_EN    ( AXI_USER_EN    ),
-    .SIM_INIT   ( "none"         ),
+    .SIM_INIT   ( "zeros"         ),
     .NUM_WORDS  ( NUM_WORDS      )
   ) i_sram (
     .clk_i      ( clk_i                                                                       ),
