@@ -1,131 +1,77 @@
-# Ara SoC – Simulation Makefile (Verilator + VCS)
-#
-# Verilator:
-#   make verilate              # elaborate + compile (default)
-#   make compile               # C++ incremental compile only
-#   make simv                  # run (hello_world by default)
-#   make simv app=<name>       # run a different application
+# ariane_tb – Simulation Makefile (VCS)
 #
 # VCS:
 #   make vcs                   # compile
-#   make vcs-run               # compile + run
-#   make vcs-run app=<name>    # run a different application
-#   make wave                  # open Verdi waveform viewer
+#   make vcs-run app=<name>    # compile + run
+#   make vcs-wave app=<name>   # compile + run with FSDB waveform
+#   make verdi                 # open Verdi waveform
 #
-# Common:
 #   make clean                 # remove all build artifacts
 
 SHELL    := /usr/bin/env bash
 ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 # ── Design parameters ─────────────────────────────────────────────────────────
-NR_LANES ?= 4
-VLEN     ?= 4096
+NR_LANES ?= 2
+VLEN     ?= 2048
 
 # ── Shared paths ──────────────────────────────────────────────────────────────
 FILELIST := $(ROOT_DIR)/filelist.f
-TB_DIR   := $(ROOT_DIR)/../tb
+TB_DIR   := $(ROOT_DIR)/tb
+DPI_DIR  := $(ROOT_DIR)/dpi
 app_path ?= $(ROOT_DIR)/../software/build/bin
 app      ?= hello_world
 
-# ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Verilator                                                                ║
-# ╚═══════════════════════════════════════════════════════════════════════════╝
-VERILATOR   := /opt/verilator/bin/verilator
-OBJCACHE    := $(shell which ccache 2>/dev/null)
+FESVR_ROOT  := /DISK1/home/jy_hu30/workspace/toolchain/riscv-tools
+# FESVR_ROOT  := /opt/riscv64
 
-VERIL_BUILD := $(ROOT_DIR)/build/verilator
-VERIL_TOP   := ara_tb_verilator
-
-# TB C++ sources
-TB_CPP_DIRS := $(TB_DIR)/verilator/lowrisc_dv_verilator_memutil_dpi/cpp \
-               $(TB_DIR)/verilator/lowrisc_dv_verilator_memutil_verilator/cpp \
-               $(TB_DIR)/verilator/lowrisc_dv_verilator_simutil_verilator/cpp
-TB_CPP_MAIN := $(TB_DIR)/verilator/ara_tb.cpp
-
-VERIL_WFLAGS := -Wno-fatal \
-  -Wno-PINCONNECTEMPTY -Wno-BLKANDNBLK  -Wno-CASEINCOMPLETE \
-  -Wno-CMPCONST       -Wno-LATCH        -Wno-LITENDIAN \
-  -Wno-UNOPTFLAT      -Wno-UNPACKED     -Wno-UNSIGNED \
-  -Wno-WIDTH          -Wno-WIDTHCONCAT   -Wno-ENUMVALUE \
-  -Wno-COMBDLY
-
-VERIL_MK  := $(VERIL_BUILD)/V$(VERIL_TOP).mk
-VERIL_BIN := $(VERIL_BUILD)/V$(VERIL_TOP)
-
--include $(VERIL_BUILD)/V$(VERIL_TOP)__ver.d
-
-.PHONY: all verilate compile simv
-
-all: verilate
-
-verilate: $(VERIL_BIN)
-
-$(VERIL_MK): $(FILELIST)
-	mkdir -p $(VERIL_BUILD)
-	$(VERILATOR) \
-	  -f $(FILELIST) \
-	  --MMD \
-	  -GNrLanes=$(NR_LANES) -GVLEN=$(VLEN) \
-	  +define+NR_LANES=$(NR_LANES) +define+VLEN=$(VLEN) \
-	  -O3 $(VERIL_WFLAGS) \
-	  $(TB_DIR)/verilator/waiver.vlt \
-	  --Mdir $(VERIL_BUILD) \
-	  -I$(TB_DIR)/dpi \
-	  --compiler clang \
-	  -CFLAGS "-DTOPLEVEL_NAME=$(VERIL_TOP) -DNR_LANES=$(NR_LANES)" \
-	  $(addprefix -CFLAGS -I,$(TB_CPP_DIRS)) \
-	  -LDFLAGS "-lelf" \
-	  --exe $(addsuffix /*.cc,$(TB_CPP_DIRS)) $(TB_CPP_MAIN) \
-	  --cc --top-module $(VERIL_TOP)
-
-$(VERIL_BIN): $(VERIL_MK)
-	cd $(VERIL_BUILD) && OBJCACHE='$(OBJCACHE)' \
-	  make -j$$(nproc) -f V$(VERIL_TOP).mk VK_PCH_I_FAST= VK_PCH_I_SLOW=
-	@echo "=== Verilator build complete: $@ ==="
-
-compile:
-	cd $(VERIL_BUILD) && OBJCACHE='$(OBJCACHE)' \
-	  make -j$$(nproc) -f V$(VERIL_TOP).mk VK_PCH_I_FAST= VK_PCH_I_SLOW=
-
-simv:
-	$(VERIL_BIN) -l ram,$(app_path)/$(app),elf
+GCC_BIN := /DISK1/home/jy_hu30/workspace/toolchain/gcc-bin/bin
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  VCS                                                                      ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-VCS       := vcs
-VERDI     := verdi
+VCS   := vcs
+VERDI := verdi
 
 VCS_BUILD := $(ROOT_DIR)/build/vcs
 VCS_TOP   := ara_tb
 VCS_BIN   := $(VCS_BUILD)/simv
 
-# DPI-C sources used by ara_tb.sv (ELF loader)
-DPI_SRCS  := $(TB_DIR)/dpi/elfloader.cc
+DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
+            ./tb/uartdpi/uartdpi.c
 
-VCS_FLAGS := -full64 \
-  -sverilog \
-  -debug_access+all \
-  -kdb \
+VCS_FLAGS := \
+  -full64 -sverilog \
   -timescale=1ns/1ps \
+  -debug_access+all -kdb \
   -DVCS \
   +vcs+lic+wait \
   +lint=TFIPC-L \
   +warn=noUII-L \
+  -error=noUCTLAB \
   -f $(FILELIST) \
   +define+NR_LANES=$(NR_LANES) +define+VLEN=$(VLEN) \
   -top $(VCS_TOP) \
-  -CFLAGS "-std=c++11 -I$(TB_DIR)/dpi" \
-  -LDFLAGS "-lelf" \
+  -cc  $(GCC_BIN)/gcc \
+  -cpp $(GCC_BIN)/g++ \
+  -ld  $(GCC_BIN)/g++ \
+  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(FESVR_ROOT)/include -I./tb/uartdpi/" \
+  -LDFLAGS "-L$(FESVR_ROOT)/lib -lfesvr -lelf -lutil" \
   $(DPI_SRCS) \
   -Mdir=$(VCS_BUILD)/csrc \
   -o $(VCS_BIN)
 
-VCS_RUN_FLAGS := +vcs+lic+wait \
+VCS_RUN_FLAGS := \
+  +vcs+lic+wait \
   +PRELOAD=$(app_path)/$(app)
 
-.PHONY: vcs vcs-run wave
+VCS_WAVE_FLAGS := $(VCS_RUN_FLAGS) \
+  +fsdbfile+waveform.fsdb \
+  -ucli -do "fsdbDumpvars 0 $(VCS_TOP); run; exit;"
+
+.PHONY: all vcs vcs-run vcs-wave verdi clean
+
+all: vcs
 
 vcs: $(VCS_BIN)
 
@@ -136,19 +82,15 @@ $(VCS_BIN): $(FILELIST)
 vcs-run: $(VCS_BIN)
 	cd $(ROOT_DIR) && $(VCS_BIN) $(VCS_RUN_FLAGS)
 
-wave:
+vcs-wave: $(VCS_BIN)
+	cd $(ROOT_DIR) && $(VCS_BIN) $(VCS_WAVE_FLAGS)
+
+verdi:
 	cd $(ROOT_DIR) && $(VERDI) -dbdir $(VCS_BUILD)/simv.daidir \
 	  -ssf waveform.fsdb
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Clean                                                                  ║
+# ║  Clean                                                                    ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-.PHONY: clean clean-verilator clean-vcs
-
-clean: clean-verilator clean-vcs
-
-clean-verilator:
-	rm -rf $(VERIL_BUILD)
-
-clean-vcs:
+clean:
 	rm -rf $(VCS_BUILD) *.fsdb *.vcd ucli.key novas.*
