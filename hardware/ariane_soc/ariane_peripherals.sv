@@ -267,22 +267,6 @@ module ariane_peripherals #(
         .SOUT    ( tx_o            )
     );
 
-    mock_uart i_mock_uart (
-    .clk_i     ( clk_i        ),
-    .rst_ni    ( rst_ni       ),
-    .penable_i ( uart_penable ),
-    .pwrite_i  ( uart_pwrite  ),
-    .paddr_i   ( uart_paddr   ),
-    .psel_i    ( uart_psel    ),
-    .pwdata_i  ( uart_pwdata  ),
-    // .prdata_o  ( uart_prdata  ),
-    .prdata_o  (   ),
-    // .pready_o  ( uart_pready  ),
-    .pready_o  (   ),
-    .pslverr_o (   )
-);
-
-
     // ---------------
     // 5. Timer
     // ---------------
