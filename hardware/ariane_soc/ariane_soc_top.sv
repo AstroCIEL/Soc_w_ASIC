@@ -36,7 +36,14 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   input  logic                           rst_ni,
   input  logic                           uart_rx_i,
   output logic                           uart_tx_o,
-  output logic [31:0]                    exit_o
+  output logic [31:0]                    exit_o,
+  input  logic                           jtag_tck_i,
+  input  logic                           jtag_tms_i,
+  input  logic                           jtag_tdi_i,
+  input  logic                           jtag_trst_ni,
+  output logic                           jtag_tdo_o,
+  output logic                           jtag_tdo_driven_o,
+  input  logic                           debug_enable_i 
 );
 
   localparam [7:0] hart_id = '0;
@@ -83,19 +90,10 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   logic        ndmreset_n;
   logic        debug_req_core;
 
-  int          jtag_enable;
   logic        init_done;
-  logic [31:0] jtag_exit;
   logic [31:0] rvfi_exit;
   logic [31:0] tracer_exit;
   logic [31:0] tandem_exit;
-
-  logic        jtag_TCK;
-  logic        jtag_TMS;
-  logic        jtag_TDI;
-  logic        jtag_TRSTn;
-  logic        jtag_TDO_data;
-  logic        jtag_TDO_driven;
 
   logic        debug_req_valid;
   logic        debug_req_ready;
@@ -143,10 +141,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   // ---------------
   assign init_done = rst_ni;
 
-  logic debug_enable;
   initial begin
-    if (!$value$plusargs("jtag_rbb_enable=%b", jtag_enable)) jtag_enable = 'h0;
-    if ($test$plusargs("debug_disable")) debug_enable = 'h0; else debug_enable = 'h1;
     if (CVA6Cfg.XLEN != 32 & CVA6Cfg.XLEN != 64) $error("CVA6Cfg.XLEN different from 32 and 64");
   end
 
@@ -155,22 +150,6 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   assign debug_resp_ready    = jtag_resp_ready;
   assign debug_req           = jtag_dmi_req;
   assign jtag_resp_valid     = debug_resp_valid;
-
-  // SiFive's SimJTAG Module
-  // Converts to DPI calls
-  SimJTAG i_SimJTAG (
-    .clock                ( clk_i                ),
-    .reset                ( ~rst_ni              ),
-    .enable               ( jtag_enable[0]       ),
-    .init_done            ( init_done            ),
-    .jtag_TCK             ( jtag_TCK             ),
-    .jtag_TMS             ( jtag_TMS             ),
-    .jtag_TDI             ( jtag_TDI             ),
-    .jtag_TRSTn           ( jtag_TRSTn           ),
-    .jtag_TDO_data        ( jtag_TDO_data        ),
-    .jtag_TDO_driven      ( jtag_TDO_driven      ),
-    .exit                 ( jtag_exit            )
-  );
 
   dmi_jtag i_dmi_jtag (
     .clk_i            ( clk_i           ),
@@ -183,12 +162,12 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .dmi_resp_ready_o ( jtag_resp_ready ),
     .dmi_resp_valid_i ( jtag_resp_valid ),
     .dmi_rst_no       (                 ), // not connected
-    .tck_i            ( jtag_TCK        ),
-    .tms_i            ( jtag_TMS        ),
-    .trst_ni          ( jtag_TRSTn      ),
-    .td_i             ( jtag_TDI        ),
-    .td_o             ( jtag_TDO_data   ),
-    .tdo_oe_o         ( jtag_TDO_driven )
+    .tck_i            ( jtag_tck_i      ),
+    .tms_i            ( jtag_tms_i      ),
+    .trst_ni          ( jtag_trst_ni    ),
+    .td_i             ( jtag_tdi_i      ),
+    .td_o             ( jtag_tdo_o      ),
+    .tdo_oe_o         ( jtag_tdo_driven_o )
   );
 
 
@@ -204,7 +183,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
 
   assign dmi_del_cnt_d  = (dmi_del_cnt_q) ? dmi_del_cnt_q - 1 : 0;
   assign debug_req_core = (dmi_del_cnt_q) ? 1'b0 :
-                          (!debug_enable) ? 1'b0 : debug_req_core_ungtd;
+                          (!debug_enable_i) ? 1'b0 : debug_req_core_ungtd;
 
   always_ff @(posedge clk_i or negedge rst_ni) begin : p_dmi_del_cnt
     if(!rst_ni) begin
@@ -434,11 +413,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .DATA_WIDTH ( AXI_DATA_WIDTH ),
     .USER_WIDTH ( AXI_USER_WIDTH ),
     .USER_EN    ( AXI_USER_EN    ),
-`ifdef VERILATOR
     .SIM_INIT   ( "none"         ),
-`else
-    .SIM_INIT   ( "zeros"        ),
-`endif
     .NUM_WORDS  ( NUM_WORDS      )
   ) i_sram (
     .clk_i      ( clk_i                                                                       ),
@@ -564,7 +539,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .tx_o           ( uart_tx_o                    )
   );
 
-  assign exit_o = jtag_exit | {31'b0, ctrl_exit[0]};
+  assign exit_o = {31'b0, ctrl_exit[0]};
   
 
   // ---------------
