@@ -16,10 +16,14 @@
 -f ../hardware/ip/cva6/filelist.f
 -f ../hardware/ip/ara/filelist.f
 -f ../hardware/ip/riscv-dbg/filelist.f
--f ../hardware/ip/clint/filelist.f
 -f ../hardware/ip/apb_timer/filelist.f
 -f ../hardware/ip/apb_uart/filelist.f
 -f ../hardware/ip/rv_plic/filelist.f
 
 
--f ../hardware/ariane_soc/fileist.f
+-f ../hardware/ariane_soc/filelist.f
+
+
+
+../tb/common/uartdpi.sv
+../tb/ara_tb.sv

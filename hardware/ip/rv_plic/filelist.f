@@ -8,5 +8,4 @@
 ../hardware/ip/rv_plic/src/rv_plic.sv
 ../hardware/ip/rv_plic/src/rv_plic_reg_top.sv
 ../hardware/ip/rv_plic/src/plic_top.sv
-../hardware/ip/rv_plic/src/gen_plic_addrmap.py
 ../hardware/ip/rv_plic/src/prim_subreg_ext.sv

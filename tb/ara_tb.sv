@@ -76,7 +76,7 @@ module ara_tb;
   logic [31:0] exit;
   logic uart_rx, uart_tx;
 
-  ariane_soc #(
+  ariane_soc_top #(
     .NrLanes           ( NrLanes   ),
     .VLEN              ( VLEN      ),
     .NUM_WORDS         ( NUM_WORDS )

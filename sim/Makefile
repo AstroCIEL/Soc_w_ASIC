@@ -16,16 +16,16 @@ NR_LANES ?= 2
 VLEN     ?= 2048
 
 # ── Shared paths ──────────────────────────────────────────────────────────────
-FILELIST := $(ROOT_DIR)/filelist.f
-TB_DIR   := $(ROOT_DIR)/tb
-DPI_DIR  := $(ROOT_DIR)/dpi
-app_path ?= $(ROOT_DIR)/../software/build/bin
-app      ?= hello_world
+FILELIST := filelist.f
+TB_DIR   := ../tb
+DPI_DIR  := $(TB_DIR)/dpi
+DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
+            $(wildcard $(DPI_DIR)/*.c)
+
+
+app      ?= ../software/build/bin/hello_world
 
 FESVR_ROOT  := /DISK1/home/jy_hu30/workspace/toolchain/riscv-tools
-# FESVR_ROOT  := /opt/riscv64
-
-GCC_BIN := /DISK1/home/jy_hu30/workspace/toolchain/gcc-bin/bin
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  VCS                                                                      ║
@@ -37,8 +37,6 @@ VCS_BUILD := $(ROOT_DIR)/build/vcs
 VCS_TOP   := ara_tb
 VCS_BIN   := $(VCS_BUILD)/simv
 
-DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
-            ./tb/uartdpi/uartdpi.c
 
 VCS_FLAGS := \
   -full64 -sverilog \
@@ -52,10 +50,7 @@ VCS_FLAGS := \
   -f $(FILELIST) \
   +define+NR_LANES=$(NR_LANES) +define+VLEN=$(VLEN) \
   -top $(VCS_TOP) \
-  -cc  $(GCC_BIN)/gcc \
-  -cpp $(GCC_BIN)/g++ \
-  -ld  $(GCC_BIN)/g++ \
-  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(FESVR_ROOT)/include -I./tb/uartdpi/" \
+  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(FESVR_ROOT)/include" \
   -LDFLAGS "-L$(FESVR_ROOT)/lib -lfesvr -lelf -lutil" \
   $(DPI_SRCS) \
   -Mdir=$(VCS_BUILD)/csrc \
@@ -63,7 +58,7 @@ VCS_FLAGS := \
 
 VCS_RUN_FLAGS := \
   +vcs+lic+wait \
-  +PRELOAD=$(app_path)/$(app)
+  +PRELOAD=$(app)
 
 VCS_WAVE_FLAGS := $(VCS_RUN_FLAGS) \
   +fsdbfile+waveform.fsdb \

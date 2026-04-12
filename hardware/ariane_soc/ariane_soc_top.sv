@@ -18,7 +18,7 @@
 `include "ara/intf_typedef.svh"
 
 
-module ariane_soc import axi_pkg::*; import ara_pkg::*; #(
+module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   // Ara-specific parameters
   parameter int unsigned NrLanes            = 0,
   parameter int unsigned VLEN               = 0,
