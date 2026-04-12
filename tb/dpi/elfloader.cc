@@ -1,27 +1,23 @@
-#include <elf.h>
+#include <fesvr/elf.h>
+#include <fesvr/memif.h>
+
 #include <svdpi.h>
 
-#include <cstdint>
 #include <cstring>
 #include <string>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <cassert>
+#include <assert.h>
 #include <unistd.h>
-#include <cstdlib>
-#include <cstdio>
+#include <stdlib.h>
+#include <stdio.h>
 #include <vector>
 #include <map>
 #include <iostream>
 
-typedef uint64_t reg_t;
-
-#define IS_ELF(hdr) \
-  ((hdr).e_ident[EI_MAG0] == ELFMAG0 && (hdr).e_ident[EI_MAG1] == ELFMAG1 && \
-   (hdr).e_ident[EI_MAG2] == ELFMAG2 && (hdr).e_ident[EI_MAG3] == ELFMAG3)
-#define IS_ELF32(hdr) (IS_ELF(hdr) && (hdr).e_ident[EI_CLASS] == ELFCLASS32)
-#define IS_ELF64(hdr) (IS_ELF(hdr) && (hdr).e_ident[EI_CLASS] == ELFCLASS64)
+#define SHT_PROGBITS 0x1
+#define SHT_GROUP 0x11
 
 // address and size
 std::vector<std::pair<reg_t, reg_t>> sections;
@@ -54,7 +50,7 @@ extern "C" char get_section (long long* address, long long* len) {
 }
 
 extern "C" void read_section (long long address, const svOpenArrayHandle buffer) {
-    // get actual poitner
+    // get actual pointer
     void* buf = svGetArrayPtr(buffer);
     // check that the address points to a section
     assert(mems.count(address) > 0);

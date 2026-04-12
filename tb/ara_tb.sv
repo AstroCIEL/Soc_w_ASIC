@@ -35,17 +35,12 @@ module ara_tb;
   localparam VLEN = 0;
   `endif
 
-  localparam ClockPeriod  = 1ns;
-  // Axi response delay [ps]
-  localparam int unsigned AxiRespDelay = 200;
+  localparam ClockPeriod       = 2ns;
+  localparam RTC_CLOCK_PERIOD  = 30.517us;
 
-  localparam AxiAddrWidth      = 64;
-  localparam AxiWideDataWidth  = 64 * NrLanes / 2;
-  localparam AxiWideBeWidth    = AxiWideDataWidth / 8;
-  localparam AxiWideByteOffset = $clog2(AxiWideBeWidth);
-
-  localparam DRAMAddrBase = 64'h8000_0000;
-  localparam DRAMLength   = 64'h4000_0000; // 1GByte of DDR (split between two chips on Genesys2)
+  localparam NUM_WORDS         = 2**18;
+  localparam AXI_DATA_WIDTH    = 64;
+  localparam AXI_DATA_BYTES    = AXI_DATA_WIDTH / 8;
 
   /********************************
    *  Clock and Reset Generation  *
@@ -53,90 +48,99 @@ module ara_tb;
 
   logic clk;
   logic rst_n;
+  logic rtc;
 
   // Controlling the reset
   initial begin
     clk   = 1'b0;
     rst_n = 1'b0;
-
-    // Synch reset for TB memories
-    repeat (10) #(ClockPeriod/2) clk = ~clk;
-    clk = 1'b0;
-
-    // Asynch reset for main system
-    repeat (5) #(ClockPeriod);
+    repeat(8)
+      #(ClockPeriod/2) clk = ~clk;
     rst_n = 1'b1;
-    repeat (5) #(ClockPeriod);
-
-    // Start the clock
     forever #(ClockPeriod/2) clk = ~clk;
+  end
+
+  // RTC clock
+  initial begin
+    forever begin
+      rtc = 1'b0;
+      #(RTC_CLOCK_PERIOD/2) rtc = 1'b1;
+      #(RTC_CLOCK_PERIOD/2) rtc = 1'b0;
+    end
   end
 
   /*********
    *  DUT  *
    *********/
 
-  logic [63:0] exit;
+  logic [31:0] exit;
+  logic uart_rx, uart_tx;
 
-  // This TB must be implemented in C for integration with Verilator.
-  // In order to Verilator to understand that the ara_testharness module is the top-level,
-  // we do not instantiate it when Verilating this module.
-  `ifndef VERILATOR
-  ara_testharness #(
-    .NrLanes     (NrLanes         ),
-    .VLEN        (VLEN            ),
-    .AxiAddrWidth(AxiAddrWidth    ),
-    .AxiDataWidth(AxiWideDataWidth),
-    .AxiRespDelay(AxiRespDelay    )
+  ariane_testharness #(
+    .NrLanes           ( NrLanes   ),
+    .VLEN              ( VLEN      ),
+    .NUM_WORDS         ( NUM_WORDS )
   ) dut (
-    .clk_i (clk  ),
-    .rst_ni(rst_n),
-    .exit_o(exit )
+    .clk_i    (clk     ),
+    .rtc_i    (rtc     ),
+    .rst_ni   (rst_n   ),
+    .uart_rx_i(uart_rx ),
+    .uart_tx_o(uart_tx ),
+    .exit_o   (exit    )
   );
-  `endif
+
+  // uart_bus #(.BAUD_RATE(6250000), .PARITY_EN(0)) i_uart_bus (.rx(uart_tx), .tx(uart_rx), .rx_en(1'b1));
+  uartdpi #(
+    .BAUD('d6250000),             // 500 MHz / (16*5) = 6.25 Mbaud; divisor=5 exact
+    .FREQ('d500_000_000),  // Hz
+    .NAME("uart0")
+  ) i_uart0 (
+      .clk_i  (clk  ),   
+      .rst_ni (rst_n),    
+      .tx_o   (uart_rx),  // DPI → SoC rx
+      .rx_i   (uart_tx)   // SoC tx → DPI
+  );
+
+
 
   /*************************
    *  DRAM Initialization  *
    *************************/
 
-  typedef logic [AxiAddrWidth-1:0] addr_t;
-  typedef logic [AxiWideDataWidth-1:0] data_t;
+  `define MAIN_MEM(P) dut.i_sram.i_tc_sram_wrapper.i_tc_sram.init_val[(``P``)]
 
   initial begin : dram_init
-    automatic data_t mem_row;
-    byte buffer [];
-    addr_t address;
-    addr_t length;
+    automatic logic [7:0][7:0] mem_row;
+    longint address, load_address, last_load_address, len;
+    byte buffer[];
     string binary;
 
-    // tc_sram is initialized with zeros. We need to overwrite this value.
-    repeat (2)
-      #ClockPeriod;
+    // Wait for clock
+    repeat (2) #ClockPeriod;
 
     // Initialize memories
     void'($value$plusargs("PRELOAD=%s", binary));
     if (binary != "") begin
-      // Read ELF
       read_elf(binary);
       $display("Loading ELF file %s", binary);
-      while (get_section(address, length)) begin
-        // Read sections
-        automatic int nwords = (length + AxiWideBeWidth - 1)/AxiWideBeWidth;
-        $display("Loading section %x of length %x", address, length);
-        buffer = new[nwords * AxiWideBeWidth];
+      wait(clk);
+
+      last_load_address = 'hFFFFFFFF;
+      while (get_section(address, len)) begin
+        automatic int num_words = (len+7)/8;
+        $display("Loading section %x of length %x", address, len);
+        buffer = new [num_words*8];
         void'(read_section(address, buffer));
-        // Initializing memories
-        for (int w = 0; w < nwords; w++) begin
+        for (int i = 0; i < num_words; i++) begin
           mem_row = '0;
-          for (int b = 0; b < AxiWideBeWidth; b++) begin
-            mem_row[8 * b +: 8] = buffer[w * AxiWideBeWidth + b];
+          for (int j = 0; j < 8; j++) begin
+            mem_row[j] = buffer[i*8 + j];
           end
-          if (address >= DRAMAddrBase && address < DRAMAddrBase + DRAMLength)
-            // This requires the sections to be aligned to AxiWideByteOffset,
-            // otherwise, they can be over-written.
-            dut.i_ara_soc.i_dram.i_tc_sram_wrapper.i_tc_sram.init_val[(address - DRAMAddrBase + (w << AxiWideByteOffset)) >> AxiWideByteOffset] = mem_row;
-          else
-            $display("Cannot initialize address %x, which doesn't fall into the L2 region.", address);
+          load_address = (address[23:0] >> 3) + i;
+          if (load_address != last_load_address) begin
+            `MAIN_MEM(load_address) = mem_row;
+            last_load_address = load_address;
+          end
         end
       end
     end else begin
@@ -145,55 +149,6 @@ module ara_tb;
     end
   end : dram_init
 
-`ifndef TARGET_GATESIM
-
-  /*************************
-   *  PRINT STORED VALUES  *
-   *************************/
-
-  // This is useful to check that the ideal dispatcher simulation was correct
-
-`ifndef IDEAL_DISPATCHER
-  localparam OutResultFile = "../gold_results.txt";
-`else
-  localparam OutResultFile = "../id_results.txt";
-`endif
-
-  int fd;
-
-  data_t                     ara_w;
-  logic [AxiWideBeWidth-1:0] ara_w_strb;
-  logic                      ara_w_valid;
-  logic                      ara_w_ready;
-
-  // Avoid dumping what it's not measured, e.g. cache warming
-  logic dump_en_mask;
-
-  initial begin
-    fd = $fopen(OutResultFile, "w");
-    $display("Dump results on %s", OutResultFile);
-  end
-
-  assign ara_w       = dut.i_ara_soc.i_system.i_ara.i_vlsu.axi_req.w.data;
-  assign ara_w_strb  = dut.i_ara_soc.i_system.i_ara.i_vlsu.axi_req.w.strb;
-  assign ara_w_valid = dut.i_ara_soc.i_system.i_ara.i_vlsu.axi_req.w_valid;
-  assign ara_w_ready = dut.i_ara_soc.i_system.i_ara.i_vlsu.axi_resp.w_ready;
-
-`ifndef IDEAL_DISPATCHER
-  assign dump_en_mask = dut.i_ara_soc.hw_cnt_en_o[0];
-`else
-  // Ideal-Dispatcher system does not warm the scalar cache
-  assign dump_en_mask = 1'b1;
-`endif
-  always_ff @(posedge clk)
-    if (dump_en_mask)
-      if (ara_w_valid && ara_w_ready)
-        for (int b = 0; b < AxiWideBeWidth; b++)
-          if (ara_w_strb[b])
-            $fdisplay(fd, "%0x", ara_w[b*8 +: 8]);
-
-`endif
-
   /*********
    *  EOC  *
    *********/
@@ -201,80 +156,18 @@ module ara_tb;
   always @(posedge clk) begin
     if (exit[0]) begin
       if (exit >> 1) begin
-        $warning("Core Test ", $sformatf("*** FAILED *** (tohost = %0d)", (exit >> 1)));
+        $error("Core Test: *** FAILED *** (tohost = %0d)", (exit >> 1));
       end else begin
-        // Print vector HW runtime
-`ifndef TARGET_GATESIM
-        $display("[hw-cycles]: %d", int'(dut.runtime_buf_q));
-        $display("[cva6-d$-stalls]: %d", int'(dut.dcache_stall_buf_q));
-        $display("[cva6-i$-stalls]: %d", int'(dut.icache_stall_buf_q));
-        $display("[cva6-sb-full]: %d", int'(dut.sb_full_buf_q));
-`endif
-        $info("Core Test ", $sformatf("*** SUCCESS *** (tohost = %0d)", (exit >> 1)));
+        $display("Core Test: *** SUCCESS *** (tohost = %0d)", (exit >> 1));
       end
-
-`ifndef TARGET_GATESIM
-      $fclose(fd);
-`endif
+      #5000
       $finish(exit >> 1);
     end
   end
 
-// Dump VCD with a SW trigger
-`ifdef VCD_DUMP
-
-  /****************
-  *  VCD DUMPING  *
-  ****************/
-
-`ifdef VCD_PATH
-  string vcd_path = `STRINGIFY(`VCD_PATH);
-`else
-  string vcd_path = "../vcd/last_sim.vcd";
-`endif
-
-  localparam logic [63:0] VCD_TRIGGER_ON  = 64'h0000_0000_0000_0001;
-  localparam logic [63:0] VCD_TRIGGER_OFF = 64'hFFFF_FFFF_FFFF_FFFF;
-
-  event start_dump_event;
-  event stop_dump_event;
-
-  logic [63:0] event_trigger_reg;
-  logic        dumping = 1'b0;
-
-  assign event_trigger_reg =
-           dut.i_ara_soc.i_ctrl_registers.event_trigger_o;
-
   initial begin
-    $display("VCD_DUMP successfully defined\n");
+    $fsdbDumpfile("waveform.fsdb");
+    $fsdbDumpvars(0, dut, "+all");
   end
-
-  always_ff @(posedge clk) begin
-    if(event_trigger_reg == VCD_TRIGGER_ON && !dumping) begin
-       $display("[TB - VCD] START DUMPING\n");
-       -> start_dump_event;
-       dumping = 1'b1;
-    end
-    if(event_trigger_reg == VCD_TRIGGER_OFF) begin
-       -> stop_dump_event;
-       $display("[TB - VCD] STOP DUMPING\n");
-    end
-  end
-
-  initial begin
-    @(start_dump_event);
-    $dumpfile(vcd_path);
-    $dumpvars(0, dut.i_ara_soc.i_system);
-    $dumpon;
-
-    #1 $display("[TB - VCD] DUMPING...\n");
-
-    @(stop_dump_event)
-    $dumpoff;
-    $dumpflush;
-    $finish;
-  end
-
-`endif
 
 endmodule : ara_tb
