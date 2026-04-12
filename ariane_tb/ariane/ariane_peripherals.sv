@@ -10,28 +10,32 @@
 
 `include "register_interface/assign.svh"
 `include "register_interface/typedef.svh"
+`include "axi/typedef.svh"
+`include "axi/assign.svh"
 
 // Xilinx Peripherals
 module ariane_peripherals #(
-    parameter int AxiAddrWidth = -1,
-    parameter int AxiDataWidth = -1,
-    parameter int AxiIdWidth   = -1,
-    parameter int AxiUserWidth = 1,
-    parameter bit InclUART     = 1,
-    parameter bit InclSPI      = 0,
-    parameter bit InclEthernet = 0,
-    parameter bit InclGPIO     = 0,
-    parameter bit InclTimer    = 1
+    parameter int           AxiAddrWidth  = -1,
+    parameter int           AxiDataWidth  = -1,
+    parameter int           AxiIdWidth    = -1,
+    parameter int           AxiUserWidth  = 1,
+    parameter logic [63:0]  DRAMBase      = 64'h8000_0000,
+    parameter logic [63:0]  DRAMLength    = 64'h4000_0000
 ) (
     input  logic       clk_i           , // Clock
     input  logic       rst_ni          , // Asynchronous reset active low
     AXI_BUS.Slave      plic            ,
     AXI_BUS.Slave      uart            ,
     AXI_BUS.Slave      timer           ,
+    AXI_BUS.Slave      ctrl            , // Ctrl registers @ 0xD000_0000
     output logic [1:0] irq_o           ,
+    // ctrl_registers outputs
+    output logic [AxiDataWidth-1:0] exit_o         ,
+    output logic [AxiDataWidth-1:0] event_trigger_o,
+    output logic [AxiDataWidth-1:0] hw_cnt_en_o    ,
     // UART
     input  logic       rx_i            ,
-    output logic       tx_o            ,
+    output logic       tx_o
 );
 
     // ---------------
@@ -245,7 +249,7 @@ module ariane_peripherals #(
         .PSEL    ( uart_psel       ),
         .PENABLE ( uart_penable    ),
         .PWRITE  ( uart_pwrite     ),
-        .PADDR   ( uart_paddr[4:2] ),
+        .PADDR   ( uart_paddr[5:3] ),
         .PWDATA  ( uart_pwdata     ),
         .PRDATA  ( uart_prdata     ),
         .PREADY  ( uart_pready     ),
@@ -262,6 +266,21 @@ module ariane_peripherals #(
         .SIN     ( rx_i            ),
         .SOUT    ( tx_o            )
     );
+
+    mock_uart i_mock_uart (
+    .clk_i     ( clk_i        ),
+    .rst_ni    ( rst_ni       ),
+    .penable_i ( uart_penable ),
+    .pwrite_i  ( uart_pwrite  ),
+    .paddr_i   ( uart_paddr   ),
+    .psel_i    ( uart_psel    ),
+    .pwdata_i  ( uart_pwdata  ),
+    // .prdata_o  ( uart_prdata  ),
+    .prdata_o  (   ),
+    // .pready_o  ( uart_pready  ),
+    .pready_o  (   ),
+    .pslverr_o (   )
+);
 
 
     // ---------------
@@ -358,4 +377,69 @@ module ariane_peripherals #(
         .PSLVERR ( timer_pslverr    ),
         .irq_o   ( irq_sources[6:3] )
     );
+
+    // ---------------
+    // 6. Ctrl Registers  (0xD000_0000)
+    //    AXI4-full → axi_to_axi_lite → ctrl_registers
+    // ---------------
+
+    // AXI typedefs matching the ctrl AXI_BUS port
+    typedef logic [AxiAddrWidth-1:0]   ctrl_addr_t;
+    typedef logic [AxiDataWidth-1:0]   ctrl_data_t;
+    typedef logic [AxiDataWidth/8-1:0] ctrl_strb_t;
+    typedef logic [AxiIdWidth-1:0]     ctrl_id_t;
+    typedef logic [AxiUserWidth-1:0]   ctrl_user_t;
+
+    `AXI_TYPEDEF_ALL(ctrl_full, ctrl_addr_t, ctrl_id_t, ctrl_data_t, ctrl_strb_t, ctrl_user_t)
+    `AXI_LITE_TYPEDEF_ALL(ctrl_lite, ctrl_addr_t, ctrl_data_t, ctrl_strb_t)
+
+    ctrl_full_req_t  ctrl_full_req;
+    ctrl_full_resp_t ctrl_full_resp;
+    ctrl_lite_req_t  ctrl_lite_req;
+    ctrl_lite_resp_t ctrl_lite_resp;
+
+    `AXI_ASSIGN_TO_REQ(ctrl_full_req, ctrl)
+    `AXI_ASSIGN_FROM_RESP(ctrl, ctrl_full_resp)
+
+    axi_to_axi_lite #(
+        .AxiAddrWidth    ( AxiAddrWidth    ),
+        .AxiDataWidth    ( AxiDataWidth    ),
+        .AxiIdWidth      ( AxiIdWidth      ),
+        .AxiUserWidth    ( AxiUserWidth    ),
+        .AxiMaxReadTxns  ( 1               ),
+        .AxiMaxWriteTxns ( 1               ),
+        .FallThrough     ( 1'b0            ),
+        .full_req_t      ( ctrl_full_req_t ),
+        .full_resp_t     ( ctrl_full_resp_t),
+        .lite_req_t      ( ctrl_lite_req_t ),
+        .lite_resp_t     ( ctrl_lite_resp_t)
+    ) i_axi_to_axi_lite_ctrl (
+        .clk_i      ( clk_i          ),
+        .rst_ni     ( rst_ni         ),
+        .test_i     ( 1'b0           ),
+        .slv_req_i  ( ctrl_full_req  ),
+        .slv_resp_o ( ctrl_full_resp ),
+        .mst_req_o  ( ctrl_lite_req  ),
+        .mst_resp_i ( ctrl_lite_resp )
+    );
+
+    ctrl_registers #(
+        .DataWidth       ( AxiDataWidth    ),
+        .AddrWidth       ( AxiAddrWidth    ),
+        .DRAMBaseAddr    ( DRAMBase        ),
+        .DRAMLength      ( DRAMLength      ),
+        .axi_lite_req_t  ( ctrl_lite_req_t ),
+        .axi_lite_resp_t ( ctrl_lite_resp_t)
+    ) i_ctrl_registers (
+        .clk_i                 ( clk_i          ),
+        .rst_ni                ( rst_ni         ),
+        .axi_lite_slave_req_i  ( ctrl_lite_req  ),
+        .axi_lite_slave_resp_o ( ctrl_lite_resp ),
+        .exit_o                ( exit_o         ),
+        .hw_cnt_en_o           ( hw_cnt_en_o    ),
+        .dram_base_addr_o      (/* unused */    ),
+        .dram_end_addr_o       (/* unused */    ),
+        .event_trigger_o       ( event_trigger_o)
+    );
+
 endmodule
