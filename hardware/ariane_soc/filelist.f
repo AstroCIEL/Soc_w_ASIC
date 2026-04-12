@@ -13,6 +13,5 @@
 ../hardware/ariane_soc/ariane_soc_top.sv
 
 
-../tb/common/SimJTAG.sv
 
 

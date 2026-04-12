@@ -20,11 +20,8 @@
 -f ../hardware/ip/apb_uart/filelist.f
 -f ../hardware/ip/rv_plic/filelist.f
 
-
 -f ../hardware/ariane_soc/filelist.f
 
-
-
-../tb/common/SimJTAG.sv
 ../tb/common/uartdpi.sv
-../tb/ara_tb.sv
+../tb/common/SimJTAG.sv
+../tb/ara_tb_verilator.sv
