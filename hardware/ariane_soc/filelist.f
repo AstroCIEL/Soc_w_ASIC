@@ -9,7 +9,7 @@ ariane_soc_pkg.sv
 ariane_axi_soc_pkg.sv
 ariane_peripherals.sv
 bootrom/bootrom.sv
-ariane/ariane_testharness.sv
+ariane/ariane_soc.sv
 
 ../tb/common/SimJTAG.sv
 
