@@ -23,6 +23,13 @@
 
 #include "kernel/dropout.h"
 
+
+#include "printf.h"
+
+#include "serial.h"
+#include "printf.h"
+
+
 extern const unsigned int N;
 extern const float SCALE;
 extern const float I[] __attribute__((aligned(4 * NR_LANES)));
@@ -31,6 +38,8 @@ extern float o[] __attribute__((aligned(4 * NR_LANES)));
 extern float o_gold[] __attribute__((aligned(4 * NR_LANES)));
 
 int main() {
+  uart_init(SYS_CLK_HZ, BAUD_RATE);
+
   printf("\n");
   printf("=============\n");
   printf("=  DROPOUT  =\n");
