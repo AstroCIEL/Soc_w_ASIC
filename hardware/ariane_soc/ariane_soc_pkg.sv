@@ -42,15 +42,7 @@ package ariane_soc;
   localparam logic[63:0] GPIOLength     = 64'h1000;
   localparam logic[63:0] CtrlLength     = 64'h1000;
 
-`ifdef NEXYS_VIDEO
-  localparam logic[63:0] DRAMLength     = 64'h20000000; // 512MByte of DDR on Nexys video board
-`else
-  localparam logic[63:0] DRAMLength     = 64'h40000000; // 1GByte of DDR (split between two chips on Genesys2)
-`endif
-  localparam logic[63:0] SRAMLength     = 64'h1800000;  // 24 MByte of SRAM
-
-  // Instantiate AXI protocol checkers
-  localparam bit GenProtocolChecker = 1'b0;
+  localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB 
 
   typedef enum logic [63:0] {
     DebugBase    = 64'h0000_0000,

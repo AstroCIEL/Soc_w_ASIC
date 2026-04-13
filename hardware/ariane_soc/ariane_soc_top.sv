@@ -28,8 +28,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   parameter int unsigned AXI_USER_WIDTH    = CVA6Cfg.AxiUserWidth,
   parameter int unsigned AXI_USER_EN       = CVA6Cfg.AXI_USER_EN,
   parameter int unsigned AXI_ADDRESS_WIDTH = 64,
-  parameter int unsigned AXI_DATA_WIDTH    = 64,
-  parameter int unsigned NUM_WORDS         = 2**25         // memory size
+  parameter int unsigned AXI_DATA_WIDTH    = 64
 ) (
   input  logic                           clk_i,
   input  logic                           rtc_i,
@@ -47,6 +46,8 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
 );
 
   localparam [7:0] hart_id = '0;
+
+  localparam int unsigned NUM_WORDS = ariane_soc::DRAMLength / (AXI_DATA_WIDTH / 8);
 
   // ---------------
   // Ara AXI type definitions (matching ara_soc)

@@ -38,7 +38,6 @@ module ara_tb;
   localparam ClockPeriod       = 2ns;
   localparam RTC_CLOCK_PERIOD  = 30.517us;
 
-  localparam NUM_WORDS         = 2**18;
   localparam AXI_DATA_WIDTH    = 64;
   localparam AXI_DATA_BYTES    = AXI_DATA_WIDTH / 8;
 
@@ -94,8 +93,7 @@ module ara_tb;
 
   ariane_soc_top #(
     .NrLanes           ( NrLanes   ),
-    .VLEN              ( VLEN      ),
-    .NUM_WORDS         ( NUM_WORDS )
+    .VLEN              ( VLEN      )
   ) dut (
     .clk_i            ( clk            ),
     .rtc_i            ( rtc            ),
