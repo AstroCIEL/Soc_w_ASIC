@@ -16,6 +16,7 @@
 `include "axi/assign.svh"
 `include "axi/typedef.svh"
 `include "ara/intf_typedef.svh"
+`include "rvfi_types.svh"
 
 
 module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
@@ -80,10 +81,13 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   `CVA6_INTF_TYPEDEF_CVA6_TO_ACC(cva6_to_acc_t, accelerator_req_t, acc_mmu_resp_t)
   `CVA6_INTF_TYPEDEF_ACC_TO_CVA6(acc_to_cva6_t, accelerator_resp_t, acc_mmu_req_t)
 
-  // RVFI PROBES (dummy type - not used with ara_system, but needed for port)
-  localparam type rvfi_probes_instr_t = logic;
-  localparam type rvfi_probes_csr_t = logic;
-  localparam type rvfi_probes_t = logic;
+  // RVFI PROBES — must match the exact struct that cva6 drives internally
+  localparam type rvfi_probes_instr_t = `RVFI_PROBES_INSTR_T(CVA6Cfg);
+  localparam type rvfi_probes_csr_t   = `RVFI_PROBES_CSR_T(CVA6Cfg);
+  localparam type rvfi_probes_t       = struct packed {
+    rvfi_probes_csr_t   csr;
+    rvfi_probes_instr_t instr;
+  };
 
   // disable test-enable
   logic        test_en;
