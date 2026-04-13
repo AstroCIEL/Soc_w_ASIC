@@ -23,23 +23,9 @@ module ara_tb;
   timeprecision 1ps;
   `endif
 
-  `ifdef NR_LANES
-  localparam NrLanes = `NR_LANES;
-  `else
-  localparam NrLanes = 0;
-  `endif
-
-  `ifdef VLEN
-  localparam VLEN = `VLEN;
-  `else
-  localparam VLEN = 0;
-  `endif
-
   localparam ClockPeriod       = 2ns;
   localparam RTC_CLOCK_PERIOD  = 30.517us;
 
-  localparam AXI_DATA_WIDTH    = 64;
-  localparam AXI_DATA_BYTES    = AXI_DATA_WIDTH / 8;
 
   /********************************
    *  Clock and Reset Generation  *
@@ -91,10 +77,7 @@ module ara_tb;
     if ($test$plusargs("debug_disable")) debug_enable = 1'b0; else debug_enable = 1'b1;
   end
 
-  ariane_soc_top #(
-    .NrLanes           ( NrLanes   ),
-    .VLEN              ( VLEN      )
-  ) dut (
+  ariane_soc_top dut (
     .clk_i            ( clk            ),
     .rtc_i            ( rtc            ),
     .rst_ni           ( rst_n          ),

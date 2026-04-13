@@ -20,15 +20,15 @@
 
 module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   // Ara-specific parameters
-  parameter int unsigned NrLanes            = 0,
-  parameter int unsigned VLEN               = 0,
+  parameter int unsigned NrLanes            = ariane_soc::NrLanes,
+  parameter int unsigned VLEN               = ariane_soc::VLEN,
   //
   parameter config_pkg::cva6_cfg_t CVA6Cfg = build_config_pkg::build_config(cva6_config_pkg::cva6_cfg),
   //
   parameter int unsigned AXI_USER_WIDTH    = CVA6Cfg.AxiUserWidth,
   parameter int unsigned AXI_USER_EN       = CVA6Cfg.AXI_USER_EN,
   parameter int unsigned AXI_ADDRESS_WIDTH = 64,
-  parameter int unsigned AXI_DATA_WIDTH    = 64
+  parameter int unsigned AXI_DATA_WIDTH    = 32*ariane_soc::NrLanes
 ) (
   input  logic                           clk_i,
   input  logic                           rtc_i,

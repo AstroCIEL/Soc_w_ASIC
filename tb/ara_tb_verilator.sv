@@ -12,10 +12,7 @@ import "DPI-C" context function byte read_section(input longint address, inout b
 
 `define STRINGIFY(x) `"x`"
 
-module ara_tb_verilator #(
-    parameter int unsigned NrLanes = 2,
-    parameter int unsigned VLEN    = 2048
-)(
+module ara_tb_verilator (
     input  logic        clk_i,
     input  logic        rst_ni,
     output logic [63:0] exit_o
@@ -65,10 +62,7 @@ module ara_tb_verilator #(
     if ($test$plusargs("debug_disable")) debug_enable = 1'b0; else debug_enable = 1'b1;
   end
 
-  ariane_soc_top #(
-    .NrLanes           ( NrLanes   ),
-    .VLEN              ( VLEN      )
-  ) dut (
+  ariane_soc_top dut (
     .clk_i            ( clk_i          ),
     .rtc_i            ( rtc            ),
     .rst_ni           ( rst_ni         ),

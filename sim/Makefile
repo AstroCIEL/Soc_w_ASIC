@@ -16,10 +16,6 @@
 SHELL    := /usr/bin/env bash
 ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
-# ── Design parameters ─────────────────────────────────────────────────────────
-NR_LANES ?= 2
-VLEN     ?= 2048
-
 # ── Shared paths ──────────────────────────────────────────────────────────────
 FILELIST        := filelist.f
 VERIL_FILELIST  := filelist_verilator.f
@@ -54,7 +50,6 @@ VCS_FLAGS := \
   +warn=noUII-L \
   -error=noUCTLAB \
   -f $(FILELIST) \
-  +define+NR_LANES=$(NR_LANES) +define+VLEN=$(VLEN) \
   -top $(VCS_TOP) \
   -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(FESVR_ROOT)/include" \
   -LDFLAGS "-L$(FESVR_ROOT)/lib -lfesvr -lelf -lutil" \
@@ -119,7 +114,6 @@ VERIL_FLAGS := \
   --top-module $(VERIL_TOP) \
   --trace-fst \
   -f $(VERIL_FILELIST) \
-  +define+NR_LANES=$(NR_LANES) +define+VLEN=$(VLEN) \
   +define+VERILATOR \
   --Mdir $(VERIL_BUILD) \
   -Wno-ENUMVALUE \
