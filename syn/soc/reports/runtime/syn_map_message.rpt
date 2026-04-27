@@ -1,0 +1,26 @@
+  =================
+   Message Summary
+  =================
+--------------------------------------------------------------------------------------
+|   Id    |  Sev   |Count |                      Message Text                        |
+--------------------------------------------------------------------------------------
+| CG-400  |Info    |    1 |Removed a clock-gating instance.                          |
+| GLO-32  |Info    |    1 |Deleting sequential instances not driving any primary     |
+|         |        |      | outputs.                                                 |
+|         |        |      |Optimizations such as constant propagation or redundancy  |
+|         |        |      | removal could change the connections so an instance does |
+|         |        |      | not drive any primary outputs anymore. To see the list   |
+|         |        |      | of deleted sequential, set the 'information_level'       |
+|         |        |      | attribute to 2 or above. If the message is truncated set |
+|         |        |      | the message attribute 'truncate' to false to see the     |
+|         |        |      | complete list.                                           |
+| MESG-6  |Warning |    1 |Message truncated because it exceeds the maximum length   |
+|         |        |      | of 4096 characters.                                      |
+|         |        |      |By default messages are limited to 4096 characters. All   |
+|         |        |      | characters after the 4096 character limit are truncated. |
+|         |        |      | To remove this limit, set the message attribute          |
+|         |        |      | 'truncate' to 'false'. However, this may dramatically    |
+|         |        |      | increase the size of the log file.                       |
+| SYNTH-5 |Info    |    1 |Done mapping.                                             |
+| TUI-58  |Info    |    2 |Removed object.                                           |
+--------------------------------------------------------------------------------------

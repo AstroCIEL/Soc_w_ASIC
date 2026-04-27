@@ -1,0 +1,28 @@
+Spreadsheet updated
+ARM Inc.
+Linux lg3 3.10.0-1160.105.1.el7.x86_64 #1 SMP Thu Dec 7 15:39:45 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux
+Compiler version r3p1
+GUI version 8.5.10
+
+
+CONFIDENTIAL AND PROPRIETARY SOFTWARE OF ARM INC.
+
+Copyright (c) 1993 - 2025 ARM Inc.  All Rights Reserved.
+
+Use of this Software is subject to the terms and conditions of the
+applicable license agreement with ARM Inc. 
+In addition, this Software is protected by patents, copyright law 
+and international treaties.
+
+The copyright notice(s) in this Software does not indicate actual or
+intended publication of this Software.
+
+
+High Density Single Port Register File SHVT MVT Compiler, 22ULL_ULL 22nm Process, 256 Rows Per Bit Line, 0.192um^2 BitCell
+Log file is ACI.log
+
+Spreadsheet updated
+Spreadsheet updated
+cmd: /work/home/limingxuan/common/TSMC_22NM_ULL/arm_rf_sp_shvt_mvt/tsmc/cln22ul/rf_sp_hde_shvt_mvt/r3p1/bin/rf_sp_hde_shvt_mvt verilog -name_case lower -mvt BASE -ser none -site_def off -check_instname on -frequency 500 -bmux off -diodes on -activity_factor 50 -words 128 -drive 6 -power_type otc -bits 46 -instname sram128x46 -retention on -libertyviewstyle nldm -write_mask off -atf off -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -redundancy off -libname rf_sp_hde -cust_comment "This is a memory instance" -write_thru off -mux 2 -top_layer m5-m10 -power_gating off -back_biasing off -ema on -bit_blast off -single_domain_only on -vmin_assist on -corners ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88v_0p88v_m40c,ssg_cworstt_0p72v_0p72v_0c,ssg_cworstt_0p72v_0p72v_125c,ssg_cworstt_0p72v_0p72v_m40c,tt_typical_0p80v_0p80v_25c,tt_typical_0p80v_0p80v_85c
+INFO: SER bits: 0
+verilog generator succeeded, created: sram128x46.v

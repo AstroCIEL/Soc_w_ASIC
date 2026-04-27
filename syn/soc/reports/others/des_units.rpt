@@ -1,0 +1,328 @@
+Units
+----------------------------------------
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+
+Units
+----------------------------------------
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+
+Units
+----------------------------------------
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+
+Units
+----------------------------------------
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_25c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+
+LIBRARY                tcbn22ullbwp7t30p140tt0p8v85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x128_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram128x46_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                sram1024x64_tt_typical_0p80v_0p80v_85c
+Time_unit              :1000ps
+Capacitive_load_unit   :1000.0fF
+Resistance_unit        :1kohm
+Voltage_unit           :1V
+Current_unit           :1mA
+Power_unit             :uW 
+
+LIBRARY                physical_cells
+Time_unit              :0ps
+Capacitive_load_unit   :0.0fF
+Resistance_unit        :
+Voltage_unit           :
+Current_unit           :
+Power_unit             :uW 
+

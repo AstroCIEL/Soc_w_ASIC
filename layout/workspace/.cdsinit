@@ -1,0 +1,2 @@
+load("/cadtools/synopsys/hspice_vS-2021.09/interface/spiceADE.ile")
+load("/cadtools/mentor/aoi_cal_2021.4_17.8/aoi_cal_2021.4_17.8/lib/calibre.OA.skl")

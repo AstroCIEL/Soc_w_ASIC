@@ -1,0 +1,11 @@
+/sim/build/
+/sim/build*/
+/syn/logs/
+/syn/soc/
+/pnr/logs/
+logs/
+build/
+syn/soc/design_backup/
+*.sdf
+*.log
+*.g

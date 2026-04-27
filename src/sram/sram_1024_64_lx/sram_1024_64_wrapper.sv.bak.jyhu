@@ -1,0 +1,60 @@
+module sram_1024_64_wrapper #(
+    parameter int AXI_ADDR_WIDTH    = 64,
+    parameter int AXI_DATA_WIDTH    = 64,
+    parameter int AXI_ADDR_OFFSET   = 3,     // 8-byte alignment (64 bit = 8 B)
+    parameter int NUM_MACROS        = 1,
+    parameter int MACRO_ADDR_WIDTH  = 10,
+    parameter int CS_WIDTH          = $clog2(NUM_MACROS)
+) (
+    input  logic                                    clk_i,
+    input  logic                                    rstn_i,
+
+    // axi2mem interface
+    input  logic                                    axi_req_i,
+    input  logic                                    axi_write_en_i,
+    input  logic [  AXI_ADDR_WIDTH-1:0]             axi_addr_i,
+    input  logic [AXI_DATA_WIDTH/8-1:0]             axi_byte_en_i,
+    input  logic [  AXI_DATA_WIDTH-1:0]             axi_wdata_i,
+    output logic [  AXI_DATA_WIDTH-1:0]             axi_rdata_o
+);
+
+    // ---------------------------------------------------------------------------
+    // Local parameters
+    // ---------------------------------------------------------------------------
+    localparam int MEM_DEPTH       = NUM_MACROS * (1 << MACRO_ADDR_WIDTH);
+    localparam int WORD_ADDR_WIDTH = MACRO_ADDR_WIDTH + ((NUM_MACROS > 1) ? CS_WIDTH : 0);
+
+    // ---------------------------------------------------------------------------
+    // Memory array
+    // ---------------------------------------------------------------------------
+    logic [AXI_DATA_WIDTH-1:0] mem [0:MEM_DEPTH-1];
+
+    // ---------------------------------------------------------------------------
+    // Address decode: strip byte-offset bits to get the word address
+    // ---------------------------------------------------------------------------
+    logic [WORD_ADDR_WIDTH-1:0] word_addr;
+    assign word_addr = axi_addr_i[AXI_ADDR_OFFSET +: WORD_ADDR_WIDTH];
+
+    // ---------------------------------------------------------------------------
+    // Synchronous read / write with byte-enable
+    // ---------------------------------------------------------------------------
+    always_ff @(posedge clk_i or negedge rstn_i) begin
+        if (!rstn_i) begin
+            axi_rdata_o <= '0;
+        end else if (axi_req_i) begin
+            if (axi_write_en_i) begin
+                // Byte-granularity write
+                for (int i = 0; i < AXI_DATA_WIDTH/8; i++) begin
+                    if (axi_byte_en_i[i]) begin
+                        mem[word_addr][i*8 +: 8] <= axi_wdata_i[i*8 +: 8];
+                    end
+                end
+            end else begin
+                // Registered read
+                axi_rdata_o <= mem[word_addr];
+            end
+        end
+    end
+
+endmodule
+

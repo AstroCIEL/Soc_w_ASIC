@@ -1,0 +1,477 @@
+USER GUIDE
+
+USAGE OF DRC COMMAND FILE:
+
+  To properly use this DRC command file, please read the following comments for the options and 
+     set the switches correctly in the header for your design.
+  
+  (*) INFO_TOP_DIE_DRC : 
+      Turn on to select INFO-TOP-DIE rules. 
+
+  (*) N22_ULL :
+      Turn on to check ULL-process rules
+
+  (*) FRONT_END :
+      This switch is enabled by default to check Front-End rules.
+      Front-End rules include NW, NWROD, NWRSTI, NT_N, DNW, OD, DOD, OD2, OD12, OD25_33, PO, CPO,
+      SR_DPO, DPO, VTH_N, VTH_P, VTL_N, VTL_P, PP, NP, LDD, ESDIMP, RPO, RH_OD, RH_PO, VAR,
+      LUP, ESD, BJT, and SR_DOD rules.
+      Please comment (//) the "#DEFINE FRONT_END" line to uncheck Front-End rules.
+
+  (*) BACK_END :
+      This switch is enabled by default to check Back-End rules.
+      Back-End rules include M1, VIAx, Mx, VIAy, My, VIAyz, Myz, VIAz, Mz, VIAr, Mr, VIAu, Mu, DM, MOM,IND,
+      RV, and AP rules.
+      Please comment (//) the "#DEFINE BACK_END" line to uncheck Back-End rules.
+
+  (*) M1_V1_M2_CHECKS :
+      
+      Turn on to check M1/VIA1/M2 related rules even if BACK_END option is off. 
+      If BACK_END option is on, M1_V1_M2_CHECKS will be turned on automatically.
+      To disable M1/VIA1/M2 checks, please turn off both M1_V1_M2_CHECKS/BACK_END options. 
+      If only standard cells level (M2, VIA1, M1, CO and Front-End layers) related rules need checking,
+      you can turn off BACK_END option and turn on M1_V1_M2_CHECKS/FRONT_END options to save DRC run-time.
+
+  (*) EFP :
+  (*) EFP_ONLY :
+      These two switches are for grouping EFP rules which take almost half of run-time in final chip tape-out DRC validation.
+      To speed up DRC validation, you can execute two DRC decks parallelly.
+      One deck is to turn off EFP option to check non-EFP rules, and the other is to turn on EFP_ONLY option to check EFP rules only.
+      For reminder, the DRC warning message "EFP_rules_are_OFF:WARNING" or "EFP_rules_are_the_only_rules_ON:WARNING" 
+      will append in DRC report if you turn off EFP option or turn on EFP_ONLY option.
+
+  (*) FULL_CHIP :
+      This switch is enabled by default and chip corner exclusion, sealring structure, chip boundary, 
+      exclusion for density checks and must-layers related rules will be affected. 
+      Please comment (//) the "#DEFINE FULL_CHIP" line if a cell or macro/IP is under verification.
+
+  (*) WITH_SEALRING : 
+      By default, this option is enable for whole chip layout with seal-ring structure.
+      Chip corner, seal-ring, and MFU check will be affected by this option. 
+      If seal-ring is not added in chip layout before tape out (added by TSMC during post tape out data preparation), 
+      please turn off this option.     
+      If the option "FULL_CHIP" is off, this option does not work.
+
+  (*) WIRE_BOND :
+ 
+      Please turn off this option if you use flip-chip package.
+      Please turn on this option if you use wire-bond package.
+  
+  (*) WITH_APRDL :
+ 
+      Please turn off this option if you do not use RV/AP as routing layer.
+
+  (*) WITH_POLYIMIDE :
+ 
+      Please turn off this option if no additional polymide process after passivation
+
+  (*) WLCSP :
+
+      The Wafer Level Chip Scale Package require additional PM1/Cu_PPI/PM2 layers.
+      If using WLCSP, please turn on this option to let DRC correct connection information. 
+      In order to choose correct cad layer assingment of CB1/AP/CB2,
+      you still need to take case WIRE_BOND/WITH_APRDL options setting.
+      WLCSP is not general offer.
+
+  (*) DBOC :
+ 
+      Turn on if you use flip-chip package with direct-bump-on-copper process (single passivation, no AP process). 
+      DBOC is not general offer.
+
+  (*) ALL_AREA_IO :
+      
+			Turn on  : treat OD injector as same as Area IO. 
+		  Turn off : treat OD injector NOT OUTSIDE LUPWDMY_2 as Area IO.
+
+
+FBEOL cad layer summary
+
+Wire-Bond package
+     (a) without AP-RDL without polyimide  
+
+           CB(76;0)-AP(derived)-CB2_WB(86;20)
+
+     (b) without AP-RDL with polyimide   
+
+           CB(76;0)-AP(derived)-CB2_WB(86;20)-PM(5;0)
+
+     (c) with AP-RDL without polyimide 
+
+           CB(76;0)/RV(85;0)-AP(74;0)-CB2_WB(86;20)
+
+     (d) with AP-RDL with polyimide
+
+           CB(76;0)/RV(85;0)-AP(74;0)-CB2_WB(86;20)-PM(5;0)
+
+Flip-Chip package 
+     (e) without AP-RDL with polyimide 
+
+           CBD(169;0)-AP(74;0)-CB2_FC(86;0)-PM(5;0)-UBM(170;0)
+
+     (f) with AP-RDL with polyimide 
+
+           CBD(169;0)/RV(85;0)-AP(74;0)-CB2_FC(86;0)-PM(5;0)-UBM(170;0)
+
+     (g) direct bump on copper 
+           CBD(169;0)-PM(5;0)-UBM(170;0)   
+
+WLCSP package
+     (h) changed from WB without AP-RDL
+     
+           CB(76;0)-AP(derived)-CB2_WB(86;20)-PM1(5;1)-Cu_PPI(74;10)-PM2(5;2)-UBM(170;0)
+     
+     (i) changed from WB with AP-RDL
+     
+           CB(76;0)/RV(85;0)-AP(74;0)-CB2_WB(86;20)-PM1(5;1)-Cu_PPI(74;10)-PM2(5;2)-UBM(170;0) 
+    
+     (j) changed from FC without AP-RDL
+    
+           CBD(169;0)-AP(74;0)-CB2_FC(86;0)-PM1(5;1)-Cu_PPI(74;10)-PM2(5;2)-UBM(170;0) 
+
+     (k) changed from FC with AP-RDL
+
+           CBD(169;0)/RV(85;0)-AP(74;0)-CB2_FC(86;0)-PM1(5;1)-Cu_PPI(74;10)-PM2(5;2)-UBM(170;0)    
+
+
+DRC options summary for FBEOL setting
+
+------------------+----------------------------------------------------------------------------------------------------
+DRC options       |                                           FBEOL       
+                  +----------------------------------------------------------------------------------------------------
+                  |    a        b        c        d        e        f        g        h        i        j        k     
+------------------+----------------------------------------------------------------------------------------------------
+WIRE_BOND         |    1        1        1        1        0        0        0        1        1        0        0     
+WITH_APRDL        |    0        0        1        1        0        1        0        0        1        0        1      
+WITH_POLYMIDE     |    0        1        0        1        1        1        1        0        0        0        0     
+WLCSP             |    0        0        0        0        0        0        0        1        1        1        1      
+DBOC              |    0        0        0        0        0        0        1        0        0        0        0     
+------------------+----------------------------------------------------------------------------------------------------
+
+1 must turn on
+0 must turn off
+0/1 can turn on or turn off
+* Don't care    
+
+
+  (*) GUIDELINE_ESD :
+
+      Please comment (//) the "#DEFINE GUIDELINE_ESD" line to uncheck the ESD protection guidelines.
+
+  (*) GUIDELINE_ANALOG :
+      
+      Please turn off this option to uncheck following Analog guideline.
+      AN.R.17mg, AN.R.20mg, AN.R.77.1mg, AN.R.77.2mg, AN.R.77.3mg, AN.R.78.1mg, AN.R.79.2mg, AN.R.80.2mg, AN.R.80.3mg, AN.R.80.4mg.
+     
+  (*) DATATYPE_WARNING :
+      This option is to flag warning datatype of NW, OD and POLY, it is strongly recommended to use 
+      NW;drawing (3;0) to define NW region, OD;drawing (6;0) to define OD region, OD;dummy (6;1) layer 
+      to defind DOD region, PO;drawing (17;0) layer to define PO region, PO;dummy (17;1) to define DPO 
+      region. And SRAM related layers must be inside SRAM region, RF related layers must be inside RFDMY 
+      region. Please comment (//) the "#DEFINE DATATYPE_WARNING" line to uncheck warning datatype.  
+
+  (*) NW_SUGGESTED :
+      By default, DRC use following two logic operations to define NW1V and NW2V.
+      NW1V = NW NOT OD2
+      NW2V = NW AND OD2
+      If the NW will not be shared by core and IO, it is suggested to enable this option to check 
+      NW.S.3/NW.S.4 conservatively by the new logic operations as follows.
+      NW1V = NW OUTSIDE OD2
+      NW2V = NW NOT OUTSIDE OD2
+
+  (*) IP_TIGHTEN_DENSITY :
+      An IP which passes local density rules (OD.DN.3/OD.DN.4/OD.DN.5/PO.DN.3/PO.DN.3.1/PO.DN.4/PO.DN.4.1/
+      M1.DN.1/M1.DN.2/Mx.DN.1/Mx.DN.2/My.DN.1/My.DN.2/Mz.DN.1/Mz.DN.2/Mr.DN.1/Mr.DN.2/Mu.DN.3/Mu.DN.4)
+      may become failure after chip integration because
+      1. Initial point is changed and then checking window shift.
+      2. The density environment around this IP may change the final density of the windows across IP boundary.
+      If you are with a will to evaluate possible local density error early in IP validation stage, 
+      you can turn on this option to tighten local density check in IP/macro/block level by
+      1. Use fine window step (window size/10) instead of the original window step (window size/2) in rule.
+      2. Increase/Decrease density value of low/high density check by 3 percent.
+      If you want to do more aggressive check, you can find and change following variables in drc deck
+      VARIABLE  DENSITY_STEP_RATIO 1/10
+      VARIABLE  DENSITY_DELTA  0.03
+
+      If you turn on FULL_CHIP option, IP_TIGHTEN_DENSITY option will be turned off automatically
+      even though you turn on this option.
+
+  (*) CHECK_LOW_DENSITY :
+      Please turn off this option to uncheck the local low density rules 
+      (OD.S.14/OD.DN.3/PO.DN.3/PO.DN.3R/PO.DN.3.1/PO.DN.3.1R/M1.DN.1/M1.DN.5R/M1.DN.6/M1.DN.6R
+      /Mx.DN.1/Mx.DN.5R/Mx.DN.6/Mx.DN.6R/Mx.DN.7/Mx.DN.7R/My.DN.1/Mz.DN.1/Mr.DN.1/Mu.DN.3/)
+      in cell level (IP/block/macro) if you only want to check local low density after dummy patterns was inserted.
+      You can not turn off this options in whole chip level. If you turn on FULL_CHIP option,
+      CHECK_LOW_DENSITY option will be turned on automatically even though you turn off this option.
+
+  (*) USE_IO_VOLTAGE_ON_CORE_TO_IO_NET :
+      Rule PO.S.50, PO.S.51, Mx.S.10, Mx.S.10.1, Mx.S.11 and Mx.S.32~34 checks the space between metal line connect to 
+      I/O devices and other metal line. 
+      By default, it doesn't check (1) same net metal (2) metal connect to P-Well(Vss) (3) metal line
+      connect to I/O devices and also connect to core devices on the other side. 
+  
+      If you turn on this option, the metal line connect to I/O devices and also 
+      connect to core devices on the other side will be checked, and regarded as I/O metal. It 
+      will tighten this check. 
+
+  (*) SKIP_CELL_BOUNDARY :
+      In cell level, enable this switch will skip the boundary PO in PO.W.15 ~ PO.W.20 check.
+      For rule PO.W.15~18, DRC only skip the gate edge with a distance (< 0.16um), to prBoundary (108;0).
+      For rule PO.W.19, DRC only skip the gate edge with a distance (< 0.26um), to prBoundary (108;0).
+      For rule PO.W.20, DRC only skip the gate edge with a distance (< 0.28um), to prBoundary (108;0).
+      If the option of "FULL_CHIP" is enabled, this option does not work.
+ 
+  (*) DVIAxR3_For_NonFlipChip:
+      Rule DVIAx.R.3 checks the area ratio of (DVIAx to DMx) and (DVIAx to DMx+1) cannot less than 1% at the same time. 
+      DVIAx.R.3 is must for Flip-Chip PAD application and also strongly recommended for Non Flip-Chip PAD.
+      This option is enabled by default to check DVIAx.R.3 for ALL PAD application.
+      If you turn off this option, DVIAx.R.3 check will be skipped for Non Flip-Chip PAD application without UBM 
+  (*) CHECK_VIRTUAL_CO:
+      FOR TSMC INTERNAL USE ONLY
+      For NTO, please turn on CHECK_VIRTUAL_CO to check CO related rules on virtual CO.
+               and then turn off CHECK_VIRTUAL_CO for final tape-out validation.    
+      For RTO, please turn off CHECK_VIRTUAL_CO.
+
+  (*) CHECK_VIRTUAL_CO_ONLY:
+      FOR TSMC INTERNAL USE ONLY
+      For NTO, if you want to check VIRTUAL CO rules only, please also enable the switch "#DEFINE CHECK_VIRTUAL_CO_ONLY".
+               and then turn off CHECK_VIRTUAL_CO_ONLY for final tape-out validation.    
+      For RTO, please turn off CHECK_VIRTUAL_CO_ONLY.
+      
+  (*) CHECK_VIRTUAL_VIAx:
+      For NTO, please turn on CHECK_VIRTUAL_VIAx to check VIAx related rules on virtual VIAx.
+               and then turn off CHECK_VIRTUAL_VIAx for final tape-out validation.    
+      For RTO, please turn off CHECK_VIRTUAL_VIAx.
+
+  (*) CHECK_VIRTUAL_VIAx_ONLY:
+      For NTO, if you want to check VIRTUAL VIAx rules only, please also enable the switch "#DEFINE CHECK_VIRTUAL_VIAx_ONLY".
+               and then turn off CHECK_VIRTUAL_VIAx_ONLY for final tape-out validation.    
+      For RTO, please turn off CHECK_VIRTUAL_VIAx_ONLY.
+
+  (*) DISCONNECT_ALL_RESISTOR: 
+  (*) CONNECT_ALL_RESISTOR:  
+       
+      By default, the connection is broken by resistors with dummy layer RES200 for Latch-Up rule checks. 
+      The switches of DISCONNECT_ALL_RESISTOR and CONNECT_ALL_RESISTOR can control the connectivity of resistor.
+      Turn on DISCONNECT_ALL_RESISTOR option will disconnect all resistors between pad and device for Latch-Up rule check.
+      Turn on CONNECT_ALL_RESISTOR option will connect all resistors between pad and device for Latch-Up rule check.
+
+  (*) DEFINE_PAD_BY_TEXT:
+      By default, DRC uses CB/CBD/CB2/UBM layer to recognize PAD, and uses the connection
+      of well strap to distinguish IO PAD and VDD/VSS PAD. So latch-up rules can not be
+      checked in cell level if no CB/CBD/CB2/UBM layer exists. Also,if VDD/VSS pad is not
+      connected to strap, it will be falsely recognized as IO pad. 
+      You can turn on this option to solve these inconveniences. Assign the PAD/VDD/VSS pin name in
+      Variables (PAD_TEXT/VDD_TEXT/VSS_TEXT). Notice that only text by metal pin layer in top cell
+      is used for latch-up check.
+   
+  (*) CHECK_FLOATING_GATE_BY_TEXT :
+  (*) CHECK_FLOATING_GATE_BY_PRIMARY_TEXT : 
+
+      The gate which does not connect to source/drain/strap/pad will be recognized as
+      floating gate in DRC. So in cell level, gates which only connect to pin will be recognized as
+      floating gate. Also, in chip level, if there is an empty IP, gates which only connect to this IP
+      will be recognized as floating gate. By default, DRC check PO.R.19 floating gate rule only in chip level.
+      If you want to check PO.R.19 rule in cell level,
+      Suggest to turn on CHECK_FLOATING_GATE_BY_PRIMARY_TEXT option to avoid the false error.
+      If there is empty IP in your design, 
+      Suggest to turn on CHECK_FLOATING_GATE_BY_TEXT option to avoid false error.
+      Then specify cell pin name in Variables (IP_PIN_TEXT). 
+      Notice that only text by metal pin layer is used for floating gate check.
+
+  (*) ChipWindowUsed :
+      By default, DRC use all tape out required layers to form the chip boundary.
+      If you want to specified the chip boundary directly, please turn on this option.
+      Then modifiy the Variables (xLB, yLB) for the coordinate of left-bottom corner,
+      and (xRT, yRT) for the coordinate of right-top corner of the user-defined chip window.
+      It can reduce the DRC run-times.
+ 
+      Moreover, the line below is an un-used layer number for constructing the chip window
+
+          LAYER ChipWindow  500
+
+      If layer number 1000 is used, please assign another layer number without conflict.
+ 
+  (*) UseprBoundary:
+      If you want to specified the chip or IP boundary by prBoundary(108;0) layer, please turn on this option.
+
+  (*) UseRoutingBlockage:
+      If the IP boundary of each metal layer are different, e.g. some region on upper metal layer is reserved
+      as routing resource in Top level, you can turn on this option to avoid low density violation on reserved region.
+      DRC will define the boundary of each metal layer by routing blockage layer (171;0 - 180;0 for M1 - M10).
+  
+  (*) VOLTAGE_RULE_CHECK :
+      Turn off to unslect voltage-dependent rules.
+
+  (*) VOLTAGE_RULE_CHECK_ONLY :
+      Turn on to only select voltage-dependent rules.
+
+  (*) ESD_LUP_RULE_CHECK :
+      Turn off to unselect ESD/LUP rules. 
+      For cell level, please keep this switch on due to LUP.6 still need to be checked in cell level.
+
+  (*) ESD_LUP_RULE_CHECK_ONLY :
+      Turn on to only select ESD/LUP rules.
+
+  (*) USE_SD_VOLTAGE_ON_CORE_TO_IO_NET :
+      Without voltage text and marker, DRC recognize net voltage by connection of I/O and core device.
+      Net connect to core device will be set as 0.8V and net connect to I/O device (OD2) will be set as 1.8V.
+      If net connect to both core and I/O device, DRC set voltage according to "USE_IO_VOLTAGE_ON_CORE_TO_IO_NET" option.
+      Turn off this option, the priority is (core S/D and GATE) > (I/O S/D and GATE).
+      Turn on this option, the priority is (I/O S/D and GATE) > (core S/D and GATE).
+      And the priority of S/D and GATE are the same.
+      If you want to distinguish the priority of S/D and GATE since GATE's potential is driven by other device's S/D,
+      you can turn on "USE_SD_VOLTAGE_ON_CORE_TO_IO_NET" option.
+      Turn on this option, the priority is (I/O S/D) > (core S/D) > (core GATE) > (I/O GATE)
+
+
+USER GUIDE
+
+
+
+  Antenna deck:
+      
+  
+
+
+USAGE OF CHECKING ANALOG CIRCUIT RULES:
+
+  Analog DRC deck is bundled in the TSMC logic DRC deck and not checked by default. 
+  The following two methods can specify the region/cell to run the analog part.
+  
+  1. Region selection based on the following dummy layers: 
+
+    (1) RRuleAnalog (CAD layer: 182;3): for the layout rules of WPE, analog designs and resistors.
+        Data inside (logic operation 'AND') this marker layers will be checked.
+     
+    (2) BJTDMY (CAD layer: 110;0): for the layout rules & recommendations of the BJT device.
+        The entire device which include collector/Base/Emitter need to covered by BJTDMY.     
+    
+  2. Cell selection based on the following variables:
+  
+     - CellsForRRuleAnalog: check the cells in the variable.
+     - ExclCellsForRRuleRequired: exclude the cells in the variable.
+   
+     (1) default setting: VARIABLE CellsForRRuleAnalog " "
+         The default setting is empty, and match none of the cells.
+    
+     (2) specifying cell list: VARIABLE CellsForRRuleAnalog "STRNAME" "ABC*"
+         This setting will include cell STRNAME and all cells with prefix ABC as well as 
+         the sub-hierarchy.
+
+     (3) exclude cell: VARIABLE ExclCellsForRRuleRequired "STRNAME" "ABC*"
+         This setting will exclude cell STRNAME and all cells with prefix ABC as well as 
+         the sub-hierarchy.    
+
+
+
+USAGE OF CHECKING DFM rules:
+
+  1. Rule selections
+
+     For DFM rules check, please enable the switch "#DEFINE DFM".
+     If you want to check DFM rules only, please also enable the switch "#DEFINE DFM_ONLY".
+     The following switches are for selecting a DFM rules category. 
+  
+     (1)   Recommended        (on)
+     (2)   Analog             (on)
+     (3)   Guideline          (on)
+
+     Turing off, for example, Recommended switch will disable all checkings of Recommendations. 
+
+
+     The following switches are for selecting a DFM rules group. 
+     (1)   First_priority          (on)
+     (2)   Manufacturing_concern   (on)
+     (3)   Device_performance       (on)
+
+     Turing off, for example, Device_performace switch will disable all checkings of device performance group. 
+
+     In addition to rule categories and groups, there are switches for each DFM rules respectively. 
+     Turing off, for example, _POEX1_ switch will disable the checking of PO.EX.1R rule. 
+     
+  2. Region/cell selections
+    
+    Three layers below are defined for users to do region selection. 
+    Data inside (logic operation 'AND') these marker layers will be checked by related DFM Rules category.
+        1) RRuleRecommended (182;2)
+        2) RRuleAnalog      (182;3)
+        3) RRuleGuideline   (182;4)
+ 
+    And three layers below are defined for users to do region excluding. 
+    Data outside (logic operation 'NOT') these marker layers will be checked by related DFM Rules category.
+
+        1) excludeRRuleRecommended  (182;12)
+        2) excludeRRuleAnalog       (182;13)
+        3) excludeRRuleGuideline    (182;14)
+    
+    
+    Another way for configuration is through cell selections. 
+    three variables below are defined for cell selections:
+
+        1) CellsForRRuleRecommended ( default setting "*" )
+        2) CellsForRRuleAnalog ( dafault setting " " )
+        3) CellsForRRuleGuideline ( dafault setting "*" )
+
+    And three variables below are defined for excluding cells:
+    
+        1) ExclCellsForRRuleRecommended ( default setting " " )
+        2) ExclCellsForRRuleAnalog ( dafault setting " " )
+        3) ExclCellsForRRuleGuideline ( dafault setting " " )
+    
+    Please specify the cell list after the VARIABLE declarations. 
+    Following are some examples for the VARIABLE CellsForRRuleRecommended:
+
+        1) default setting
+
+            VARIABLE CellsForRRuleRecommended "*"
+
+           As star "*" is the wild card to match zero or more characters, 
+           the default setting will match and include all of the cells.
+
+        2) specifying cell list
+
+            VARIABLE CellsForRRuleRecommended "STRNAME" "ABC*"
+
+           This setting will include cell STRNAME and all cells with prefix ABC 
+           as well as the sub-hierarchy.    
+    
+        3) disable cell selection
+
+            VARIABLE CellsForRRuleRecommended " "
+
+        4) exclude cell
+       
+            VARIABLE ExclCellsForRRuleRecommended "STRNAME" "ABC*"
+
+           This seeting will exclude cell STRNAME and all cells with prefix ABC 
+           as well as the sub-hierarchy.    
+ 
+    Putting a space in the cell list means that no cell will be selected.
+
+    Data from region and cell selections will be 'OR'ed together into checking. So if only
+    region selection is desired, please disable cell selection by the above method.  
+    On the other hand, if only cell selection is needed, please remove the marker layer, 
+    if drawn, or redirect them into an empty layer number. As an example,
+
+        LAYER RRuleRequired 6000
+
+    will make the layer RRuleRequired empty. Calibre would accept 0 ~ 8191 as valid layer
+    numbers. If the marker layers are not drawn, region selection is not effective at all.
+
+    For futhur customization to specify cell list in each DFM rule, following is an example:
+
+    // change the following line
+
+    ODW1_ODCellIn = INSIDE CELL ODi CellsForRRuleRecommended
+    ODW1_ODCellOut = NOT INSIDE CELL ODi ExclCellsForRRuleRecommended
+    ODW1_ODCell = ODW1_ODCellIn AND ODW1_ODCellOut
+
+    // into
+
+    ODW1_ODCellIn = INSIDE CELL ODi "abc*"
+    ODW1_ODCellOut = NOT INSIDE CELL ODi ExclCellsForRRuleRecommended 
+    ODW1_ODCell = ODW1_ODCellIn AND ODW1_ODCellOut
+
+    // Then all cells with prefix 'abc', including their sub-hierarchy, 
+       will be checked in OD.W.1R
+  

@@ -1,0 +1,226 @@
+  =================
+   Message Summary
+  =================
+--------------------------------------------------------------------------------
+|     Id      |  Sev   |Count |                 Message Text                   |
+--------------------------------------------------------------------------------
+| CDFG-236    |Warning |   25 |Detected non-positive value for replication     |
+|             |        |      | prefix.                                        |
+|             |        |      |The prefix expression of a replication          |
+|             |        |      | generally must evaluate to a positive          |
+|             |        |      | constant.  The value of a replication with a   |
+|             |        |      | non-positive prefix depends on the setting of  |
+|             |        |      | the attribute 'hdl_zero_replicate_is_null'.    |
+|             |        |      | If true, the replication is treated as a       |
+|             |        |      | zero-width expression.  If false, the          |
+|             |        |      | replication evaluates to 1'b0.                 |
+| CDFG-250    |Info    |  375 |Processing multi-dimensional arrays.            |
+| CDFG-464    |Warning |    4 |Connected signal is wider than module port.     |
+|             |        |      |This may cause simulation mismatches between    |
+|             |        |      | the original and synthesized designs.          |
+| CDFG-466    |Warning |    1 |Connected signal is wider than libpin.          |
+|             |        |      |This may cause simulation mismatches between    |
+|             |        |      | the original and synthesized designs.          |
+| CDFG-472    |Warning |    6 |Unreachable statements for case item.           |
+| CDFG-479    |Info    |   48 |Constant relational expression.                 |
+|             |        |      |A relational expression can evaluate to a       |
+|             |        |      | constant when a variable is compared to a      |
+|             |        |      | value which is outside the bounds of the       |
+|             |        |      | variable.                                      |
+| CDFG-500    |Info    |  603 |Unused module input port.                       |
+|             |        |      |In port definition within the module, the input |
+|             |        |      | port is not used in any assignment statements  |
+|             |        |      | or conditional expressions for decision        |
+|             |        |      | statements.                                    |
+| CDFG-501    |Info    |   14 |Unused module inout port.                       |
+|             |        |      |The value of the inout port is not used within  |
+|             |        |      | the design.                                    |
+| CDFG-508    |Warning |  134 |Removing unused register.                       |
+|             |        |      |Genus removes the flip-flop or latch inferred   |
+|             |        |      | for an unused signal or variable. To preserve  |
+|             |        |      | the flip-flop or latch, set the                |
+|             |        |      | hdl_preserve_unused_registers attribute to     |
+|             |        |      | true or use a pragma in the RTL.               |
+| CDFG-893    |Info    |    9 |Optimized the MUX created for array read /      |
+|             |        |      | write or variable shifter.                     |
+| CDFG2G-615  |Warning |    1 |Generated logic differs from the expected       |
+|             |        |      | logic.                                         |
+|             |        |      |The logic generated for an always_comb,         |
+|             |        |      | always_latch or always_ff process may not      |
+|             |        |      | match the behavior specified in the input HDL. |
+| CDFG2G-616  |Info    |    1 |Latch inferred. Check and revisit your RTL if   |
+|             |        |      | this is not the intended behavior.             |
+|             |        |      |Use the attributes 'set_attribute               |
+|             |        |      | hdl_error_on_latch true'(LUI)                  |
+|             |        |      | or 'set_db hdl_error_on_latch true' (CUI)      |
+|             |        |      | to issue an error when a latch is inferred.    |
+|             |        |      | Use the attributes 'set_attributes             |
+|             |        |      | hdl_latch_keep_feedback true'(LUI)             |
+|             |        |      | or 'set_db hdl_latch_keep_feedback true'(CUI)  |
+|             |        |      | to infer combinational logic rather than a     |
+|             |        |      | latch in case a variable is explicitly         |
+|             |        |      | assigned to itself.                            |
+| CDFG2G-628  |Info    |    3 |Variable indexed array read/write found inside  |
+|             |        |      | for loop.                                      |
+| ELAB-1      |Info    |    1 |Elaborating Design.                             |
+| ELAB-2      |Info    |  178 |Elaborating Subdesign.                          |
+| ELAB-3      |Info    |    1 |Done Elaborating Design.                        |
+| ELABUTL-123 |Warning |   47 |Undriven module output port.                    |
+| ELABUTL-124 |Warning |   16 |Unconnected instance input port detected.       |
+|             |        |      |Run check_design to check 'Undriven Port(s)     |
+|             |        |      | /Pin(s)                                        |
+|             |        |      | ' section for all unconnected instance input   |
+|             |        |      | ports. It is better to double confirm with     |
+|             |        |      | designer these unconnected instance input port |
+|             |        |      | are expected. During syn_gen the unconnected   |
+|             |        |      | instance input ports are controlled by         |
+|             |        |      | attribute 'hdl_unconnected_value', the default |
+|             |        |      | value is 0.                                    |
+| ELABUTL-127 |Warning |   26 |Undriven module input port.                     |
+|             |        |      |Run check_design to check 'Undriven Port(s)     |
+|             |        |      | /Pin(s)                                        |
+|             |        |      | ' section for all undriven module input ports. |
+|             |        |      | It is better to double confirm with designer   |
+|             |        |      | if these undriven ports are expected. During   |
+|             |        |      | syn_gen the undriven ports are controlled by   |
+|             |        |      | attribute 'hdl_unconnected_value', the default |
+|             |        |      | value is 0.                                    |
+| ELABUTL-132 |Info    |  201 |Unused instance port.                           |
+|             |        |      |Please check the reported scenario of           |
+|             |        |      | unconnected instance port to ensure that it    |
+|             |        |      | matches the design intent.                     |
+| LBR-101     |Warning |    4 |Unusable clock gating integrated cell found at  |
+|             |        |      | the time of loading libraries. This warning    |
+|             |        |      | happens because a particular library cell is   |
+|             |        |      | defined as 'clock_gating_integrated_cell', but |
+|             |        |      | 'dont_use' attribute is defined as true in the |
+|             |        |      | liberty library. To make Genus use this cell   |
+|             |        |      | for clock gating insertion, 'dont_use'         |
+|             |        |      | attribute should be set to false.              |
+|             |        |      |To make the cell usable, change the value of    |
+|             |        |      | 'dont_use' attribute to false.                 |
+| LBR-109     |Info    |    1 |Set default library domain.                     |
+| LBR-162     |Info    |   40 |Both 'pos_unate' and 'neg_unate' timing_sense   |
+|             |        |      | arcs have been processed.                      |
+|             |        |      |Setting the 'timing_sense' to non_unate.        |
+| LBR-163     |Error   |    2 |Failed to execute command.                      |
+|             |        |      |Specify libraries using read_libs or read_mmmc. |
+| LBR-170     |Info    |   40 |Ignoring specified timing sense.                |
+|             |        |      |Timing sense should never be set with           |
+|             |        |      | 'rising_edge' or 'falling_edge' timing type.   |
+| LBR-40      |Info    |    8 |An unsupported construct was detected in this   |
+|             |        |      | library.                                       |
+|             |        |      |Check to see if this construct is really needed |
+|             |        |      | for synthesis. Many liberty constructs are not |
+|             |        |      | actually required.                             |
+| LBR-41      |Info    |   40 |An output library pin lacks a function          |
+|             |        |      | attribute.                                     |
+|             |        |      |If the remainder of this library cell's         |
+|             |        |      | semantic checks are successful, it will be     |
+|             |        |      | considered as a timing-model                   |
+|             |        |      | (because one of its outputs does not have a va |
+|             |        |      | lid function.                                  |
+| LBR-412     |Info    |    8 |Created nominal operating condition.            |
+|             |        |      |The nominal operating condition is represented, |
+|             |        |      | either by the nominal PVT values specified in  |
+|             |        |      | the library source                             |
+|             |        |      | (via nom_process,nom_voltage and nom_temperatu |
+|             |        |      | re respectively)                               |
+|             |        |      | , or by the default PVT values (1.0,1.0,1.0).  |
+| LBR-72      |Info    |   32 |Detected an unsupported timing arc type.        |
+|             |        |      |Refer to 'Supported Liberty timing_type Values' |
+|             |        |      | in the 'Timing Analysis Guide' for more        |
+|             |        |      | information.                                   |
+| LBR-76      |Warning |   40 |Detected both combinational and sequential      |
+|             |        |      | timing arcs in a library cell. This might      |
+|             |        |      | prevent the tool from using this cell for      |
+|             |        |      | technology mapping. The tool will treat it as  |
+|             |        |      | unusable.                                      |
+|             |        |      |The library cell will be treated as a           |
+|             |        |      | timing-model. Make sure that the timing arcs   |
+|             |        |      | and output function are defined correctly.     |
+|             |        |      | Even if the cell intends to have               |
+|             |        |      | dual-functionality, it cannot be unmapped or   |
+|             |        |      | automatically inferred.                        |
+| LBR-9       |Warning |   40 |Library cell has no output pins defined.        |
+|             |        |      |Add the missing output pin(s)                   |
+|             |        |      | , then reload the library. Else the library    |
+|             |        |      | cell will be marked as timing model i.e.       |
+|             |        |      | unusable. Timing_model means that the cell     |
+|             |        |      | does not have any defined function. If there   |
+|             |        |      | is no output pin, Genus will mark library cell |
+|             |        |      | as unusable i.e. the attribute 'usable' will   |
+|             |        |      | be marked to 'false' on the libcell.           |
+|             |        |      | Therefore, the cell is not used for mapping    |
+|             |        |      | and it will not be picked up from the library  |
+|             |        |      | for synthesis. If you query the attribute      |
+|             |        |      | 'unusable_reason' on the libcell; result will  |
+|             |        |      | be: 'Library cell has no output pins.'Note:    |
+|             |        |      | The message LBR-9 is only for the logical pins |
+|             |        |      | and not for the power_ground pins. Genus will  |
+|             |        |      | depend upon the output function defined in the |
+|             |        |      | pin group (output pin)                         |
+|             |        |      | of the cell, to use it for mapping. The pg_pin |
+|             |        |      | will not have any function defined.            |
+| PHYS-12     |Warning |   18 |The variant range of wire parameters is too     |
+|             |        |      | large. An example of wire parameters are, a    |
+|             |        |      | WIDTH for layer, PITCH for layer, MINSPACING   |
+|             |        |      | for layers, etc.                               |
+|             |        |      |Check the consistency of the parameters, and    |
+|             |        |      | see if you can ignore this message or you're   |
+|             |        |      | using different LEF file with wrong            |
+|             |        |      | parameters.                                    |
+| PHYS-127    |Info    |    3 |Macro with non-zero origin.                     |
+| SDC-200     |Warning |    2 |Unsupported SDC command.                        |
+|             |        |      |The current version of Genus does not support   |
+|             |        |      | this SDC command and ignores it. However,      |
+|             |        |      | future versions may be enhanced to support     |
+|             |        |      | this command. This SDC command will be added   |
+|             |        |      | to the Tcl variable                            |
+|             |        |      | $::dc::sdc_unsupported_commands_write_sdc. The |
+|             |        |      | contents of this variable will be written out  |
+|             |        |      | during write_sdc.                              |
+| SDC-201     |Warning |    2 |Unsupported SDC command option.                 |
+|             |        |      |The current version does not support this SDC   |
+|             |        |      | command option.  However, future versions may  |
+|             |        |      | be enhanced to support this option.            |
+| TIM-167     |Info    |    2 |An external clock is being defined.             |
+|             |        |      |An external clock does not directly drive any   |
+|             |        |      | points within the design, but is only used as  |
+|             |        |      | a reference for external delays.               |
+| VLOGPT-31   |Warning |    2 |Unsupported system task or function: assuming   |
+|             |        |      | value 1'b1.                                    |
+|             |        |      |The $signed and $unsigned system functions are  |
+|             |        |      | always supported, and synthesizable            |
+|             |        |      | SystemVerilog system functions are supported   |
+|             |        |      | when SystemVerilog parsing is enabled.  No     |
+|             |        |      | other system functions are supported.          |
+| VLOGPT-35   |Warning |    1 |Ignoring unsynthesizable delay specifier (#<n>) |
+|             |        |      | mentioned in verilog file. These delay numbers |
+|             |        |      | are for simulation purpose only.               |
+|             |        |      |All delay numbers assigned or used in           |
+|             |        |      | behavioral code are for simulation purposes    |
+|             |        |      | only and are not synthesizable. These values   |
+|             |        |      | are ignored during synthesis. This warning is  |
+|             |        |      | issued only once per module.                   |
+| VLOGPT-37   |Warning |   10 |Ignoring unsynthesizable construct.             |
+|             |        |      |For example, the following constructs will be   |
+|             |        |      | ignored:
+    - initial block
+    - final       |
+|             |        |      | block
+    - program block
+    - property       |
+|             |        |      | block
+    - sequence block
+    - covergroup
+   |
+|             |        |      | - checker block
+    - gate drive strength
+     |
+|             |        |      | - system task enable
+    - reg declaration     |
+|             |        |      | with initial value
+    - specify block.        |
+| VLOGPT-670  |Warning |    2 |Ignoring unexpected semicolon.                  |
+--------------------------------------------------------------------------------

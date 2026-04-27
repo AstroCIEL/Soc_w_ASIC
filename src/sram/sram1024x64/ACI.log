@@ -1,0 +1,58 @@
+Spreadsheet updated
+ARM Inc.
+Linux lg3 3.10.0-1160.105.1.el7.x86_64 #1 SMP Thu Dec 7 15:39:45 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux
+Compiler version r6p0
+GUI version 8.5.10
+
+
+CONFIDENTIAL AND PROPRIETARY SOFTWARE OF ARM INC.
+
+Copyright (c) 1993 - 2025 ARM Inc.  All Rights Reserved.
+
+Use of this Software is subject to the terms and conditions of the
+applicable license agreement with ARM Inc. 
+In addition, this Software is protected by patents, copyright law 
+and international treaties.
+
+The copyright notice(s) in this Software does not indicate actual or
+intended publication of this Software.
+
+
+High Density Single Port SRAM SHVT MVT Compiler, CLN22ULL 22nm Process 0.140um^2 ULL Bit Cell
+Log file is ACI.log
+
+Created spec file: sram1024x64.spec
+Spreadsheet updated
+cmd: /work/home/tyjia/common/TSMC_22NM_ULL/CA001/arm/tsmc/cln22ul/sram_sp_hde_shvt_mvt/r6p0/bin/sram_sp_hde_shvt_mvt gds2 -name_case upper -site_def off -diodes on -activity_factor 50 -drive 6 -write_mask on -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -redundancy off -wp_size 1 -write_thru off -libname sram_sp_hde -prefix "" -ema on -back_biasing off -bit_blast off -single_domain_only on -vmin_assist on -mvt BASE -ser none -check_instname on -frequency 500 -bmux off -words 1024 -bits 64 -retention on -instname sram1024x64 -atf off -libertyviewstyle nldm -rows_p_bl 256 -flexible_banking 4 -cust_comment "" -mux 4 -power_gating off -corners ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88v_0p88v_m40c,ssg_cworstt_0p72v_0p72v_0c,ssg_cworstt_0p72v_0p72v_125c,ssg_cworstt_0p72v_0p72v_m40c,tt_typical_0p80v_0p80v_25c,tt_typical_0p80v_0p80v_85c
+INFO: SER bits: 0
+ARM PIPD physical GDS tool, version 2.5.1
+gds2 generator succeeded, created: sram1024x64.gds2
+Spreadsheet updated
+cmd: /work/home/tyjia/common/TSMC_22NM_ULL/CA001/arm/tsmc/cln22ul/sram_sp_hde_shvt_mvt/r6p0/bin/sram_sp_hde_shvt_mvt lef-fp -name_case upper -site_def off -diodes on -activity_factor 50 -drive 6 -write_mask on -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -redundancy off -wp_size 1 -write_thru off -libname sram_sp_hde -prefix "" -ema on -back_biasing off -bit_blast off -single_domain_only on -vmin_assist on -mvt BASE -ser none -check_instname on -frequency 500 -bmux off -words 1024 -bits 64 -retention on -instname sram1024x64 -atf off -libertyviewstyle nldm -rows_p_bl 256 -flexible_banking 4 -cust_comment "" -mux 4 -power_gating off -corners ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88v_0p88v_m40c,ssg_cworstt_0p72v_0p72v_0c,ssg_cworstt_0p72v_0p72v_125c,ssg_cworstt_0p72v_0p72v_m40c,tt_typical_0p80v_0p80v_25c,tt_typical_0p80v_0p80v_85c
+INFO: SER bits: 0
+lef-fp generator succeeded, created: sram1024x64.lef
+cmd: /work/home/tyjia/common/TSMC_22NM_ULL/CA001/arm/tsmc/cln22ul/sram_sp_hde_shvt_mvt/r6p0/bin/sram_sp_hde_shvt_mvt liberty -name_case upper -site_def off -diodes on -activity_factor 50 -drive 6 -write_mask on -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -redundancy off -wp_size 1 -write_thru off -libname sram1024x64 -prefix "" -ema on -back_biasing off -bit_blast off -single_domain_only on -vmin_assist on -mvt BASE -ser none -check_instname on -frequency 500 -bmux off -words 1024 -bits 64 -retention on -instname sram1024x64 -atf off -libertyviewstyle nldm -rows_p_bl 256 -flexible_banking 4 -cust_comment "" -mux 4 -power_gating off -corners ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88v_0p88v_m40c,ssg_cworstt_0p72v_0p72v_0c,ssg_cworstt_0p72v_0p72v_125c,ssg_cworstt_0p72v_0p72v_m40c,tt_typical_0p80v_0p80v_25c,tt_typical_0p80v_0p80v_85c
+INFO: SER bits: 0
+liberty generator succeeded, created:
+   sram1024x64_ffg_cbestt_0p88v_0p88v_0c.lib
+   sram1024x64_ffg_cbestt_0p88v_0p88v_125c.lib
+   sram1024x64_ffg_cbestt_0p88v_0p88v_m40c.lib
+   sram1024x64_ssg_cworstt_0p72v_0p72v_0c.lib
+   sram1024x64_ssg_cworstt_0p72v_0p72v_125c.lib
+   sram1024x64_ssg_cworstt_0p72v_0p72v_m40c.lib
+   sram1024x64_tt_typical_0p80v_0p80v_25c.lib
+   sram1024x64_tt_typical_0p80v_0p80v_85c.lib
+   sram1024x64_ffg_cbestt_0p88v_0p88v_0c.lib_sh5p1cm
+   sram1024x64_ffg_cbestt_0p88v_0p88v_125c.lib_sh5p1cm
+   sram1024x64_ffg_cbestt_0p88v_0p88v_m40c.lib_sh5p1cm
+   sram1024x64_ssg_cworstt_0p72v_0p72v_0c.lib_sh5p1cm
+   sram1024x64_ssg_cworstt_0p72v_0p72v_125c.lib_sh5p1cm
+   sram1024x64_ssg_cworstt_0p72v_0p72v_m40c.lib_sh5p1cm
+   sram1024x64_tt_typical_0p80v_0p80v_25c.lib_sh5p1cm
+   sram1024x64_tt_typical_0p80v_0p80v_85c.lib_sh5p1cm
+cmd: /work/home/tyjia/common/TSMC_22NM_ULL/CA001/arm/tsmc/cln22ul/sram_sp_hde_shvt_mvt/r6p0/bin/sram_sp_hde_shvt_mvt lvs -name_case upper -site_def off -diodes on -activity_factor 50 -drive 6 -write_mask on -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -redundancy off -wp_size 1 -write_thru off -libname sram1024x64 -prefix "" -ema on -back_biasing off -bit_blast off -single_domain_only on -vmin_assist on -mvt BASE -ser none -check_instname on -frequency 500 -bmux off -words 1024 -bits 64 -retention on -instname sram1024x64 -atf off -libertyviewstyle nldm -rows_p_bl 256 -flexible_banking 4 -cust_comment "" -mux 4 -power_gating off -corners ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88v_0p88v_m40c,ssg_cworstt_0p72v_0p72v_0c,ssg_cworstt_0p72v_0p72v_125c,ssg_cworstt_0p72v_0p72v_m40c,tt_typical_0p80v_0p80v_25c,tt_typical_0p80v_0p80v_85c
+INFO: SER bits: 0
+lvs generator succeeded, created: sram1024x64.cdl
+cmd: /work/home/tyjia/common/TSMC_22NM_ULL/CA001/arm/tsmc/cln22ul/sram_sp_hde_shvt_mvt/r6p0/bin/sram_sp_hde_shvt_mvt verilog -name_case upper -site_def off -diodes on -activity_factor 50 -drive 6 -write_mask on -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -redundancy off -wp_size 1 -write_thru off -libname sram1024x64 -prefix "" -ema on -back_biasing off -bit_blast off -single_domain_only on -vmin_assist on -mvt BASE -ser none -check_instname on -frequency 500 -bmux off -words 1024 -bits 64 -retention on -instname sram1024x64 -atf off -libertyviewstyle nldm -rows_p_bl 256 -flexible_banking 4 -cust_comment "" -mux 4 -power_gating off -corners ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88v_0p88v_m40c,ssg_cworstt_0p72v_0p72v_0c,ssg_cworstt_0p72v_0p72v_125c,ssg_cworstt_0p72v_0p72v_m40c,tt_typical_0p80v_0p80v_25c,tt_typical_0p80v_0p80v_85c
+INFO: SER bits: 0
+verilog generator succeeded, created: sram1024x64.v

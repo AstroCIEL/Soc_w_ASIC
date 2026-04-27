@@ -1,0 +1,113 @@
+  =================
+   Message Summary
+  =================
+--------------------------------------------------------------------------------------
+|     Id      |  Sev   |Count  |                    Message Text                     |
+--------------------------------------------------------------------------------------
+| ELABUTL-128 |Info    |    47 |Undriven module output port.                         |
+|             |        |       |The 'hdl_unconnected_value' attribute controls       |
+|             |        |       | treatment of undriven output port.                  |
+| ELABUTL-129 |Info    |    16 |Unconnected instance input port detected.            |
+|             |        |       |The 'hdl_unconnected_value' attribute controls       |
+|             |        |       | treatment of unconnected input port.                |
+| ELABUTL-131 |Info    |    26 |Undriven module input port.                          |
+|             |        |       |The 'hdl_unconnected_value' attribute controls       |
+|             |        |       | treatment of undriven input port.                   |
+| GLO-12      |Info    |  1543 |Replacing a flip-flop with a logic constant 0.       |
+|             |        |       |To prevent this optimization, set the                |
+|             |        |       | 'optimize_constant_0_flops' root attribute to       |
+|             |        |       | 'false' or 'optimize_constant_0_seq' instance       |
+|             |        |       | attribute to 'false'. You can also see the complete |
+|             |        |       | list of deleted sequential with command 'report     |
+|             |        |       | sequential -deleted' (on Reason 'constant0').       |
+| GLO-26      |Warning |304150 |Setting attribute 'optimize_constant_0_seq' only     |
+|             |        |       | allowed for sequential instances.                   |
+|             |        |       |Attribute 'optimize_constant_0_seq' is evaluated     |
+|             |        |       | only for sequential instances. Therefore changing   |
+|             |        |       | it for other instances is ignored.                  |
+| GLO-27      |Warning |304150 |Setting attribute 'optimize_constant_1_seq' only     |
+|             |        |       | allowed for sequential instances.                   |
+|             |        |       |Attribute 'optimize_constant_1_seq' is evaluated     |
+|             |        |       | only for sequential instances. Therefore changing   |
+|             |        |       | it for other instances is ignored.                  |
+| GLO-28      |Warning |304150 |Setting attribute 'optimize_merge_seq' only allowed  |
+|             |        |       | for sequential instances.                           |
+|             |        |       |Attribute 'optimize_merge_seq' is evaluated only for |
+|             |        |       | sequential instances.  Therefore changing it for    |
+|             |        |       | other instances is ignored.                         |
+| GLO-32      |Info    |     1 |Deleting sequential instances not driving any        |
+|             |        |       | primary outputs.                                    |
+|             |        |       |Optimizations such as constant propagation or        |
+|             |        |       | redundancy removal could change the connections so  |
+|             |        |       | an instance does not drive any primary outputs      |
+|             |        |       | anymore. To see the list of deleted sequential, set |
+|             |        |       | the 'information_level' attribute to 2 or above. If |
+|             |        |       | the message is truncated set the message attribute  |
+|             |        |       | 'truncate' to false to see the complete list.       |
+| GLO-52      |Info    |   739 |Skipping 'boundary_opto' = false setting since set   |
+|             |        |       | on an internal created hierarchy.                   |
+|             |        |       |User is not allowed and should not need to disable   |
+|             |        |       | boundary optimization on internal created           |
+|             |        |       | hierarchies.                                        |
+| MESG-6      |Warning |     1 |Message truncated because it exceeds the maximum     |
+|             |        |       | length of 4096 characters.                          |
+|             |        |       |By default messages are limited to 4096 characters.  |
+|             |        |       | All characters after the 4096 character limit are   |
+|             |        |       | truncated. To remove this limit, set the message    |
+|             |        |       | attribute 'truncate' to 'false'. However, this may  |
+|             |        |       | dramatically increase the size of the log file.     |
+| PBS-1       |Info    |     1 |Enabling Partition Based Synthesis.                  |
+| POPT-33     |Warning |     2 |Failed to connect test signal to clock-gating logic. |
+|             |        |       |Define the test signal using the 'define_dft         |
+|             |        |       | test_mode' or the 'define_dft shift_enable'         |
+|             |        |       | command. Set the 'lp_clock_gating_test_signal'      |
+|             |        |       | attribute on the design or clock-gating instance(s) |
+|             |        |       | . Then rerun the 'add_clock_gates_test_connection'  |
+|             |        |       | command.                                            |
+| POPT-40     |Warning |   373 |Setting clock-gating integrated cell on a            |
+|             |        |       | non-uniquified subdesign, which might have been     |
+|             |        |       | multiply instantiated.                              |
+|             |        |       |Use the edit_netlist dedicate_subdesign <instance>   |
+|             |        |       | to uniquify the subdesign if you do not want this   |
+|             |        |       | attribute to be set on all instances.               |
+| SDC-208     |Warning |     1 |Could not find requested search value.               |
+|             |        |       |Use the 'vcd' and 'vls' commands to browse the       |
+|             |        |       | virtual directories to find the object because the  |
+|             |        |       | specified name and/or location does not exist.      |
+| ST-110      |Info    |   223 |Connection established with super-threading server.  |
+|             |        |       |The tool is entering super-threading mode and has    |
+|             |        |       | established a connection with a CPU server process. |
+|             |        |       | This is enabled by the root attributes              |
+|             |        |       | 'super_thread_servers' or 'auto_super_thread'.      |
+| ST-112      |Info    |   222 |A super-threading server has been shut down          |
+|             |        |       | normally.                                           |
+|             |        |       |A super-threaded optimization is complete and a CPU  |
+|             |        |       | server was successfully shut down.                  |
+| ST-120      |Info    |     1 |Attempting to launch a super-threading server.       |
+|             |        |       |The tool is entering super-threading mode and is     |
+|             |        |       | launching a CPU server process.  This is enabled by |
+|             |        |       | the root attribute 'super_thread_servers' or        |
+|             |        |       | 'auto_super_thread'.                                |
+| ST-128      |Info    |     3 |Super thread servers are launched successfully.      |
+| SYNTH-1     |Info    |     1 |Synthesizing.                                        |
+| SYNTH-2     |Info    |     1 |Done synthesizing.                                   |
+| TIM-501     |Info    |     1 |Resetting the break_timing_paths attribute of a pin  |
+|             |        |       | removes exceptions set on the pin.                  |
+|             |        |       | break_timing_paths attribute has default value of   |
+|             |        |       | false and can be reset to other values either false |
+|             |        |       | or clock_gating depends on the enable signal.       |
+|             |        |       |Do the analysis and apply the case analysis on the   |
+|             |        |       | pin whether you want to break the timing paths or   |
+|             |        |       | not                                                 |
+| TUI-280     |Info    |    13 |An additional product license has been checked out.  |
+|             |        |       |The command 'license checkin' can be used to check   |
+|             |        |       | the license back in when it is no longer needed.    |
+| TUI-58      |Info    |     2 |Removed object.                                      |
+| TUI-67      |Warning |     3 |The attribute is not applicable to the object.       |
+|             |        |       |To see the description and usage for this attribute, |
+|             |        |       | type '::legacy::set_attribute -h <attr_name> *'     |
+|             |        |       | (in legacy UI mode)                                 |
+|             |        |       | or 'help * <attr_name> -detail' (in CUI mode).      |
+| TUI-744     |Info    |     2 |Timing analysis will be done for this view.          |
+|             |        |       |Worst paths will be shown in this view.              |
+--------------------------------------------------------------------------------------

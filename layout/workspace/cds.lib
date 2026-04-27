@@ -1,0 +1,14 @@
+#####################################################################################
+# Description:  Default library definitions
+# Author:       Mingxuan Li <mingxuanli_siris@163.com> [Peking University]
+#####################################################################################
+
+DEFINE tsmcN22 /project/common/ncc/foundry/tsmc/TSMC_22nm_ULL/PDK/PDK_20211230_LO_0.8V_2.5V_1P9M_6X1Z1U_UT_ALRDL/tsmcN22
+DEFINE basic /cadtools/cadence/IC617721/tools/dfII/etc/cdslib/basic
+DEFINE analogLib /cadtools/cadence/IC617721/tools/dfII/etc/cdslib/artist/analogLib
+DEFINE tcbn22ullbwp7t30p140hvt /work/home/wumeng/pdks/tsmc/tsmc22ull/tcbn22ullbwp7t30p140hvt_110a/digital/Back_End/cdk/tcbn22ullbwp7t30p140hvt_110a/tcbn22ullbwp7t30p140hvt
+DEFINE tcbn22ullbwp7t30p140lvt /work/home/wumeng/pdks/tsmc/tsmc22ull/tcbn22ullbwp7t30p140lvt_110a/digital/Back_End/cdk/tcbn22ullbwp7t30p140lvt_110a/tcbn22ullbwp7t30p140lvt
+DEFINE tcbn22ullbwp7t30p140 /work/home/wumeng/pdks/tsmc/tsmc22ull/tcbn22ullbwp7t30p140_110a/digital/Back_End/cdk/tcbn22ullbwp7t30p140_110a/tcbn22ullbwp7t30p140
+DEFINE tphn22ullgv2od3_c171206_9m6x1z1u /work/home/wumeng/pdks/tsmc/tsmc22ull/tphn22ullgv2od3_c171206_110b/digital/Back_End/cdk/tphn22ullgv2od3_c171206_120a/mt_2/9m/9M_6X2Z/tphn22ullgv2od3_c171206_9m6x1z1u
+DEFINE tpbn22V_110a_9m6x1z1u /project/work/home/wumeng/pdks/tsmc/tsmc22ull/tpbn22v_110a/digital/Back_End/Cadence_OA/tpbn22V_110a_9m6x1z1u
+DEFINE tsmc22ull_sealring_9M /project/work/home/syye/workspace_22/PIPESAR_9M/tsmc22ull_sealring_9M

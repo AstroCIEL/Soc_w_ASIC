@@ -1,0 +1,83 @@
+Magic 271485
+Revision Verdi_V-2023.12-SP1
+
+; Window Layout <x> <y> <width> <height> <signalwidth> <valuewidth>
+viewPort 0 25 2280 395 225 65
+
+; File list:
+; openDirFile [-d delimiter] [-s time_offset] [-rf auto_bus_rule_file] path_name file_name
+openDirFile -d / "" "/data/home/x_long32/Documents/RTL_PROJECT/SOC_CVA6_ORI/sim/build_cpu_sram_tb_save/cpu_sram_tb.fsdb"
+
+; file time scale:
+; fileTimeScale ### s|ms|us|ns|ps
+
+; signal spacing:
+signalSpacing 5
+
+; windowTimeUnit is used for zoom, cursor & marker
+; waveform viewport range
+zoom 500591328.906393 501090367.076090
+cursor 500410000.000000
+marker 0.000000
+
+; user define markers
+; userMarker time_pos marker_name color linestyle
+userMarker 500030000 M1 ID_GREEN5 long_dashed
+
+; visible top row signal index
+top 0
+; marker line index
+markerPos 10
+
+; event list
+; addEvent event_name event_expression
+; curEvent event_name
+
+
+
+COMPLEX_EVENT_BEGIN
+
+
+COMPLEX_EVENT_END
+
+
+
+; toolbar current search type
+; curSTATUS search_type
+curSTATUS ByChange
+
+
+addGroup "G1"
+activeDirFile "" "/data/home/x_long32/Documents/RTL_PROJECT/SOC_CVA6_ORI/sim/build_cpu_sram_tb_save/cpu_sram_tb.fsdb"
+addSignal -h 15 /cpu_sram_tb/i_soc/master[8]/aw_valid
+addSignal -h 15 -holdScope ar_valid
+addSignal -h 15 /cpu_sram_tb/i_soc/i_cpu/commit_stage_i/clk_i
+addSignal -h 15 -UNSIGNED -HEX -holdScope pc_o[63:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope commit_ack_o[1:0]
+addSignal -h 15 -UNSIGNED -HEX /cpu_sram_tb/i_soc/master[8]/ar_addr[63:0]
+addSignal -h 15 -UNSIGNED -HEX -holdScope aw_addr[63:0]
+addSignal -h 15 -holdScope r_valid
+addSignal -h 15 -holdScope r_ready
+addSignal -h 15 -UNSIGNED -HEX -holdScope r_data[63:0]
+addGroup "G2"
+
+; getSignalForm Scope Hierarchy Status
+; active file of getSignalForm
+activeDirFile "" "/data/home/x_long32/Documents/RTL_PROJECT/SOC_CVA6_ORI/sim/build_cpu_sram_tb_save/cpu_sram_tb.fsdb"
+
+GETSIGNALFORM_SCOPE_HIERARCHY_BEGIN
+getSignalForm close
+
+"/cpu_sram_tb"
+"/cpu_sram_tb/i_soc"
+"/cpu_sram_tb/i_soc/master[8]"
+
+SCOPE_LIST_BEGIN
+"/cpu_sram_tb"
+"/cpu_sram_tb/i_soc/master[8]"
+"/cpu_sram_tb/i_soc"
+SCOPE_LIST_END
+
+GETSIGNALFORM_SCOPE_HIERARCHY_END
+
+
