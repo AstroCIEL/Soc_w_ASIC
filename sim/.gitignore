@@ -6,5 +6,6 @@ ucli.key
 novas.*
 verdiLog
 
-.vcd
+*.vcd
+*.fst
 *.fsdb

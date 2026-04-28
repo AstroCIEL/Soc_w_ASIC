@@ -7,9 +7,7 @@
 # --------------------------------------------------------------------------
 if {![info exists SCRIPT_DIR]}  { set SCRIPT_DIR  [file dirname [file normalize [info script]]] }
 if {![info exists PROJ_ROOT]}   { set PROJ_ROOT   [file normalize "${SCRIPT_DIR}/.."] }
-if {![info exists TOP_MODULE]}  { set TOP_MODULE   ara_soc }
-if {![info exists NR_LANES]}    { set NR_LANES     4 }
-if {![info exists VLEN]}        { set VLEN         4096 }
+if {![info exists TOP_MODULE]}  { set TOP_MODULE   ariane_soc_top }
 if {![info exists REPORT_DIR]}  { set REPORT_DIR   ${SCRIPT_DIR}/reports }
 if {![info exists OUTPUT_DIR]}  { set OUTPUT_DIR   ${SCRIPT_DIR}/outputs }
 
@@ -20,8 +18,6 @@ puts "=================================================================="
 puts "  PROJ_ROOT  : ${PROJ_ROOT}"
 puts "  SCRIPT_DIR : ${SCRIPT_DIR}"
 puts "  TOP_MODULE : ${TOP_MODULE}"
-puts "  NR_LANES   : ${NR_LANES}"
-puts "  VLEN       : ${VLEN}"
 puts "  REPORT_DIR : ${REPORT_DIR}"
 puts "  OUTPUT_DIR : ${OUTPUT_DIR}"
 puts "=================================================================="
@@ -46,21 +42,20 @@ source ${SCRIPT_DIR}/read_design.tcl
 # --------------------------------------------------------------------------
 # Step 4: Elaborate & Link
 # --------------------------------------------------------------------------
-elaborate ${TOP_MODULE} -library WORK -parameters "NrLanes=${NR_LANES},VLEN=${VLEN}"
+elaborate ${TOP_MODULE} -library WORK
 # After parametric elaborate DC renames the design to e.g. ara_soc_NrLanes4_VLEN4096.
 # Record the actual name for reference; downstream commands use [current_design].
 set ELAB_NAME [get_object_name [current_design]]
 puts "Elaborated design name: ${ELAB_NAME}"
 link
 
-# Mark SRAM wrappers as dont_touch (black boxes for macro replacement)
-# These correspond to the shapes in hardware/tech/sram-report.txt:
-#   l2_mem_wrapper  — 1048576 × 128b (L2 main memory, = 2^22/NrLanes words)
-#   vrf_mem_wrapper — 64 × 64b       (Ara VRF banks)
-#   sram_cache      — cache I$/D$    (via tc_sram_wrapper → tc_sram_syn)
-# TODO: uncomment and adjust when real SRAM macros are integrated
-# if {[sizeof_collection [get_cells -hier -filter "ref_name == tc_sram" -quiet]] > 0} {
-#     set_dont_touch [get_cells -hier -filter "ref_name == tc_sram"]
+# <TODO> Mark SRAM wrappers as dont_touch so DC treats them as black boxes.
+# ariane_soc_top contains:
+#   i_sram             — main DRAM (tc_sram via paired_sram_wrapper)
+#   i_ariane_peripherals / bootrom / cache srams — via tc_sram_wrapper → tc_sram_syn
+# Uncomment and adjust cell names when real macro libraries are wired in.
+# if {[sizeof_collection [get_cells -hier -filter "ref_name =~ tc_sram_syn" -quiet]] > 0} {
+#     set_dont_touch [get_cells -hier -filter "ref_name =~ tc_sram_syn"]
 # }
 
 write -f ddc -hierarchy -output ${OUTPUT_DIR}/${ELAB_NAME}_precompile.ddc

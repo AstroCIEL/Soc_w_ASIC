@@ -3,9 +3,7 @@
 ###############################################################################
 
 DC_SHELL   := dc_shell
-TOP_MODULE := ara_soc
-NR_LANES   := 4
-VLEN       := 4096
+TOP_MODULE := ariane_soc_top
 SCRIPT_DIR := $(shell pwd)
 PROJ_ROOT  := $(shell cd .. && pwd)
 REPORT_DIR := $(SCRIPT_DIR)/reports
@@ -19,8 +17,6 @@ syn:
 		-x "set PROJ_ROOT $(PROJ_ROOT); \
 		    set SCRIPT_DIR $(SCRIPT_DIR); \
 		    set TOP_MODULE $(TOP_MODULE); \
-		    set NR_LANES $(NR_LANES); \
-		    set VLEN $(VLEN); \
 		    set REPORT_DIR $(REPORT_DIR); \
 		    set OUTPUT_DIR $(OUTPUT_DIR)" \
 		-f dc_script.tcl \
@@ -62,5 +58,4 @@ help:
 	@echo ""
 	@echo "Customization:"
 	@echo "  make syn TOP_MODULE=xxx       - Override top module"
-	@echo "  make syn NR_LANES=2 VLEN=512  - Override design parameters"
 	@echo "  make syn DC_SHELL=dc_shell-t  - Use topographical mode"

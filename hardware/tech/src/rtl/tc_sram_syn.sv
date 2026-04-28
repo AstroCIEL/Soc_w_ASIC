@@ -7,7 +7,7 @@
 // Unknown shapes trigger an elaboration-time $fatal.
 //
 // Known shapes (from sram.txt):
-//  1048576 × 128  — L2 main memory
+//    16384 ×  64  — L2 main memory (128 kB, AXI_DATA_WIDTH=64b / NrLanes=2)
 //       64 × 256  — D$ data bank
 //       64 × 128  — I$ data
 //       64 ×  64  — Ara VRF bank
@@ -49,10 +49,10 @@ module tc_sram #(
   end
 
   // ── Shape dispatch ───────────────────────────────────────────────────────
-  if (NumWords == 1048576 && DataWidth == 128) begin : gen_l2_mem
-    // L2 main memory — 1048576 × 128b  (= 2^22/NrLanes words, AxiDataWidth=32*NrLanes bits)
+  if (NumWords == 16384 && DataWidth == 64) begin : gen_l2_mem
+    // L2 main memory — 16384 × 64b  (128 kB, AXI_DATA_WIDTH=64b / NrLanes=2)
     // TODO: instantiate real macro here
-    // sram_1048576x128 i_macro (
+    // sram_16384x64 i_macro (
     //   .CLK   (clk_i        ),
     //   .CEN   (~req_i[0]    ),
     //   .WEN   (~we_i[0]     ),
