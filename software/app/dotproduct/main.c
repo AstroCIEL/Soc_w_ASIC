@@ -25,13 +25,8 @@
 
 #include "util.h"
 
-#ifdef SPIKE
-#include <stdio.h>
-#elif defined ARA_LINUX
-#include <stdio.h>
-#else
+#include "serial.h"
 #include "printf.h"
-#endif
 
 // Run also the scalar benchmark
 #define SCALAR 1
@@ -57,6 +52,8 @@ extern int16_t res16_v, res16_s;
 extern int8_t res8_v, res8_s;
 
 int main() {
+  uart_init(SYS_CLK_HZ, BAUD_RATE);
+
   printf("\n");
   printf("==========\n");
   printf("=  DOTP  =\n");

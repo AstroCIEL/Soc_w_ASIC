@@ -19,17 +19,14 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifdef SPIKE
-#include "util.h"
-#include <stdio.h>
-#elif defined ARA_LINUX
-#include <stdio.h>
-#else
+#include "serial.h"
 #include "printf.h"
-#endif
+
 
 int main() {
+  uart_init(SYS_CLK_HZ, BAUD_RATE);
   printf("Ariane says Hello!\n");
+  uart_flush_safe(SYS_CLK_HZ, BAUD_RATE);   
 
   return 0;
 }

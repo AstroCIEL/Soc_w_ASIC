@@ -10,10 +10,12 @@
 
 // Franceco Conti <fconti@iis.ee.ethz.ch>
 
+`include "common_cells/assertions.svh"
+
 module onehot_to_bin #(
-    parameter int unsigned ONEHOT_WIDTH = 16,
+    parameter int ONEHOT_WIDTH = 16,
     // Do Not Change
-    parameter int unsigned BIN_WIDTH    = ONEHOT_WIDTH == 1 ? 1 : $clog2(ONEHOT_WIDTH)
+    parameter int BIN_WIDTH    = ONEHOT_WIDTH == 1 ? 1 : $clog2(ONEHOT_WIDTH)
 )   (
     input  logic [ONEHOT_WIDTH-1:0] onehot,
     output logic [BIN_WIDTH-1:0]    bin
@@ -29,10 +31,7 @@ module onehot_to_bin #(
         assign bin[j] = |(tmp_mask & onehot);
     end
 
-`ifndef SYNTHESIS
 `ifndef COMMON_CELLS_ASSERTS_OFF
-    assert final ($onehot0(onehot)) else
-        $fatal(1, "[onehot_to_bin] More than two bit set in the one-hot signal");
-`endif
+    `ASSERT_FINAL(more_than_2_bits, $onehot0(onehot), "More than two bit set in the one-hot signal")
 `endif
 endmodule
