@@ -34,11 +34,10 @@ typedef enum irqn {
     IRQn_MAX            = 31
 } irqn_t;
 
-#define EOC_ADDRESS_REG         0xD0000000UL
-#define DRAM_START_ADDRESS_REG  0xD0000008UL
-#define DRAM_END_ADDRESS_REG    0xD0000010UL
-#define EVENT_TRIGGER_REG       0xD0000018UL
-#define HW_CNT_EN_REG           0xD0000020UL
+/* ------------------------------------------------------------------ */
+/* SoC control registers (ctrl_registers.sv, 64b-strided AXI)          */
+/* ------------------------------------------------------------------ */
+#define SOC_CTRL_BASE           0xD0000000UL
 
 /* ------------------------------------------------------------------ */
 /* Platform clock / baudrate defaults                                 */

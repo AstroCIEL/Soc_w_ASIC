@@ -2,6 +2,7 @@
 #include "serial.h"
 #include "plic.h"
 #include "clint.h"
+#include "soc_ctrl.h"
 #include "soc.h"
 #include "csr.h"
 
@@ -19,6 +20,9 @@ void pre_main(void)
 
     clint_bind(&clint0);
     clint0.init(&clint0, CLINT0_REGS);
+
+    soc_ctrl_bind(&soc_ctrl0);
+    soc_ctrl0.init(&soc_ctrl0, SOC_CTRL0_REGS);
 
     /* Keep FS/VS dirty so F/V state survives context switches. */
     CSR_SET_BITS(CSR_REG_MSTATUS, MSTATUS_FS_VS_DIRTY_MASK);
