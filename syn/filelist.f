@@ -1,4 +1,3 @@
-// Synthesis filelist - all paths relative to syn/
 
 // Technology (synthesis)
 -f ../hardware/tech/filelist_syn.f
@@ -21,5 +20,8 @@
 -f ../hardware/ip/apb_uart/filelist.f
 -f ../hardware/ip/rv_plic/filelist.f
 
-// SoC (ariane_soc_top + all peripherals/bootrom)
+// soc
 -f ../hardware/ariane_soc/filelist.f
+
+// user ip
+-f ../hardware/user_ip/default_slave/filelist_syn.f
