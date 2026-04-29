@@ -19,14 +19,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "runtime.h"
+
 
 #include "kernel/dotproduct.h"
 
 #include "util.h"
 
-#include "serial.h"
-#include "printf.h"
+#include <stdio.h>
 
 // Run also the scalar benchmark
 #define SCALAR 1
@@ -52,8 +51,6 @@ extern int16_t res16_v, res16_s;
 extern int8_t res8_v, res8_s;
 
 int main() {
-  uart_init(SYS_CLK_HZ, BAUD_RATE);
-
   printf("\n");
   printf("==========\n");
   printf("=  DOTP  =\n");
@@ -106,7 +103,7 @@ int main() {
 
       if (CHECK) {
         if (res32_v != res32_s) {
-          printf("Error: v = %ld, g = %ld\n", res32_v, res32_s);
+          printf("Error: v = %d, g = %d\n", res32_v, res32_s);
           return -1;
         }
       }
@@ -131,7 +128,7 @@ int main() {
 
       if (CHECK) {
         if (res16_v != res16_s) {
-          printf("Error: v = %ld, g = %ld\n", res16_v, res16_s);
+          printf("Error: v = %hd, g = %hd\n", res16_v, res16_s);
           return -1;
         }
       }
@@ -156,7 +153,7 @@ int main() {
 
       if (CHECK) {
         if (res8_v != res8_s) {
-          printf("Error: v = %ld, g = %ld\n", res8_v, res8_s);
+          printf("Error: v = %hhd, g = %hhd\n", res8_v, res8_s);
           return -1;
         }
       }

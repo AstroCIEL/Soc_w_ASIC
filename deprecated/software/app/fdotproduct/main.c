@@ -19,13 +19,18 @@
 #include <stdint.h>
 #include <string.h>
 
-
+#include "runtime.h"
 #include "util.h"
 
 #include "kernel/fdotproduct.h"
 
+#ifdef SPIKE
 #include <stdio.h>
-
+#elif defined ARA_LINUX
+#include <stdio.h>
+#else
+#include "printf.h"
+#endif
 
 // Threshold for FP comparisons
 #define THRESHOLD_64b 0.0000000001
@@ -123,35 +128,35 @@ int main() {
     }
   }
 
-  // for (uint64_t avl = 8; avl <= (vsize >> 2); avl *= 8) {
-  //   // Dotp
-  //   printf("Calulating 16b dotp with vectors with length = %lu\n", avl);
-  //   start_timer();
-  //   res16_v = fdotp_v16b(v16a, v16b, avl);
-  //   stop_timer();
-  //   runtime_v = get_timer();
-  //   printf("Vector runtime: %ld\n", runtime_v);
+  for (uint64_t avl = 8; avl <= (vsize >> 2); avl *= 8) {
+    // Dotp
+    printf("Calulating 16b dotp with vectors with length = %lu\n", avl);
+    start_timer();
+    res16_v = fdotp_v16b(v16a, v16b, avl);
+    stop_timer();
+    runtime_v = get_timer();
+    printf("Vector runtime: %ld\n", runtime_v);
 
-  //   if (SCALAR) {
-  //     start_timer();
-  //     res16_s = fdotp_s16b(v16a, v16b, avl);
-  //     stop_timer();
-  //     runtime_s = get_timer();
-  //     printf("Scalar runtime: %ld\n", runtime_s);
-  //   }
+    if (SCALAR) {
+      start_timer();
+      res16_s = fdotp_s16b(v16a, v16b, avl);
+      stop_timer();
+      runtime_s = get_timer();
+      printf("Scalar runtime: %ld\n", runtime_s);
+    }
 
-  //   if (CHECK) {
-  //     if (SCALAR) {
-  //       printf("Checking results: v = %x, s = %x\n", *((uint16_t *)&res16_v),
-  //              *((uint16_t *)&res16_s));
-  //       if (!similarity_check(res16_v, res16_s, THRESHOLD_16b)) {
-  //         printf("Error: v = %x, s = %x\n", *((uint16_t *)&res16_v),
-  //                *((uint16_t *)&res16_s));
-  //         return -1;
-  //       }
-  //     }
-  //   }
-  // }
+    if (CHECK) {
+      if (SCALAR) {
+        printf("Checking results: v = %x, s = %x\n", *((uint16_t *)&res16_v),
+               *((uint16_t *)&res16_s));
+        if (!similarity_check(res16_v, res16_s, THRESHOLD_16b)) {
+          printf("Error: v = %x, s = %x\n", *((uint16_t *)&res16_v),
+                 *((uint16_t *)&res16_s));
+          return -1;
+        }
+      }
+    }
+  }
 
   printf("SUCCESS.\n");
 

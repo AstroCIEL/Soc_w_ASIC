@@ -16,9 +16,17 @@
 
 // Author: Matheus Cavalcante, ETH Zurich
 
-#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 
-int main(void) {
+#include "serial.h"
+#include "printf.h"
+
+
+int main() {
+  uart_init(SYS_CLK_HZ, BAUD_RATE);
   printf("Ariane says Hello!\n");
+  uart_flush_safe(SYS_CLK_HZ, BAUD_RATE);   
+
   return 0;
 }

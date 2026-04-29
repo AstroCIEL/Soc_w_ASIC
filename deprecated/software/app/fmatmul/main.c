@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include "kernel/fmatmul.h"
-
+#include "runtime.h"
 #include "util.h"
 
 #ifdef SPIKE
