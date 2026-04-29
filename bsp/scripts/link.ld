@@ -11,6 +11,7 @@ MEMORY {
 SECTIONS {
   .text : {
     KEEP(*(.text.start))
+    . = ALIGN(256);
     PROVIDE(__vector_start = .);
     KEEP(*(.vectors))
     *(.text.init)

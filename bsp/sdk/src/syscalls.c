@@ -282,7 +282,7 @@ void *_sbrk(ptrdiff_t incr)
     }
 }
 
-void handle_syscall (long a0,
+long handle_syscall (long a0,
 		     long a1,
 		     long a2,
 		     long a3,
@@ -296,75 +296,77 @@ void handle_syscall (long a0,
     long syscall_id = a7;
   #endif
 
+  long ret = -ENOSYS;
   switch (syscall_id) {
     case SYS_exit:
       _exit (a0);
-      break;
+      __builtin_unreachable ();
     case SYS_read:
-      _read (a0, (void *) a1, a2);
+      ret = _read (a0, (void *) a1, a2);
       break;
     case SYS_write:
-      _write (a0, (const void *) a1, a2);
+      ret = _write (a0, (const void *) a1, a2);
       break;
     case SYS_getpid:
-      _getpid ();
+      ret = _getpid ();
       break;
     case SYS_kill:
-      _kill (a0, a1);
+      ret = _kill (a0, a1);
       break;
     case SYS_open:
-      _open ((const char *) a0, a1, a2);
+      ret = _open ((const char *) a0, a1, a2);
       break;
     case SYS_openat:
-      _openat (a0, (const char *) a1, a2, a3);
+      ret = _openat (a0, (const char *) a1, a2, a3);
       break;
     case SYS_close:
-      _close (a0);
+      ret = _close (a0);
       break;
     case SYS_lseek:
-      _lseek (a0, a1, a2);
+      ret = _lseek (a0, a1, a2);
       break;
     case SYS_brk:
-      _brk ((void *) a0);
+      ret = _brk ((void *) a0);
       break;
     case SYS_link:
-      _link ((const char *) a0, (const char *) a1);
+      ret = _link ((const char *) a0, (const char *) a1);
       break;
     case SYS_unlink:
-      _unlink ((const char *) a0);
+      ret = _unlink ((const char *) a0);
       break;
     case SYS_chdir:
-      _chdir ((const char *) a0);
+      ret = _chdir ((const char *) a0);
       break;
     case SYS_getcwd:
-      _getcwd ((char *) a0, a1);
+      ret = (long) _getcwd ((char *) a0, a1);
       break;
     case SYS_stat:
-      _stat ((const char *) a0, (struct stat *) a1);
+      ret = _stat ((const char *) a0, (struct stat *) a1);
       break;
     case SYS_fstat:
-      _fstat (a0, (struct stat *) a1);
+      ret = _fstat (a0, (struct stat *) a1);
       break;
     case SYS_lstat:
-      _lstat ((const char *) a0, (struct stat *) a1);
+      ret = _lstat ((const char *) a0, (struct stat *) a1);
       break;
     case SYS_fstatat:
-      _fstatat (a0, (const char *) a1, (struct stat *) a2, a3);
+      ret = _fstatat (a0, (const char *) a1, (struct stat *) a2, a3);
       break;
     case SYS_access:
-      _access ((const char *) a0, a1);
+      ret = _access ((const char *) a0, a1);
       break;
     case SYS_faccessat:
-      _faccessat (a0, (const char *) a1, a2, a3);
+      ret = _faccessat (a0, (const char *) a1, a2, a3);
       break;
     case SYS_gettimeofday:
-      _gettimeofday ((struct timeval *) a0, (void *) a1);
+      ret = _gettimeofday ((struct timeval *) a0, (void *) a1);
       break;
     case SYS_times:
-      _times ((struct tms *) a0);
+      ret = _times ((struct tms *) a0);
       break;
     default:
       unimplemented_syscall ();
       break;
   }
+  return ret;
 }

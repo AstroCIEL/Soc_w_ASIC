@@ -158,6 +158,9 @@ u_sw_irq_handler:
 
 handle_ecall:
 	jal ra, handle_syscall
+	/* Write the C-level return value (now in a0) into the saved-a0
+	   slot so end_handler_ret restores it as the syscall result. */
+	sd a0, 8(sp)
 	j end_handler_incr_mepc
 
 handle_ebreak:
