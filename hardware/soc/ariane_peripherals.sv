@@ -251,7 +251,7 @@ module ariane_peripherals #(
         .PSEL    ( uart_psel       ),
         .PENABLE ( uart_penable    ),
         .PWRITE  ( uart_pwrite     ),
-        .PADDR   ( uart_paddr[5:3] ),
+        .PADDR   ( uart_paddr[5:2] ),
         .PWDATA  ( uart_pwdata     ),
         .PRDATA  ( uart_prdata     ),
         .PREADY  ( uart_pready     ),

@@ -21,14 +21,14 @@
  *   scr         : Scratch
  */
 struct uart_regs {
-    volatile uint32_t rbr_thr_dll;  uint32_t _rsv0;   /* 0x00 */
-    volatile uint32_t ier_dlm;      uint32_t _rsv1;   /* 0x08 */
-    volatile uint32_t fcr_iir;      uint32_t _rsv2;   /* 0x10 */
-    volatile uint32_t lcr;          uint32_t _rsv3;   /* 0x18 */
-    volatile uint32_t mcr;          uint32_t _rsv4;   /* 0x20 */
-    volatile uint32_t lsr;          uint32_t _rsv5;   /* 0x28 */
-    volatile uint32_t msr;          uint32_t _rsv6;   /* 0x30 */
-    volatile uint32_t scr;          uint32_t _rsv7;   /* 0x38 */
+    volatile uint32_t rbr_thr_dll; /* 0x00 */
+    volatile uint32_t ier_dlm;     /* 0x08 */
+    volatile uint32_t fcr_iir;     /* 0x10 */
+    volatile uint32_t lcr;         /* 0x18 */
+    volatile uint32_t mcr;         /* 0x20 */
+    volatile uint32_t lsr;         /* 0x28 */
+    volatile uint32_t msr;         /* 0x30 */
+    volatile uint32_t scr;         /* 0x38 */
 };
 
 struct uart {
