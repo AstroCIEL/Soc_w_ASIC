@@ -28,6 +28,7 @@ module ariane_peripherals #(
     AXI_BUS.Slave      uart            ,
     AXI_BUS.Slave      timer           ,
     AXI_BUS.Slave      ctrl            , // Ctrl registers @ 0xD000_0000
+    AXI_BUS.Slave      default_slave   , // Default slave (mem + IRQ doorbell)
     output logic [1:0] irq_o           ,
     // ctrl_registers outputs
     output logic [AxiDataWidth-1:0] exit_o         ,
@@ -44,6 +45,7 @@ module ariane_peripherals #(
     logic [ariane_soc::NumSources-1:0] irq_sources;
 
     // Unused interrupt sources
+    assign irq_sources[2]                          = 1'b0;
     assign irq_sources[ariane_soc::NumSources-1:7] = '0;
 
     REG_BUS #(
@@ -424,6 +426,45 @@ module ariane_peripherals #(
         .dram_base_addr_o      (/* unused */    ),
         .dram_end_addr_o       (/* unused */    ),
         .event_trigger_o       ( event_trigger_o)
+    );
+
+    // ---------------
+    // 7. Default Slave (simple mem + IRQ doorbell) @ DefaultSlaveBase
+    // ---------------
+    logic                     dslv_req;
+    logic                     dslv_we;
+    logic [AxiAddrWidth-1:0]  dslv_addr;
+    logic [AxiDataWidth-1:0]  dslv_wdata;
+    logic [AxiDataWidth-1:0]  dslv_rdata;
+
+    axi2mem #(
+        .AXI_ID_WIDTH   ( AxiIdWidth   ),
+        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
+        .AXI_DATA_WIDTH ( AxiDataWidth ),
+        .AXI_USER_WIDTH ( AxiUserWidth )
+    ) i_axi2dslv (
+        .clk_i  ( clk_i         ),
+        .rst_ni ( rst_ni        ),
+        .slave  ( default_slave ),
+        .req_o  ( dslv_req      ),
+        .we_o   ( dslv_we       ),
+        .addr_o ( dslv_addr     ),
+        .be_o   (               ),
+        .user_o (               ),
+        .data_o ( dslv_wdata    ),
+        .user_i ( '0            ),
+        .data_i ( dslv_rdata    )
+    );
+
+    default_slave i_default_slave (
+        .clk_i     ( clk_i          ),
+        .rst       ( ~rst_ni        ),
+        .axi_req   ( dslv_req       ),
+        .axi_we    ( dslv_we        ),
+        .axi_addr  ( dslv_addr      ),
+        .axi_wdata ( dslv_wdata     ),
+        .axi_rdata ( dslv_rdata     ),
+        .irq_o     ( irq_sources[1] )
     );
 
 endmodule

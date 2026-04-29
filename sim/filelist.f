@@ -19,6 +19,7 @@
 -f ../hardware/ip/apb_timer/filelist.f
 -f ../hardware/ip/apb_uart/filelist.f
 -f ../hardware/ip/rv_plic/filelist.f
+-f ../hardware/ip/default_slave/filelist.f
 
 
 -f ../hardware/ariane_soc/filelist.f

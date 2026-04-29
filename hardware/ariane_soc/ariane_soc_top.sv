@@ -448,7 +448,8 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     '{ idx: ariane_soc::Timer,    start_addr: ariane_soc::TimerBase,    end_addr: ariane_soc::TimerBase + ariane_soc::TimerLength       },
     '{ idx: ariane_soc::GPIO,     start_addr: ariane_soc::GPIOBase,     end_addr: ariane_soc::GPIOBase + ariane_soc::GPIOLength         },
     '{ idx: ariane_soc::DRAM,     start_addr: ariane_soc::DRAMBase,     end_addr: ariane_soc::DRAMBase + ariane_soc::DRAMLength         },
-    '{ idx: ariane_soc::Ctrl,     start_addr: ariane_soc::CtrlBase,     end_addr: ariane_soc::CtrlBase + ariane_soc::CtrlLength         }
+    '{ idx: ariane_soc::Ctrl,     start_addr: ariane_soc::CtrlBase,     end_addr: ariane_soc::CtrlBase + ariane_soc::CtrlLength         },
+    '{ idx: ariane_soc::DefaultSlave, start_addr: ariane_soc::DefaultSlaveBase, end_addr: ariane_soc::DefaultSlaveBase + ariane_soc::DefaultSlaveLength }
   };
 
   localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
@@ -536,6 +537,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .uart           ( master[ariane_soc::UART]     ),
     .timer          ( master[ariane_soc::Timer]    ),
     .ctrl           ( master[ariane_soc::Ctrl]     ),
+    .default_slave  ( master[ariane_soc::DefaultSlave] ),
     .irq_o          ( irqs                         ),
     .exit_o         ( ctrl_exit                    ),
     .event_trigger_o( ctrl_event_trigger           ),

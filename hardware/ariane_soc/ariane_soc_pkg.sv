@@ -32,10 +32,11 @@ package ariane_soc;
     CLINT    = 5,
     ROM      = 6,
     Debug    = 7,
-    Ctrl     = 8
+    Ctrl     = 8,
+    DefaultSlave = 9
   } axi_slaves_t;
 
-  localparam NB_PERIPHERALS = Ctrl + 1;
+  localparam NB_PERIPHERALS = DefaultSlave + 1;
 
   localparam logic[63:0] DebugLength    = 64'h1000;
   localparam logic[63:0] ROMLength      = 64'h10000;
@@ -45,6 +46,7 @@ package ariane_soc;
   localparam logic[63:0] TimerLength    = 64'h1000;
   localparam logic[63:0] GPIOLength     = 64'h1000;
   localparam logic[63:0] CtrlLength     = 64'h1000;
+  localparam logic[63:0] DefaultSlaveLength = 64'h1000;
 
   localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB 
 
@@ -56,6 +58,7 @@ package ariane_soc;
     UARTBase     = 64'h1000_0000,
     TimerBase    = 64'h1800_0000,
     GPIOBase     = 64'h4000_0000,
+    DefaultSlaveBase = 64'h5000_0000,
     DRAMBase     = 64'h8000_0000,
     CtrlBase     = 64'hD000_0000
   } soc_bus_start_t;
