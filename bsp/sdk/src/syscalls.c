@@ -31,6 +31,7 @@
 extern int errno;
 
 #define STDOUT_FILENO 1
+#define STDERR_FILENO 2
 
 /* Character output primitive supplied by the SoC driver. */
 extern void uart_putc(char c);
@@ -158,7 +159,7 @@ int _gettimeofday(struct timeval *tp, void *tzp)
 
 int _isatty(int file)
 {
-  return (file == STDOUT_FILENO);
+  return (file == STDOUT_FILENO) || (file == STDERR_FILENO);
 }
 
 int _kill(int pid, int sig)
@@ -240,7 +241,7 @@ int _wait(int *status)
 ssize_t _write(int file, const void *ptr, size_t len)
 {
   const char *cptr = (char *)ptr;
-  if (file != STDOUT_FILENO)
+  if (file != STDOUT_FILENO && file != STDERR_FILENO)
     {
       errno = ENOSYS;
       return -1;
