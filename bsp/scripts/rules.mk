@@ -12,6 +12,7 @@ RUNTIME_SRCS_C := $(SDK_DIR)/src/syscalls.c \
                   $(SDK_DIR)/src/util.c \
                   $(SOC_DIR)/src/serial.c \
                   $(SOC_DIR)/src/soc_ctrl.c \
+                  $(SOC_DIR)/src/plic.c \
                   $(COMMON_DIR)/src/hook.c
 
 RUNTIME_SRCS_S := $(SDK_DIR)/src/crt0.S \
