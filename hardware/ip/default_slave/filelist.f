@@ -1,0 +1,1 @@
+../hardware/ip/default_slave/default_slave.sv
