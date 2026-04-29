@@ -22,33 +22,13 @@
 #define DEFAULT_SLAVE_IRQ_SET_OFF   0x00UL
 #define DEFAULT_SLAVE_IRQ_ACK_OFF   0x10UL
 
-/* ------------------------------------------------------------------ */
-/* IRQ number enumeration (rv_plic source IDs as seen by software).    */
-/*                                                                      */
-/* plic_top.sv inserts a one-slot offset between the hardware           */
-/* `irq_sources[]` vector and the register-visible source id:           */
-/*     prio_i[0] = 0         (reserved "no interrupt" sentinel)         */
-/*     prio_i[i] = prio_q[i-1]   for i >= 1                             */
-/*     ip_i     = {ip, 1'b0}                                            */
-/*     ie_i[t]  = {ie_q[t][N_SOURCE-1:0], 1'b0}                         */
-/*                                                                      */
-/* Therefore the register/claim id used by software is                  */
-/* `irq_sources_index + 1` (SiFive-style "id 0 == none").               */
-/*                                                                      */
-/*   irq_sources[0] (UART)           → id 1                              */
-/*   irq_sources[1] (default_slave)  → id 2                              */
-/* ------------------------------------------------------------------ */
-typedef enum {
-    IRQn_NONE           = 0,   /* "no interrupt" sentinel                */
-    IRQn_UART           = 1,   /* irq_sources[0] ← UART                  */
-    IRQn_DEFAULT_SLAVE  = 2,   /* irq_sources[1] ← default_slave.irq_o   */
-    IRQn_MAX            = 31   /* rv_plic always allocates 32 sources    */
-} IRQn_Type;
+typedef enum irqn {
+    IRQn_NONE           = 0,
+    IRQn_UART           = 1,
+    IRQn_DEFAULT_SLAVE  = 2,
+    IRQn_MAX            = 31
+} irqn_t;
 
-/* ------------------------------------------------------------------ */
-/* Testbench control registers (ctrl_registers.sv)                    */
-/*   EOC_ADDRESS_REG  : write (status<<1 | 1) to terminate simulation */
-/* ------------------------------------------------------------------ */
 #define EOC_ADDRESS_REG         0xD0000000UL
 #define DRAM_START_ADDRESS_REG  0xD0000008UL
 #define DRAM_END_ADDRESS_REG    0xD0000010UL

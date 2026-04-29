@@ -5,43 +5,72 @@
 #include "soc.h"
 
 #define PLIC_NUM_TARGETS    2u
+#define PLIC_NUM_SOURCES    32u
 
-typedef struct {
+/* Target (context) ids used by the OO API. */
+#define PLIC_CTX_M0  0u   /* hart 0, M-mode */
+#define PLIC_CTX_S0  1u   /* hart 0, S-mode */
+
+/* ------------------------------------------------------------------ */
+/*  rv_plic register block -- SiFive-style sparse layout               */
+/*                                                                      */
+/*    0x000000  priority[i]            (i = 0..N_SOURCE)                */
+/*    0x001000  pending bit array                                       */
+/*    0x002000  enable bit array, target 0                              */
+/*    0x002080  enable bit array, target 1                              */
+/*    0x200000  threshold / claim-complete, target 0                    */
+/*    0x201000  threshold / claim-complete, target 1                    */
+/*                                                                      */
+/*  Source id mapping (plic_top.sv inserts a one-slot offset):          */
+/*     SW-visible id  = irq_sources[]_index + 1                         */
+/*     id 0 is the SiFive "no interrupt" sentinel.                      */
+/* ------------------------------------------------------------------ */
+struct plic_target_regs {
     volatile uint32_t threshold;
     volatile uint32_t claim_complete;
-    uint32_t _rsv[(0x1000 - 8) / 4];
-} plic_target_t;
+    uint32_t          _rsv[(0x1000 - 8) / 4];
+};
 
-typedef struct {
-    volatile uint32_t priority[1024];                 /* 0x000000 */
-    volatile uint32_t pending[1024];                  /* 0x001000 */
-    volatile uint32_t enable[PLIC_NUM_TARGETS][32];   /* 0x002000 */
-    uint32_t _pad[(0x200000 - 0x002100) / 4];
-    plic_target_t     target[PLIC_NUM_TARGETS];       /* 0x200000 */
-} plic_regs_t;
+struct plic_regs {
+    volatile uint32_t priority[1024];                               /* 0x000000 */
+    volatile uint32_t pending [1024];                               /* 0x001000 */
+    volatile uint32_t enable  [PLIC_NUM_TARGETS][32];               /* 0x002000 */
+    uint32_t          _pad[(0x200000 - 0x002100) / 4];
+    struct plic_target_regs target[PLIC_NUM_TARGETS];               /* 0x200000 */
+};
 
-#define PLIC0        ((plic_regs_t *)(PLIC_BASE))
-#define PLIC_CTX_M0  0u
-#define PLIC_CTX_S0  1u
+#define PLIC0_REGS  ((struct plic_regs *)(PLIC_BASE))
 
-typedef void (*plic_isr_t)(IRQn_Type irq, void *arg);
+struct plic_entry {
+    void  (*fn)(irqn_t irq, void *arg);
+    void   *arg;
+};
 
-void plic_init             (plic_regs_t *p);
-void plic_set_priority     (plic_regs_t *p, IRQn_Type irq, unsigned prio);
-void plic_enable           (plic_regs_t *p, unsigned ctx, IRQn_Type irq);
-void plic_disable          (plic_regs_t *p, unsigned ctx, IRQn_Type irq);
-void plic_set_threshold    (plic_regs_t *p, unsigned ctx, unsigned thr);
-void plic_register_handler (IRQn_Type irq, plic_isr_t fn, void *arg);
-void plic_handle_m_ext_irq (void);
+struct plic;
 
-static inline uint32_t plic_claim(plic_regs_t *p, unsigned ctx)
-{
-    return p->target[ctx].claim_complete;
-}
+struct plic {
+    struct plic_regs *regs;
+    struct plic_entry table[PLIC_NUM_SOURCES];
 
-static inline void plic_complete(plic_regs_t *p, unsigned ctx, uint32_t irq)
-{
-    p->target[ctx].claim_complete = irq;
-}
+    /* OO-style ops; populated by plic_bind() at init time. */
+    void     (*init)           (struct plic *p, struct plic_regs *regs);
+    void     (*set_priority)   (struct plic *p, irqn_t irq, unsigned prio);
+    void     (*enable)         (struct plic *p, unsigned ctx, irqn_t irq);
+    void     (*disable)        (struct plic *p, unsigned ctx, irqn_t irq);
+    void     (*set_threshold)  (struct plic *p, unsigned ctx, unsigned thr);
+    void     (*register_handler)(struct plic *p, irqn_t irq,
+                                 void (*fn)(irqn_t, void *), void *arg);
+    uint32_t (*claim)          (struct plic *p, unsigned ctx);
+    void     (*complete)       (struct plic *p, unsigned ctx, uint32_t irq);
+    void     (*handle_m_ext)   (struct plic *p);
+};
+
+extern struct plic plic0;
+
+/* Install the default ops into `p`. */
+void plic_bind(struct plic *p);
+
+/* Bridge called from handlers.S on M-mode external IRQ; dispatches on plic0. */
+void plic_handle_m_ext_irq(void);
 
 #endif

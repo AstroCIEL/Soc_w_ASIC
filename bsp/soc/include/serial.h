@@ -20,7 +20,7 @@
  *   msr         : Modem Status
  *   scr         : Scratch
  */
-typedef struct uart_regs {
+struct uart_regs {
     volatile uint32_t rbr_thr_dll;  uint32_t _rsv0;   /* 0x00 */
     volatile uint32_t ier_dlm;      uint32_t _rsv1;   /* 0x08 */
     volatile uint32_t fcr_iir;      uint32_t _rsv2;   /* 0x10 */
@@ -29,17 +29,27 @@ typedef struct uart_regs {
     volatile uint32_t lsr;          uint32_t _rsv5;   /* 0x28 */
     volatile uint32_t msr;          uint32_t _rsv6;   /* 0x30 */
     volatile uint32_t scr;          uint32_t _rsv7;   /* 0x38 */
-} uart_regs_t;
+};
 
-typedef struct uart {
-    uart_regs_t *regs;
-    uint32_t     clk_hz;
-    uint32_t     baud;
-} uart_t;
+struct uart {
+    struct uart_regs *regs;
+    uint32_t          clk_hz;
+    uint32_t          baud;
 
-#define UART0_REGS  ((uart_regs_t *)(UART_BASE))
+    /* OO-style ops; populated by uart_bind() at init time. */
+    void (*init) (struct uart *u, struct uart_regs *regs,
+                  uint32_t clk_hz, uint32_t baud);
+    void (*putc) (struct uart *u, char c);
+    void (*puts) (struct uart *u, const char *s);
+    void (*flush)(struct uart *u);
+};
 
-extern uart_t uart0;
+#define UART0_REGS  ((struct uart_regs *)(UART_BASE))
+
+extern struct uart uart0;
+
+/* Install the default ops into `u` so that u->init/putc/puts/flush work.    */
+void uart_bind(struct uart *u);
 
 /* LCR bits */
 #define LCR_8N1         0x03u    /* 8 data, no parity, 1 stop */
@@ -54,13 +64,5 @@ extern uart_t uart0;
 #define LSR_DR          0x01u
 #define LSR_THRE        0x20u
 #define LSR_TEMT        0x40u
-
-/* ------------------------------------------------------------------ */
-/*  API (struct-based)                                                */
-/* ------------------------------------------------------------------ */
-void uart_init       (uart_t *u, uart_regs_t *regs, uint32_t clk_hz, uint32_t baud);
-void uart_putc       (uart_t *u, char c);
-void uart_puts       (uart_t *u, const char *s);
-void uart_flush_safe (uart_t *u);
 
 #endif /* SERIAL_H */

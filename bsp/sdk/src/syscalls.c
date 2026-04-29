@@ -57,46 +57,53 @@ __syscall_error(long a0)
 
 void unimplemented_syscall()
 {
-  uart_puts(&uart0, "BSP: Unimplemented system call called!\n");
+  uart0.puts(&uart0, "BSP: Unimplemented system call called!\n");
 }
 
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
 {
+  (void)rqtp; (void)rmtp;
   errno = ENOSYS;
   return -1;
 }
 
 int _access(const char *file, int mode)
 {
+  (void)file; (void)mode;
   errno = ENOSYS;
   return -1;
 }
 
 int _chdir(const char *path)
 {
+  (void)path;
   errno = ENOSYS;
   return -1;
 }
 
 int _chmod(const char *path, mode_t mode)
 {
+  (void)path; (void)mode;
   errno = ENOSYS;
   return -1;
 }
 
 int _chown(const char *path, uid_t owner, gid_t group)
 {
+  (void)path; (void)owner; (void)group;
   errno = ENOSYS;
   return -1;
 }
 
 int _close(int file)
 {
+  (void)file;
   return -1;
 }
 
 int _execve(const char *name, char *const argv[], char *const env[])
 {
+  (void)name; (void)argv; (void)env;
   errno = ENOMEM;
   return -1;
 }
@@ -108,6 +115,7 @@ void _exit(int exit_status)
 
 int _faccessat(int dirfd, const char *file, int mode, int flags)
 {
+  (void)dirfd; (void)file; (void)mode; (void)flags;
   errno = ENOSYS;
   return -1;
 }
@@ -120,6 +128,7 @@ int _fork(void)
 
 int _fstat(int file, struct stat *st)
 {
+  (void)file;
   st->st_mode = S_IFCHR;
   return 0;
   // errno = -ENOSYS;
@@ -128,18 +137,21 @@ int _fstat(int file, struct stat *st)
 
 int _fstatat(int dirfd, const char *file, struct stat *st, int flags)
 {
+  (void)dirfd; (void)file; (void)st; (void)flags;
   errno = ENOSYS;
   return -1;
 }
 
 int _ftime(struct timeb *tp)
 {
+  (void)tp;
   errno = ENOSYS;
   return -1;
 }
 
 char *_getcwd(char *buf, size_t size)
 {
+  (void)buf; (void)size;
   errno = -ENOSYS;
   return NULL;
 }
@@ -151,6 +163,7 @@ int _getpid()
 
 int _gettimeofday(struct timeval *tp, void *tzp)
 {
+  (void)tp; (void)tzp;
   errno = -ENOSYS;
   return -1;
 }
@@ -162,45 +175,53 @@ int _isatty(int file)
 
 int _kill(int pid, int sig)
 {
+  (void)pid; (void)sig;
   errno = EINVAL;
   return -1;
 }
 
 int _link(const char *old_name, const char *new_name)
 {
+  (void)old_name; (void)new_name;
   errno = EMLINK;
   return -1;
 }
 
 off_t _lseek(int file, off_t ptr, int dir)
 {
+  (void)file; (void)ptr; (void)dir;
   return 0;
 }
 
 int _lstat(const char *file, struct stat *st)
 {
+  (void)file; (void)st;
   errno = ENOSYS;
   return -1;
 }
 
 int _open(const char *name, int flags, int mode)
 {
+  (void)name; (void)flags; (void)mode;
   return -1;
 }
 
 int _openat(int dirfd, const char *name, int flags, int mode)
 {
+  (void)dirfd; (void)name; (void)flags; (void)mode;
   errno = ENOSYS;
   return -1;
 }
 
 ssize_t _read(int file, void *ptr, size_t len)
 {
+  (void)file; (void)ptr; (void)len;
   return 0;
 }
 
 int _stat(const char *file, struct stat *st)
 {
+  (void)file;
   st->st_mode = S_IFCHR;
   return 0;
   // errno = ENOSYS;
@@ -209,29 +230,33 @@ int _stat(const char *file, struct stat *st)
 
 long _sysconf(int name)
 {
-
+  (void)name;
   return -1;
 }
 
 clock_t _times(struct tms *buf)
 {
+  (void)buf;
   return -1;
 }
 
 int _unlink(const char *name)
 {
+  (void)name;
   errno = ENOENT;
   return -1;
 }
 
 int _utime(const char *path, const struct utimbuf *times)
 {
+  (void)path; (void)times;
   errno = ENOSYS;
   return -1;
 }
 
 int _wait(int *status)
 {
+  (void)status;
   errno = ECHILD;
   return -1;
 }
@@ -247,7 +272,7 @@ ssize_t _write(int file, const void *ptr, size_t len)
 
   const void *eptr = cptr + len;
   while (cptr != eptr)
-    uart_putc(&uart0, *cptr++);
+    uart0.putc(&uart0, *cptr++);
   return len;
 }
 
@@ -264,7 +289,8 @@ int _brk(void *addr)
 void *_sbrk(ptrdiff_t incr)
 {
   char *old_brk = brk;
-  register long sp asm("sp");
+  long sp;
+  __asm__ volatile ("mv %0, sp" : "=r"(sp));
 
   char *new_brk = brk += incr;
   if (new_brk < (char *) sp && new_brk < __heap_end)
