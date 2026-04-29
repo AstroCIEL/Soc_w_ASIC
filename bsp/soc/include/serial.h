@@ -4,36 +4,63 @@
 #include <stdint.h>
 #include "soc.h"
 
-/* Register offsets (byte-addressed, 32-bit APB).
- * apb_uart connects PADDR = addr[5:3], so offsets are reg_index * 4. */
-#define UART_RBR_THR    0x00   /* reg0: Receive Buffer(R) / Transmit Holding(W) / DLAB: DLL */
-#define UART_IER        0x08   /* reg1: Interrupt Enable  / DLAB: DLM */
-#define UART_FCR        0x10   /* reg2: FIFO Control (write-only) / IIR (read) */
-#define UART_LCR        0x18   /* reg3: Line Control */
-#define UART_MCR        0x20   /* reg4: Modem Control */
-#define UART_LSR        0x28   /* reg5: Line Status (read-only) */
+/* ------------------------------------------------------------------ */
+/*  APB 16550-compatible UART register block                          */
+/* ------------------------------------------------------------------ */
+/*
+ * Register semantics (DLAB selects between RBR/THR/IER and DLL/DLM):
+ *   rbr_thr_dll : DLAB=0 → Receive Buffer (R) / Transmit Holding (W)
+ *                 DLAB=1 → Divisor Latch Low
+ *   ier_dlm     : DLAB=0 → Interrupt Enable
+ *                 DLAB=1 → Divisor Latch High
+ *   fcr_iir     : Write = FIFO Control; Read = Interrupt ID
+ *   lcr         : Line Control (DLAB lives in bit 7)
+ *   mcr         : Modem Control
+ *   lsr         : Line Status (read-only)
+ *   msr         : Modem Status
+ *   scr         : Scratch
+ */
+typedef struct uart_regs {
+    volatile uint32_t rbr_thr_dll;  uint32_t _rsv0;   /* 0x00 */
+    volatile uint32_t ier_dlm;      uint32_t _rsv1;   /* 0x08 */
+    volatile uint32_t fcr_iir;      uint32_t _rsv2;   /* 0x10 */
+    volatile uint32_t lcr;          uint32_t _rsv3;   /* 0x18 */
+    volatile uint32_t mcr;          uint32_t _rsv4;   /* 0x20 */
+    volatile uint32_t lsr;          uint32_t _rsv5;   /* 0x28 */
+    volatile uint32_t msr;          uint32_t _rsv6;   /* 0x30 */
+    volatile uint32_t scr;          uint32_t _rsv7;   /* 0x38 */
+} uart_regs_t;
+
+typedef struct uart {
+    uart_regs_t *regs;
+    uint32_t     clk_hz;
+    uint32_t     baud;
+} uart_t;
+
+#define UART0_REGS  ((uart_regs_t *)(UART_BASE))
+
+extern uart_t uart0;
 
 /* LCR bits */
-#define LCR_8N1         0x03   /* 8 data, no parity, 1 stop */
-#define LCR_DLAB        0x80   /* Divisor Latch Access Bit */
+#define LCR_8N1         0x03u    /* 8 data, no parity, 1 stop */
+#define LCR_DLAB        0x80u    /* Divisor Latch Access Bit */
 
 /* FCR bits */
-#define FCR_FIFO_EN     0x01
-#define FCR_RX_RST      0x02
-#define FCR_TX_RST      0x04
+#define FCR_FIFO_EN     0x01u
+#define FCR_RX_RST      0x02u
+#define FCR_TX_RST      0x04u
 
 /* LSR bits */
-#define LSR_DR          0x01   /* Data Ready */
-#define LSR_THRE        0x20   /* THR Empty */
-#define LSR_TEMT        0x40   /* Transmitter Empty */
+#define LSR_DR          0x01u
+#define LSR_THRE        0x20u
+#define LSR_TEMT        0x40u
 
-/* ── Helpers ── */
-#define UART_REG(off)   (*(volatile uint32_t *)(UART_BASE + (off)))
-
-/* ── API ── */
-void uart_init(uint32_t clk_hz, uint32_t baud);
-void uart_putc(char c);
-void uart_puts(const char *s);
-void uart_flush_safe(uint32_t clk_hz, uint32_t baud);
+/* ------------------------------------------------------------------ */
+/*  API (struct-based)                                                */
+/* ------------------------------------------------------------------ */
+void uart_init       (uart_t *u, uart_regs_t *regs, uint32_t clk_hz, uint32_t baud);
+void uart_putc       (uart_t *u, char c);
+void uart_puts       (uart_t *u, const char *s);
+void uart_flush_safe (uart_t *u);
 
 #endif /* SERIAL_H */

@@ -8,12 +8,12 @@
 __attribute__((weak))
 void pre_main(void)
 {
-    uart_init(SYS_CLK_HZ, BAUD_RATE);
+    uart_init(&uart0, UART0_REGS, SYS_CLK_HZ, BAUD_RATE);
     CSR_SET_BITS(CSR_REG_MSTATUS, MSTATUS_FS_VS_DIRTY_MASK);
 }
 
 __attribute__((weak))
 void post_main(void)
 {
-    uart_flush_safe(SYS_CLK_HZ, BAUD_RATE);
+    uart_flush_safe(&uart0);
 }

@@ -27,14 +27,12 @@
 #include <machine/syscall.h>
 #include <assert.h>
 #include "soc_ctrl.h"
+#include "serial.h"
 #undef errno
 extern int errno;
 
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
-
-/* Character output primitive supplied by the SoC driver. */
-extern void uart_putc(char c);
 
 /* It turns out that older newlib versions use different symbol names which goes
  * against newlib recommendations. Anyway this is fixed in later version.
@@ -58,8 +56,7 @@ __syscall_error(long a0)
 
 void unimplemented_syscall()
 {
-  const char *p = "BSP: Unimplemented system call called!\n";
-  while (*p) uart_putc(*p++);
+  uart_puts(&uart0, "BSP: Unimplemented system call called!\n");
 }
 
 int nanosleep(const struct timespec *rqtp, struct timespec *rmtp)
@@ -249,7 +246,7 @@ ssize_t _write(int file, const void *ptr, size_t len)
 
   const void *eptr = cptr + len;
   while (cptr != eptr)
-    uart_putc(*cptr++);
+    uart_putc(&uart0, *cptr++);
   return len;
 }
 

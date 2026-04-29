@@ -30,25 +30,29 @@ RUNTIME_OBJS += $(EXTRA_RUNTIME_OBJS)
 # Pattern rules  (LLVM, out-of-tree)
 # ---------------------------------------------------------------------------
 # Sources living under BSP_DIR  →  objects under BUILD_DIR.
+DEPFLAGS = -MMD -MP -MF $@.d -MT $@
+
 $(BUILD_DIR)/%.S.o: $(BSP_DIR)/%.S
 	@mkdir -p $(dir $@)
-	$(RISCV_CC) $(RISCV_CCFLAGS) -c $< -o $@
+	$(RISCV_CC) $(RISCV_CCFLAGS) $(DEPFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.c.o: $(BSP_DIR)/%.c
 	@mkdir -p $(dir $@)
-	$(RISCV_CC) $(RISCV_CCFLAGS) -c $< -o $@
+	$(RISCV_CC) $(RISCV_CCFLAGS) $(DEPFLAGS) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o: $(BSP_DIR)/%.cpp
 	@mkdir -p $(dir $@)
-	$(RISCV_CXX) $(RISCV_CXXFLAGS) -c $< -o $@
+	$(RISCV_CXX) $(RISCV_CXXFLAGS) $(DEPFLAGS) -c $< -o $@
 
 # Generated sources that already live inside BUILD_DIR  (e.g. data.S).
 $(BUILD_DIR)/%.S.o: $(BUILD_DIR)/%.S
 	@mkdir -p $(dir $@)
-	$(RISCV_CC) $(RISCV_CCFLAGS) -c $< -o $@
+	$(RISCV_CC) $(RISCV_CCFLAGS) $(DEPFLAGS) -c $< -o $@
 
 # ---------------------------------------------------------------------------
 # Linker-script preprocessing
 # ---------------------------------------------------------------------------
 %.ld: %.ld.c
 	$(RISCV_CC) -P -E $(DEFINES) $< -o $@
+
+-include $(shell find $(BUILD_DIR) -name '*.d' 2>/dev/null)
