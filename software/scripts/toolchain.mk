@@ -33,14 +33,6 @@ SOC_DIR      := $(BSP_DIR)/soc
 COMMON_DIR   := $(BSP_DIR)/common
 SCRIPTS_DIR  := $(BSP_DIR)/scripts
 
-ARA_DIR := $(shell git rev-parse --show-toplevel 2>/dev/null || echo $$ARA_DIR)
-
-# ---------------------------------------------------------------------------
-# Install directories  (all overridable)
-# ---------------------------------------------------------------------------
-INSTALL_DIR         ?= $(ARA_DIR)/install
-LLVM_INSTALL_DIR    ?= $(INSTALL_DIR)/riscv-llvm
-ISA_SIM_INSTALL_DIR ?= $(INSTALL_DIR)/riscv-isa-sim
 
 # ---------------------------------------------------------------------------
 # Architecture parameters
