@@ -113,6 +113,7 @@ RISCV_FLAGS   ?= $(LLVM_FLAGS) $(LLVM_V_FLAGS) -mcmodel=medany \
 
 RISCV_CCFLAGS  ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections -std=gnu99
 RISCV_CXXFLAGS ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections
-RISCV_LDFLAGS  ?= -static -nostartfiles -lm -Wl,--gc-sections -T$(LINK_SCRIPT)
+RISCV_LDFLAGS  ?= -static -nostartfiles -lm -Wl,--gc-sections \
+                  -Wl,--allow-multiple-definition -T$(LINK_SCRIPT)
 
 RISCV_OBJDUMP_FLAGS ?= -D --mattr=v
