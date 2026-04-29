@@ -46,8 +46,6 @@ ifndef config
 	endif
 endif
 
-include $(ARA_DIR)/config/$(config).mk
-
 # ---------------------------------------------------------------------------
 # Install directories  (all overridable)
 # ---------------------------------------------------------------------------
@@ -76,26 +74,9 @@ RISCV_LD      ?= $(RISCV_PREFIX)ld.lld
 RISCV_STRIP   ?= $(RISCV_PREFIX)llvm-strip
 
 # ---------------------------------------------------------------------------
-# Spike ISA simulator
-# ---------------------------------------------------------------------------
-RISCV_SIM     ?= $(ISA_SIM_INSTALL_DIR)/bin/spike
-vlen_spike    := $(shell vlen=$$(grep vlen $(ARA_DIR)/config/$(config).mk | cut -d" " -f3) && echo "$$(( $$vlen < 4096 ? $$vlen : 4096 ))")
-RISCV_SIM_OPT ?= --isa=rv64gcv_zfh --varch="vlen:$(vlen_spike),elen:64"
-
-# ---------------------------------------------------------------------------
 # Python
 # ---------------------------------------------------------------------------
 PYTHON ?= python3
-
-# ---------------------------------------------------------------------------
-# Preprocessor defines  (all additive – callers may append to DEFINES)
-# ---------------------------------------------------------------------------
-ENV_DEFINES ?=
-ifeq ($(vcd_dump),1)
-ENV_DEFINES += -DVCD_DUMP=1
-endif
-MAKE_DEFINES = -DNR_LANES=$(nr_lanes) -DVLEN=$(vlen)
-DEFINES += $(ENV_DEFINES) $(MAKE_DEFINES)
 
 # ---------------------------------------------------------------------------
 # Compiler / linker flags

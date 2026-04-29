@@ -4,6 +4,24 @@ ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 .PHONY: all clean
 all:
 
+# ---------------------------------------------------------------------------
+# Hardware Config
+# ---------------------------------------------------------------------------
+# Number of vector lanes
+nr_lanes ?= 2
+
+# Length of each vector register (in bits)
+# Constraints: VLEN > 128
+vlen ?= 2048
+
+# Dump VCD traces from applications that honor the VCD_DUMP compile guard.
+vcd_dump ?= 0
+
+# ---------------------------------------------------------------------------
+# Preprocessor defines  (all additive – app/soc makefiles may append)
+# ---------------------------------------------------------------------------
+MAKE_DEFINES := -DNR_LANES=$(nr_lanes) -DVLEN=$(vlen)
+DEFINES      += $(ENV_DEFINES) $(MAKE_DEFINES)
 
 # ---------------------------------------------------------------------------
 # Directory layout
