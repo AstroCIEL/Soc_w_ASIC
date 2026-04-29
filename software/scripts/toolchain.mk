@@ -36,17 +36,6 @@ SCRIPTS_DIR  := $(BSP_DIR)/scripts
 ARA_DIR := $(shell git rev-parse --show-toplevel 2>/dev/null || echo $$ARA_DIR)
 
 # ---------------------------------------------------------------------------
-# Ara configuration
-# ---------------------------------------------------------------------------
-ifndef config
-	ifdef ARA_CONFIGURATION
-		config := $(ARA_CONFIGURATION)
-	else
-		config := default
-	endif
-endif
-
-# ---------------------------------------------------------------------------
 # Install directories  (all overridable)
 # ---------------------------------------------------------------------------
 INSTALL_DIR         ?= $(ARA_DIR)/install
