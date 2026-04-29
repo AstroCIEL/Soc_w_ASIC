@@ -28,6 +28,7 @@
 #include <assert.h>
 #include "soc_ctrl.h"
 #include "serial.h"
+#include "context.h"
 #undef errno
 extern int errno;
 
@@ -279,91 +280,91 @@ void *_sbrk(ptrdiff_t incr)
     }
 }
 
-long handle_syscall (long a0,
-		     long a1,
-		     long a2,
-		     long a3,
-		     __attribute__((unused)) long a4,
-		     __attribute__((unused)) long a5,
-		     __attribute__((unused)) long a6,
-		     long a7) {
-  #ifdef __riscv_32e
-    register long syscall_id asm("t0");
-  #else
-    long syscall_id = a7;
-  #endif
+void handle_syscall(trap_context_t *ctx)
+{
+  long a0 = (long)ctx->gpr[REG_A0];
+  long a1 = (long)ctx->gpr[REG_A1];
+  long a2 = (long)ctx->gpr[REG_A2];
+  long a3 = (long)ctx->gpr[REG_A3];
+  long syscall_id = (long)ctx->gpr[REG_A7];
 
   long ret = -ENOSYS;
   switch (syscall_id) {
     case SYS_exit:
-      _exit (a0);
-      __builtin_unreachable ();
+      _exit(a0);
+      __builtin_unreachable();
     case SYS_read:
-      ret = _read (a0, (void *) a1, a2);
+      ret = _read(a0, (void *)a1, a2);
       break;
     case SYS_write:
-      ret = _write (a0, (const void *) a1, a2);
+      ret = _write(a0, (const void *)a1, a2);
       break;
     case SYS_getpid:
-      ret = _getpid ();
+      ret = _getpid();
       break;
     case SYS_kill:
-      ret = _kill (a0, a1);
+      ret = _kill(a0, a1);
       break;
     case SYS_open:
-      ret = _open ((const char *) a0, a1, a2);
+      ret = _open((const char *)a0, a1, a2);
       break;
     case SYS_openat:
-      ret = _openat (a0, (const char *) a1, a2, a3);
+      ret = _openat(a0, (const char *)a1, a2, a3);
       break;
     case SYS_close:
-      ret = _close (a0);
+      ret = _close(a0);
       break;
     case SYS_lseek:
-      ret = _lseek (a0, a1, a2);
+      ret = _lseek(a0, a1, a2);
       break;
     case SYS_brk:
-      ret = _brk ((void *) a0);
+      ret = _brk((void *)a0);
       break;
     case SYS_link:
-      ret = _link ((const char *) a0, (const char *) a1);
+      ret = _link((const char *)a0, (const char *)a1);
       break;
     case SYS_unlink:
-      ret = _unlink ((const char *) a0);
+      ret = _unlink((const char *)a0);
       break;
     case SYS_chdir:
-      ret = _chdir ((const char *) a0);
+      ret = _chdir((const char *)a0);
       break;
     case SYS_getcwd:
-      ret = (long) _getcwd ((char *) a0, a1);
+      ret = (long)_getcwd((char *)a0, a1);
       break;
     case SYS_stat:
-      ret = _stat ((const char *) a0, (struct stat *) a1);
+      ret = _stat((const char *)a0, (struct stat *)a1);
       break;
     case SYS_fstat:
-      ret = _fstat (a0, (struct stat *) a1);
+      ret = _fstat(a0, (struct stat *)a1);
       break;
     case SYS_lstat:
-      ret = _lstat ((const char *) a0, (struct stat *) a1);
+      ret = _lstat((const char *)a0, (struct stat *)a1);
       break;
     case SYS_fstatat:
-      ret = _fstatat (a0, (const char *) a1, (struct stat *) a2, a3);
+      ret = _fstatat(a0, (const char *)a1, (struct stat *)a2, a3);
       break;
     case SYS_access:
-      ret = _access ((const char *) a0, a1);
+      ret = _access((const char *)a0, a1);
       break;
     case SYS_faccessat:
-      ret = _faccessat (a0, (const char *) a1, a2, a3);
+      ret = _faccessat(a0, (const char *)a1, a2, a3);
       break;
     case SYS_gettimeofday:
-      ret = _gettimeofday ((struct timeval *) a0, (void *) a1);
+      ret = _gettimeofday((struct timeval *)a0, (void *)a1);
       break;
     case SYS_times:
-      ret = _times ((struct tms *) a0);
+      ret = _times((struct tms *)a0);
       break;
     default:
-      unimplemented_syscall ();
+      unimplemented_syscall();
       break;
   }
-  return ret;
+  ctx->gpr[REG_A0] = (uint64_t)ret;
+}
+
+void ctx_advance_mepc(trap_context_t *ctx)
+{
+  uint16_t hw = *(const uint16_t *)(uintptr_t)ctx->mepc;
+  ctx->mepc += ((hw & 0x3) == 0x3) ? 4 : 2;
 }

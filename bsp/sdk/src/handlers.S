@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 
+#include <context.h>
+
 /* Exception codes */
 #define EXCEPTION_ILLEGAL_INSN 2
-#define EXCEPTION_BREAKPOINT 3
-#define EXCEPTION_ECALL_M 11
+#define EXCEPTION_BREAKPOINT   3
+#define EXCEPTION_ECALL_M      11
 
 .section .text.handlers
 .global __no_irq_handler
@@ -70,154 +72,146 @@ __no_irq_handler:
 	jal ra, puts
 	j __no_irq_handler
 
-m_software_irq_handler:
-	j __no_irq_handler
-
-m_timer_irq_handler:
-	j __no_irq_handler
-
-m_external_irq_handler:
-	j __no_irq_handler
-
-m_fast0_irq_handler:
-	j __no_irq_handler
-
-m_fast1_irq_handler:
-	j __no_irq_handler
-
-m_fast2_irq_handler:
-	j __no_irq_handler
-
-m_fast3_irq_handler:
-	j __no_irq_handler
-
-m_fast4_irq_handler:
-	j __no_irq_handler
-
-m_fast5_irq_handler:
-	j __no_irq_handler
-
-m_fast6_irq_handler:
-	j __no_irq_handler
-
-m_fast7_irq_handler:
-	j __no_irq_handler
-
-m_fast8_irq_handler:
-	j __no_irq_handler
-
-m_fast9_irq_handler:
-	j __no_irq_handler
-
-m_fast10_irq_handler:
-	j __no_irq_handler
-
-m_fast11_irq_handler:
-	j __no_irq_handler
-
-m_fast12_irq_handler:
-	j __no_irq_handler
-
-m_fast13_irq_handler:
-	j __no_irq_handler
-
-m_fast14_irq_handler:
-	j __no_irq_handler
-
-m_fast15_irq_handler:
-	j __no_irq_handler
+m_software_irq_handler:  j __no_irq_handler
+m_timer_irq_handler:     j __no_irq_handler
+m_external_irq_handler:  j __no_irq_handler
+m_fast0_irq_handler:     j __no_irq_handler
+m_fast1_irq_handler:     j __no_irq_handler
+m_fast2_irq_handler:     j __no_irq_handler
+m_fast3_irq_handler:     j __no_irq_handler
+m_fast4_irq_handler:     j __no_irq_handler
+m_fast5_irq_handler:     j __no_irq_handler
+m_fast6_irq_handler:     j __no_irq_handler
+m_fast7_irq_handler:     j __no_irq_handler
+m_fast8_irq_handler:     j __no_irq_handler
+m_fast9_irq_handler:     j __no_irq_handler
+m_fast10_irq_handler:    j __no_irq_handler
+m_fast11_irq_handler:    j __no_irq_handler
+m_fast12_irq_handler:    j __no_irq_handler
+m_fast13_irq_handler:    j __no_irq_handler
+m_fast14_irq_handler:    j __no_irq_handler
+m_fast15_irq_handler:    j __no_irq_handler
 
 u_sw_irq_handler:
-	/* While we are still using puts in handlers, save all caller saved
-	   regs.  Eventually, some of these saves could be deferred.  */
-	addi sp,sp,-128
-	sd ra,  0(sp)
-	sd a0,  8(sp)
-	sd a1, 16(sp)
-	sd a2, 24(sp)
-	sd a3, 32(sp)
-	sd a4, 40(sp)
-	sd a5, 48(sp)
-	sd a6, 56(sp)
-	sd a7, 64(sp)
-	sd t0, 72(sp)
-	sd t1, 80(sp)
-	sd t2, 88(sp)
-	sd t3, 96(sp)
-	sd t4,104(sp)
-	sd t5,112(sp)
-	sd t6,120(sp)
-	csrr t0, mcause
-	li t1, EXCEPTION_ILLEGAL_INSN
-	beq t0, t1, handle_illegal_insn
-	li t1, EXCEPTION_ECALL_M
-	beq t0, t1, handle_ecall
-	li t1, EXCEPTION_BREAKPOINT
-	beq t0, t1, handle_ebreak
-	j handle_unknown
+	addi	sp, sp, -CTX_SIZE
+	sd	x1,  CTX_GPR_OFF(1)(sp)
+	addi	t0, sp, CTX_SIZE
+	sd	t0,  CTX_GPR_OFF(2)(sp)
+	sd	x3,  CTX_GPR_OFF(3)(sp)
+	sd	x4,  CTX_GPR_OFF(4)(sp)
+	sd	x5,  CTX_GPR_OFF(5)(sp)
+	sd	x6,  CTX_GPR_OFF(6)(sp)
+	sd	x7,  CTX_GPR_OFF(7)(sp)
+	sd	x8,  CTX_GPR_OFF(8)(sp)
+	sd	x9,  CTX_GPR_OFF(9)(sp)
+	sd	x10, CTX_GPR_OFF(10)(sp)
+	sd	x11, CTX_GPR_OFF(11)(sp)
+	sd	x12, CTX_GPR_OFF(12)(sp)
+	sd	x13, CTX_GPR_OFF(13)(sp)
+	sd	x14, CTX_GPR_OFF(14)(sp)
+	sd	x15, CTX_GPR_OFF(15)(sp)
+	sd	x16, CTX_GPR_OFF(16)(sp)
+	sd	x17, CTX_GPR_OFF(17)(sp)
+	sd	x18, CTX_GPR_OFF(18)(sp)
+	sd	x19, CTX_GPR_OFF(19)(sp)
+	sd	x20, CTX_GPR_OFF(20)(sp)
+	sd	x21, CTX_GPR_OFF(21)(sp)
+	sd	x22, CTX_GPR_OFF(22)(sp)
+	sd	x23, CTX_GPR_OFF(23)(sp)
+	sd	x24, CTX_GPR_OFF(24)(sp)
+	sd	x25, CTX_GPR_OFF(25)(sp)
+	sd	x26, CTX_GPR_OFF(26)(sp)
+	sd	x27, CTX_GPR_OFF(27)(sp)
+	sd	x28, CTX_GPR_OFF(28)(sp)
+	sd	x29, CTX_GPR_OFF(29)(sp)
+	sd	x30, CTX_GPR_OFF(30)(sp)
+	sd	x31, CTX_GPR_OFF(31)(sp)
+
+	csrr	t0, mcause
+	sd	t0, CTX_MCAUSE_OFF(sp)
+	csrr	t0, mstatus
+	sd	t0, CTX_MSTATUS_OFF(sp)
+	csrr	t0, mepc
+	sd	t0, CTX_MEPC_OFF(sp)
+
+	mv	a0, sp
+	ld	t0, CTX_MCAUSE_OFF(sp)
+	li	t1, EXCEPTION_ILLEGAL_INSN
+	beq	t0, t1, handle_illegal_insn
+	li	t1, EXCEPTION_ECALL_M
+	beq	t0, t1, handle_ecall
+	li	t1, EXCEPTION_BREAKPOINT
+	beq	t0, t1, handle_ebreak
+	j	handle_unknown
 
 handle_ecall:
-	jal ra, handle_syscall
-	/* Write the C-level return value (now in a0) into the saved-a0
-	   slot so end_handler_ret restores it as the syscall result. */
-	sd a0, 8(sp)
-	j end_handler_incr_mepc
+	call	handle_syscall
+	mv	a0, sp
+	call	ctx_advance_mepc
+	j	end_handler_ret
 
 handle_ebreak:
-	/* TODO support debug handling requirements.  */
-	la a0, ebreak_msg
-	jal ra, puts
-	j end_handler_incr_mepc
+	la	a0, ebreak_msg
+	call	puts
+	mv	a0, sp
+	call	ctx_advance_mepc
+	j	end_handler_ret
 
 handle_illegal_insn:
-	la a0, illegal_insn_msg
-	jal ra, puts
-	j end_handler_incr_mepc
+	la	a0, illegal_insn_msg
+	call	puts
+	mv	a0, sp
+	call	ctx_advance_mepc
+	j	end_handler_ret
 
 handle_unknown:
-	la a0, unknown_msg
-	jal ra, puts
-	/* We don't know what interrupt/exception is being handled, so don't
-	   increment mepc.  */
-	j end_handler_ret
+	la	a0, unknown_msg
+	call	puts
+	j	end_handler_ret
 
-end_handler_incr_mepc:
-	csrr t0, mepc
-	lb t1, 0(t0)
-	li a0, 0x3
-	and t1, t1, a0
-	/* Increment mepc by 2 or 4 depending on whether the instruction at mepc
-	   is compressed or not.  */
-	bne t1, a0, end_handler_incr_mepc2
-	addi t0, t0, 2
-end_handler_incr_mepc2:
-	addi t0, t0, 2
-	csrw mepc, t0
 end_handler_ret:
-	ld ra,  0(sp)
-	ld a0,  8(sp)
-	ld a1, 16(sp)
-	ld a2, 24(sp)
-	ld a3, 32(sp)
-	ld a4, 40(sp)
-	ld a5, 48(sp)
-	ld a6, 56(sp)
-	ld a7, 64(sp)
-	ld t0, 72(sp)
-	ld t1, 80(sp)
-	ld t2, 88(sp)
-	ld t3, 96(sp)
-	ld t4,104(sp)
-	ld t5,112(sp)
-	ld t6,120(sp)
-	addi sp,sp,128
+	ld	t0, CTX_MSTATUS_OFF(sp)
+	csrw	mstatus, t0
+	ld	t0, CTX_MEPC_OFF(sp)
+	csrw	mepc, t0
+
+	ld	x1,  CTX_GPR_OFF(1)(sp)
+	ld	x3,  CTX_GPR_OFF(3)(sp)
+	ld	x4,  CTX_GPR_OFF(4)(sp)
+	ld	x5,  CTX_GPR_OFF(5)(sp)
+	ld	x6,  CTX_GPR_OFF(6)(sp)
+	ld	x7,  CTX_GPR_OFF(7)(sp)
+	ld	x8,  CTX_GPR_OFF(8)(sp)
+	ld	x9,  CTX_GPR_OFF(9)(sp)
+	ld	x10, CTX_GPR_OFF(10)(sp)
+	ld	x11, CTX_GPR_OFF(11)(sp)
+	ld	x12, CTX_GPR_OFF(12)(sp)
+	ld	x13, CTX_GPR_OFF(13)(sp)
+	ld	x14, CTX_GPR_OFF(14)(sp)
+	ld	x15, CTX_GPR_OFF(15)(sp)
+	ld	x16, CTX_GPR_OFF(16)(sp)
+	ld	x17, CTX_GPR_OFF(17)(sp)
+	ld	x18, CTX_GPR_OFF(18)(sp)
+	ld	x19, CTX_GPR_OFF(19)(sp)
+	ld	x20, CTX_GPR_OFF(20)(sp)
+	ld	x21, CTX_GPR_OFF(21)(sp)
+	ld	x22, CTX_GPR_OFF(22)(sp)
+	ld	x23, CTX_GPR_OFF(23)(sp)
+	ld	x24, CTX_GPR_OFF(24)(sp)
+	ld	x25, CTX_GPR_OFF(25)(sp)
+	ld	x26, CTX_GPR_OFF(26)(sp)
+	ld	x27, CTX_GPR_OFF(27)(sp)
+	ld	x28, CTX_GPR_OFF(28)(sp)
+	ld	x29, CTX_GPR_OFF(29)(sp)
+	ld	x30, CTX_GPR_OFF(30)(sp)
+	ld	x31, CTX_GPR_OFF(31)(sp)
+
+	addi	sp, sp, CTX_SIZE
 	mret
 
 .section .rodata
 illegal_insn_msg:
 	.string "BSP: illegal instruction exception handler entered\n"
-ecall_msg:
-	.string "BSP: ecall exception handler entered\n"
 ebreak_msg:
 	.string "BSP: ebreak exception handler entered\n"
 unknown_msg:
