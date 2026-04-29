@@ -34,9 +34,6 @@ int main(void)
 {
     printf("=== default_slave IRQ demo ===\n");
 
-    /* Route the PLIC (OO-style). */
-    plic_bind(&plic0);
-    plic0.init            (&plic0, PLIC0_REGS);
     plic0.register_handler(&plic0, IRQn_DEFAULT_SLAVE, default_slave_isr, NULL);
     plic0.set_priority    (&plic0, IRQn_DEFAULT_SLAVE, 1);
     plic0.set_threshold   (&plic0, PLIC_CTX_M0, 0);

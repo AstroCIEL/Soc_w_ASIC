@@ -14,6 +14,11 @@
 #define PLIC_BASE           0x0C000000UL
 
 /* ------------------------------------------------------------------ */
+/* CLINT (SiFive-style)                                                */
+/* ------------------------------------------------------------------ */
+#define CLINT_BASE          0x02000000UL
+
+/* ------------------------------------------------------------------ */
 /* Default slave (simple mem + IRQ doorbell)                          */
 /*   - write offset 0x00  → raise irq                                  */
 /*   - write offset 0x10  → clear irq                                  */

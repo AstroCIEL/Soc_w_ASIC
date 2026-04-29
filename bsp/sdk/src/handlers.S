@@ -172,8 +172,20 @@ __no_irq_handler:
 	jal ra, puts
 	j __no_irq_handler
 
-m_software_irq_handler:  j __no_irq_handler
-m_timer_irq_handler:     j __no_irq_handler
+m_software_irq_handler:
+	SAVE_CTX
+	call	clint_handle_m_sw_irq
+	RESTORE_CTX
+	mret
+
+m_timer_irq_handler:
+	SAVE_CTX
+	call	clint_handle_m_timer_irq
+	RESTORE_CTX
+	mret
+
+
+
 m_fast0_irq_handler:     j __no_irq_handler
 m_fast1_irq_handler:     j __no_irq_handler
 m_fast2_irq_handler:     j __no_irq_handler
