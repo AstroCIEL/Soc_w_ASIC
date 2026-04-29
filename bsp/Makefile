@@ -1,9 +1,15 @@
 SHELL    = /usr/bin/env bash
 ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
+.PHONY: all clean
+all:
+
+
 # ---------------------------------------------------------------------------
 # Directory layout
 # ---------------------------------------------------------------------------
+
+
 BSP_DIR     := $(ROOT_DIR)
 APP_DIR     := $(BSP_DIR)/app
 SDK_DIR     := $(BSP_DIR)/sdk
@@ -36,7 +42,7 @@ BINARIES := $(addprefix $(BIN_DIR)/,$(APPS))
 # ===================================================================
 #  Targets
 # ===================================================================
-.PHONY: all clean $(APPS)
+.PHONY: $(APPS)
 
 all: $(BINARIES)
 

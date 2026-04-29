@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "runtime.h"
+
 #include "util.h"
 
 #include "kernel/fdotproduct.h"
