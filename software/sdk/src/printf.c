@@ -790,3 +790,22 @@ int fctprintf(void (*out)(char character, void *arg), void *arg,
   va_end(va);
   return ret;
 }
+
+/* -----------------------------------------------------------------
+ * Export paland printf under the standard libc names so that apps
+ * pulling in <stdio.h> still resolve to this tiny formatter instead
+ * of newlib's (malloc-heavy, unusable with our 128 KiB RAM).
+ * ----------------------------------------------------------------- */
+#undef printf
+#undef sprintf
+#undef snprintf
+#undef vsnprintf
+
+int printf(const char *format, ...)
+    __attribute__((alias("printf_")));
+int sprintf(char *buffer, const char *format, ...)
+    __attribute__((alias("sprintf_")));
+int snprintf(char *buffer, size_t count, const char *format, ...)
+    __attribute__((alias("snprintf_")));
+int vsnprintf(char *buffer, size_t count, const char *format, va_list va)
+    __attribute__((alias("vsnprintf_")));

@@ -20,9 +20,11 @@
 -f ../hardware/ip/apb_uart/filelist.f
 -f ../hardware/ip/rv_plic/filelist.f
 
+// soc
+-f ../hardware/soc/filelist.f
 
--f ../hardware/ariane_soc/filelist.f
-
+// user ip
+-f ../hardware/user_ip/default_slave/filelist_sim.f
 
 
 ../tb/common/SimJTAG.sv
