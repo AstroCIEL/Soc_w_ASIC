@@ -114,29 +114,29 @@ module idma_backend_synth_rw_axil #(
     output logic                   eh_req_ready_o,
     input  idma_pkg::idma_eh_req_t eh_req_i,
 
-    output addr_t                  axi_lite_ar_addr_o,
-    output axi_pkg::prot_t         axi_lite_ar_prot_o,
-    output logic                   axi_lite_ar_valid_o,
-    input  logic                   axi_lite_ar_ready_i,
+    output addr_t                  axil_ar_addr_o,
+    output axi_pkg::prot_t         axil_ar_prot_o,
+    output logic                   axil_ar_valid_o,
+    input  logic                   axil_ar_ready_i,
     
-    input  data_t                  axi_lite_r_data_i,
-    input  axi_pkg::resp_t         axi_lite_r_resp_i,
-    input  logic                   axi_lite_r_valid_i,
-    output logic                   axi_lite_r_ready_o,
+    input  data_t                  axil_r_data_i,
+    input  axi_pkg::resp_t         axil_r_resp_i,
+    input  logic                   axil_r_valid_i,
+    output logic                   axil_r_ready_o,
     
 
-    output addr_t                  axi_lite_aw_addr_o,
-    output axi_pkg::prot_t         axi_lite_aw_prot_o,
-    output logic                   axi_lite_aw_valid_o,
-    input  logic                   axi_lite_aw_ready_i,
-    output data_t                  axi_lite_w_data_o,
-    output strb_t                  axi_lite_w_strb_o,
-    output logic                   axi_lite_w_valid_o,
-    input  logic                   axi_lite_w_ready_i,
+    output addr_t                  axil_aw_addr_o,
+    output axi_pkg::prot_t         axil_aw_prot_o,
+    output logic                   axil_aw_valid_o,
+    input  logic                   axil_aw_ready_i,
+    output data_t                  axil_w_data_o,
+    output strb_t                  axil_w_strb_o,
+    output logic                   axil_w_valid_o,
+    input  logic                   axil_w_ready_i,
     
-    input  axi_pkg::resp_t         axi_lite_b_resp_i,
-    input  logic                   axi_lite_b_valid_i,
-    output logic                   axi_lite_b_ready_o,
+    input  axi_pkg::resp_t         axil_b_resp_i,
+    input  logic                   axil_b_valid_i,
+    output logic                   axil_b_ready_o,
     
 
     output idma_pkg::idma_busy_t   idma_busy_o
@@ -147,21 +147,20 @@ module idma_backend_synth_rw_axil #(
                                                                 idma_pkg::NO_ERROR_HANDLING;
 
     // AXI-Lite typedefs
-`AXI_LITE_TYPEDEF_AW_CHAN_T(axi_lite_aw_chan_t, addr_t)
-`AXI_LITE_TYPEDEF_W_CHAN_T(axi_lite_w_chan_t, data_t, strb_t)
-`AXI_LITE_TYPEDEF_B_CHAN_T(axi_lite_b_chan_t)
+`AXI_LITE_TYPEDEF_AW_CHAN_T(axil_aw_chan_t, addr_t)
+`AXI_LITE_TYPEDEF_W_CHAN_T(axil_w_chan_t, data_t, strb_t)
+`AXI_LITE_TYPEDEF_B_CHAN_T(axil_b_chan_t)
 
-`AXI_LITE_TYPEDEF_AR_CHAN_T(axi_lite_ar_chan_t, addr_t)
-`AXI_LITE_TYPEDEF_R_CHAN_T(axi_lite_r_chan_t, data_t)
+`AXI_LITE_TYPEDEF_AR_CHAN_T(axil_ar_chan_t, addr_t)
+`AXI_LITE_TYPEDEF_R_CHAN_T(axil_r_chan_t, data_t)
 
-`AXI_LITE_TYPEDEF_REQ_T(axi_lite_req_t, axi_lite_aw_chan_t, axi_lite_w_chan_t, axi_lite_ar_chan_t)
-`AXI_LITE_TYPEDEF_RESP_T(axi_lite_rsp_t, axi_lite_b_chan_t, axi_lite_r_chan_t)
+`AXI_LITE_TYPEDEF_REQ_T(axil_req_t, axil_aw_chan_t, axil_w_chan_t, axil_ar_chan_t)
+`AXI_LITE_TYPEDEF_RESP_T(axil_rsp_t, axil_b_chan_t, axil_r_chan_t)
 
 
     // Meta Channel Widths
-    "localparam int unsigned axi_lite_aw_chan_width = $bits(axi_lite_aw_chan_t);"
-
-    "localparam int unsigned axi_lite_ar_chan_width = $bits(axi_lite_ar_chan_t);"
+    localparam int unsigned axil_aw_chan_width = $bits(axil_aw_chan_t);
+    localparam int unsigned axil_ar_chan_width = $bits(axil_ar_chan_t);
 
 
     /// Option struct: AXI4 id as well as AXI and backend options
@@ -292,31 +291,31 @@ module idma_backend_synth_rw_axil #(
 
 
     // AXI-Lite Read
-    assign axi_lite_ar_addr_o   = axi_lite_read_req.ar.addr;
-    assign axi_lite_ar_prot_o   = axi_lite_read_req.ar.prot;
-    assign axi_lite_ar_valid_o  = axi_lite_read_req.ar_valid;
-    assign axi_lite_r_ready_o   = axi_lite_read_req.r_ready;
+    assign axil_ar_addr_o   = axil_read_req.ar.addr;
+    assign axil_ar_prot_o   = axil_read_req.ar.prot;
+    assign axil_ar_valid_o  = axil_read_req.ar_valid;
+    assign axil_r_ready_o   = axil_read_req.r_ready;
     
-    assign axi_lite_read_rsp.ar_ready  = axi_lite_ar_ready_i;
-    assign axi_lite_read_rsp.r.data    = axi_lite_r_data_i;
-    assign axi_lite_read_rsp.r.resp    = axi_lite_r_resp_i;
-    assign axi_lite_read_rsp.r_valid   = axi_lite_r_valid_i;
+    assign axil_read_rsp.ar_ready  = axil_ar_ready_i;
+    assign axil_read_rsp.r.data    = axil_r_data_i;
+    assign axil_read_rsp.r.resp    = axil_r_resp_i;
+    assign axil_read_rsp.r_valid   = axil_r_valid_i;
     
 
 
     // AXI-Lite Write
-    assign axi_lite_aw_addr_o   = axi_lite_write_req.aw.addr;
-    assign axi_lite_aw_prot_o   = axi_lite_write_req.aw.prot;
-    assign axi_lite_aw_valid_o  = axi_lite_write_req.aw_valid;
-    assign axi_lite_w_data_o    = axi_lite_write_req.w.data;
-    assign axi_lite_w_strb_o    = axi_lite_write_req.w.strb;
-    assign axi_lite_w_valid_o   = axi_lite_write_req.w_valid;
-    assign axi_lite_b_ready_o   = axi_lite_write_req.b_ready;
+    assign axil_aw_addr_o   = axil_write_req.aw.addr;
+    assign axil_aw_prot_o   = axil_write_req.aw.prot;
+    assign axil_aw_valid_o  = axil_write_req.aw_valid;
+    assign axil_w_data_o    = axil_write_req.w.data;
+    assign axil_w_strb_o    = axil_write_req.w.strb;
+    assign axil_w_valid_o   = axil_write_req.w_valid;
+    assign axil_b_ready_o   = axil_write_req.b_ready;
     
-    assign axi_lite_write_rsp.aw_ready = axi_lite_aw_ready_i;
-    assign axi_lite_write_rsp.w_ready  = axi_lite_w_ready_i;
-    assign axi_lite_write_rsp.b.resp   = axi_lite_b_resp_i;
-    assign axi_lite_write_rsp.b_valid  = axi_lite_b_valid_i;
+    assign axil_write_rsp.aw_ready = axil_aw_ready_i;
+    assign axil_write_rsp.w_ready  = axil_w_ready_i;
+    assign axil_write_rsp.b.resp   = axil_b_resp_i;
+    assign axil_write_rsp.b_valid  = axil_b_valid_i;
     
 
 
