@@ -7,6 +7,7 @@
 -f ../hardware/ip/obi/filelist.f
 -f ../hardware/ip/apb/filelist.f
 -f ../hardware/ip/axi/filelist.f
+-f ../hardware/ip/axi_stream/filelist.f
 -f ../hardware/ip/axi_slice/filelist.f
 -f ../hardware/ip/register_interface/filelist.f
 -f ../hardware/ip/axi_riscv_atomics/filelist.f
@@ -19,6 +20,8 @@
 -f ../hardware/ip/apb_timer/filelist.f
 -f ../hardware/ip/apb_uart/filelist.f
 -f ../hardware/ip/rv_plic/filelist.f
+-f ../hardware/ip/iDMA/filelist.f
+-f ../hardware/ip/axi2mem_burst/filelist.f
 
 // soc
 -f ../hardware/soc/filelist.f
