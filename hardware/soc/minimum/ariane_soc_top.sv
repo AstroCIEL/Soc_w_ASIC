@@ -8,10 +8,7 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 //
-// Author: Florian Zaruba, ETH Zurich
-// Date: 19.03.2017
-// Description: Test-harness for Ariane
-//              Instantiates an AXI-Bus and memories
+// Description: Minimum SoC top — CVA6 scalar core only (no Ara VPU, no DMA).
 
 `include "axi/assign.svh"
 `include "axi/typedef.svh"
@@ -19,17 +16,13 @@
 `include "rvfi_types.svh"
 
 
-module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
-  // Ara-specific parameters
-  parameter int unsigned NrLanes            = ariane_soc::NrLanes,
-  parameter int unsigned VLEN               = ariane_soc::VLEN,
-  //
+module ariane_soc_top import axi_pkg::*; #(
   parameter config_pkg::cva6_cfg_t CVA6Cfg = build_config_pkg::build_config(cva6_config_pkg::cva6_cfg),
   //
   parameter int unsigned AXI_USER_WIDTH    = CVA6Cfg.AxiUserWidth,
   parameter int unsigned AXI_USER_EN       = CVA6Cfg.AXI_USER_EN,
   parameter int unsigned AXI_ADDRESS_WIDTH = 64,
-  parameter int unsigned AXI_DATA_WIDTH    = 32*ariane_soc::NrLanes
+  parameter int unsigned AXI_DATA_WIDTH    = 64
 ) (
   input  logic                           clk_i,
   input  logic                           rtc_i,
@@ -53,24 +46,15 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   // ---------------
   // Ara AXI type definitions (matching ara_soc)
   // ---------------
-  localparam AxiIdWidth        = ariane_axi::IdWidth;
-  localparam AxiNarrowDataWidth = 64;
-  localparam AxiWideDataWidth  = 64 * NrLanes / 2;
-  localparam AxiSocIdWidth     = AxiIdWidth - $clog2(ariane_soc::NrSlaves);
-  localparam AxiCoreIdWidth    = AxiIdWidth - 1;
+  localparam AxiIdWidth = ariane_axi::IdWidth;
 
-  typedef logic [AxiNarrowDataWidth-1:0] axi_narrow_data_t;
-  typedef logic [AxiNarrowDataWidth/8-1:0] axi_narrow_strb_t;
   typedef logic [AXI_ADDRESS_WIDTH-1:0] axi_addr_t;
-  typedef logic [AXI_USER_WIDTH-1:0] axi_user_t;
-  typedef logic [AxiWideDataWidth-1:0] axi_wide_data_t;
-  typedef logic [AxiWideDataWidth/8-1:0] axi_wide_strb_t;
-  typedef logic [AxiCoreIdWidth-1:0] axi_core_id_t;
-  typedef logic [AxiIdWidth-1:0] axi_id_t;
+  typedef logic [AXI_USER_WIDTH-1:0]    axi_user_t;
+  typedef logic [AXI_DATA_WIDTH-1:0]    axi_data_t;
+  typedef logic [AXI_DATA_WIDTH/8-1:0]  axi_strb_t;
+  typedef logic [AxiIdWidth-1:0]        axi_id_t;
 
-  `AXI_TYPEDEF_ALL(system, axi_addr_t, axi_id_t, axi_wide_data_t, axi_wide_strb_t, axi_user_t)
-  `AXI_TYPEDEF_ALL(ara_axi, axi_addr_t, axi_core_id_t, axi_wide_data_t, axi_wide_strb_t, axi_user_t)
-  `AXI_TYPEDEF_ALL(ariane_axi_typed, axi_addr_t, axi_core_id_t, axi_narrow_data_t, axi_narrow_strb_t, axi_user_t)
+  `AXI_TYPEDEF_ALL(core_axi, axi_addr_t, axi_id_t, axi_data_t, axi_strb_t, axi_user_t)
 
   // Exception and accelerator interface types for ara_system
   `CVA6_TYPEDEF_EXCEPTION(exception_t, CVA6Cfg)
@@ -81,7 +65,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   `CVA6_INTF_TYPEDEF_CVA6_TO_ACC(cva6_to_acc_t, accelerator_req_t, acc_mmu_resp_t)
   `CVA6_INTF_TYPEDEF_ACC_TO_CVA6(acc_to_cva6_t, accelerator_resp_t, acc_mmu_req_t)
 
-  // RVFI PROBES — must match the exact struct that cva6 drives internally
+  // RVFI PROBES
   localparam type rvfi_probes_instr_t = `RVFI_PROBES_INSTR_T(CVA6Cfg);
   localparam type rvfi_probes_csr_t   = `RVFI_PROBES_CSR_T(CVA6Cfg);
   localparam type rvfi_probes_t       = struct packed {
@@ -98,7 +82,6 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   logic        init_done;
   logic [31:0] rvfi_exit;
   logic [31:0] tracer_exit;
-  logic [31:0] tandem_exit;
 
   logic        debug_req_valid;
   logic        debug_req_ready;
@@ -553,13 +536,11 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   // ---------------
   // Core (ara_system replacing ariane)
   // ---------------
-  system_req_t   axi_system_req;
-  system_resp_t  axi_system_resp;
-  rvfi_probes_t  rvfi_probes;
+  core_axi_req_t   axi_core_req;
+  core_axi_resp_t  axi_core_resp;
+  rvfi_probes_t    rvfi_probes;
 
   ara_system #(
-    .NrLanes            ( NrLanes                   ),
-    .VLEN               ( VLEN                      ),
     .CVA6Cfg            ( CVA6Cfg                   ),
     .exception_t        ( exception_t               ),
     .accelerator_req_t  ( accelerator_req_t         ),
@@ -572,30 +553,15 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .rvfi_probes_csr_t  ( rvfi_probes_csr_t         ),
     .rvfi_probes_t      ( rvfi_probes_t             ),
     .AxiAddrWidth       ( AXI_ADDRESS_WIDTH         ),
-    .AxiIdWidth         ( AxiCoreIdWidth            ),
-    .AxiNarrowDataWidth ( AxiNarrowDataWidth        ),
-    .AxiWideDataWidth   ( AxiWideDataWidth          ),
-    .ariane_axi_ar_t    ( ariane_axi_typed_ar_chan_t),
-    .ariane_axi_aw_t    ( ariane_axi_typed_aw_chan_t),
-    .ariane_axi_b_t     ( ariane_axi_typed_b_chan_t ),
-    .ariane_axi_r_t     ( ariane_axi_typed_r_chan_t ),
-    .ariane_axi_w_t     ( ariane_axi_typed_w_chan_t ),
-    .ariane_axi_req_t   ( ariane_axi_typed_req_t    ),
-    .ariane_axi_resp_t  ( ariane_axi_typed_resp_t   ),
-    .ara_axi_ar_t       ( ara_axi_ar_chan_t         ),
-    .ara_axi_aw_t       ( ara_axi_aw_chan_t         ),
-    .ara_axi_b_t        ( ara_axi_b_chan_t          ),
-    .ara_axi_r_t        ( ara_axi_r_chan_t          ),
-    .ara_axi_w_t        ( ara_axi_w_chan_t          ),
-    .ara_axi_req_t      ( ara_axi_req_t             ),
-    .ara_axi_resp_t     ( ara_axi_resp_t            ),
-    .system_axi_ar_t    ( system_ar_chan_t           ),
-    .system_axi_aw_t    ( system_aw_chan_t           ),
-    .system_axi_b_t     ( system_b_chan_t            ),
-    .system_axi_r_t     ( system_r_chan_t            ),
-    .system_axi_w_t     ( system_w_chan_t            ),
-    .system_axi_req_t   ( system_req_t              ),
-    .system_axi_resp_t  ( system_resp_t             )
+    .AxiIdWidth         ( AxiIdWidth                ),
+    .AxiDataWidth       ( AXI_DATA_WIDTH            ),
+    .axi_ar_t           ( core_axi_ar_chan_t        ),
+    .axi_aw_t           ( core_axi_aw_chan_t        ),
+    .axi_b_t            ( core_axi_b_chan_t         ),
+    .axi_r_t            ( core_axi_r_chan_t         ),
+    .axi_w_t            ( core_axi_w_chan_t         ),
+    .axi_req_t          ( core_axi_req_t            ),
+    .axi_resp_t         ( core_axi_resp_t           )
   ) i_ara_system (
     .clk_i              ( clk_i               ),
     .rst_ni             ( ndmreset_n          ),
@@ -609,26 +575,26 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .time_irq_i         ( timer_irq           ),
     .debug_req_i        ( debug_req_core      ),
     .rvfi_probes_o      ( rvfi_probes         ),
-    .axi_req_o          ( axi_system_req      ),
-    .axi_resp_i         ( axi_system_resp     )
+    .axi_req_o          ( axi_core_req        ),
+    .axi_resp_i         ( axi_core_resp       )
   );
 
-  `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::AraMst], axi_system_req)
-  `AXI_ASSIGN_TO_RESP(axi_system_resp, slave[ariane_soc::AraMst])
+  `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::AraMst], axi_core_req)
+  `AXI_ASSIGN_TO_RESP(axi_core_resp, slave[ariane_soc::AraMst])
 
   // -------------
   // Simulation Helper Functions
   // -------------
   // check for response errors
   always_ff @(posedge clk_i) begin : p_assert
-    if (axi_system_req.r_ready &&
-      axi_system_resp.r_valid &&
-      axi_system_resp.r.resp inside {axi_pkg::RESP_DECERR, axi_pkg::RESP_SLVERR}) begin
+    if (axi_core_req.r_ready &&
+      axi_core_resp.r_valid &&
+      axi_core_resp.r.resp inside {axi_pkg::RESP_DECERR, axi_pkg::RESP_SLVERR}) begin
       $warning("R Response Errored");
     end
-    if (axi_system_req.b_ready &&
-      axi_system_resp.b_valid &&
-      axi_system_resp.b.resp inside {axi_pkg::RESP_DECERR, axi_pkg::RESP_SLVERR}) begin
+    if (axi_core_req.b_ready &&
+      axi_core_resp.b_valid &&
+      axi_core_resp.b.resp inside {axi_pkg::RESP_DECERR, axi_pkg::RESP_SLVERR}) begin
       $warning("B Response Errored");
     end
   end
@@ -646,12 +612,12 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .DATA_WIDTH(ariane_axi_soc::DataWidth),
     .WID_WIDTH(ariane_axi_soc::IdWidthSlave),
     .RID_WIDTH(ariane_axi_soc::IdWidthSlave),
-    .AWUSER_WIDTH(ariane_axi_soc::UserWidth),
-    .WUSER_WIDTH(ariane_axi_soc::UserWidth),
-    .BUSER_WIDTH(ariane_axi_soc::UserWidth),
-    .ARUSER_WIDTH(ariane_axi_soc::UserWidth),
-    .RUSER_WIDTH(ariane_axi_soc::UserWidth),
-    .ADDR_WIDTH(ariane_axi_soc::AddrWidth)
+    .AWUSER_WIDTH(AXI_USER_WIDTH),
+    .WUSER_WIDTH(AXI_USER_WIDTH),
+    .BUSER_WIDTH(AXI_USER_WIDTH),
+    .ARUSER_WIDTH(AXI_USER_WIDTH),
+    .RUSER_WIDTH(AXI_USER_WIDTH),
+    .ADDR_WIDTH(AXI_ADDRESS_WIDTH)
   ) i_Axi4PC (
     .ACLK(clk_i),
     .ARESETn(ndmreset_n),

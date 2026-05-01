@@ -11,10 +11,6 @@
 // Author: Florian Zaruba, ETH Zurich
 // Description: Contains SoC information as constants
 package ariane_soc;
-  // Vector unit configuration (authoritative values for all RTL/TB)
-  localparam int unsigned NrLanes = 2;
-  localparam int unsigned VLEN    = 2048;  // [bits]
-
   // M-Mode Hart, S-Mode Hart
   localparam int unsigned NumTargets = 2;
   // Uart, SPI, Ethernet, reserved
