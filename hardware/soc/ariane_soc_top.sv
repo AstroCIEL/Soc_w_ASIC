@@ -274,8 +274,8 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .data_i     ( dm_slave_rdata            )
   );
 
-  `AXI_ASSIGN_FROM_REQ(slave[1], dm_axi_m_req)
-  `AXI_ASSIGN_TO_RESP(dm_axi_m_resp, slave[1])
+  `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::DebugMst], dm_axi_m_req)
+  `AXI_ASSIGN_TO_RESP(dm_axi_m_resp, slave[ariane_soc::DebugMst])
 
   axi_adapter #(
     .CVA6Cfg               ( CVA6Cfg                   ),
@@ -395,23 +395,24 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .mst    ( dram                     )
   );
 
-  axi2mem #(
+  axi2mem_burst_rw #(
     .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
     .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH            ),
     .AXI_DATA_WIDTH ( AXI_DATA_WIDTH               ),
-    .AXI_USER_WIDTH ( AXI_USER_WIDTH               )
+    .AXI_USER_WIDTH ( AXI_USER_WIDTH               ),
+    .BufDepth       ( 1                            )
   ) i_axi2mem (
-    .clk_i  ( clk_i   ),
+    .clk_i  ( clk_i      ),
     .rst_ni ( ndmreset_n ),
-    .slave  ( dram    ),
-    .req_o  ( req          ),
-    .we_o   ( we           ),
-    .addr_o ( addr         ),
-    .be_o   ( be           ),
-    .user_o ( wuser        ),
-    .data_o ( wdata        ),
-    .user_i ( ruser        ),
-    .data_i ( rdata        )
+    .slave  ( dram       ),
+    .req_o  ( req        ),
+    .we_o   ( we         ),
+    .addr_o ( addr       ),
+    .be_o   ( be         ),
+    .user_o ( wuser      ),
+    .data_o ( wdata      ),
+    .user_i ( ruser      ),
+    .data_i ( rdata      )
   );
 
   paired_sram_wrapper #(
@@ -449,7 +450,8 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     '{ idx: ariane_soc::GPIO,     start_addr: ariane_soc::GPIOBase,     end_addr: ariane_soc::GPIOBase + ariane_soc::GPIOLength         },
     '{ idx: ariane_soc::DRAM,     start_addr: ariane_soc::DRAMBase,     end_addr: ariane_soc::DRAMBase + ariane_soc::DRAMLength         },
     '{ idx: ariane_soc::Ctrl,     start_addr: ariane_soc::CtrlBase,     end_addr: ariane_soc::CtrlBase + ariane_soc::CtrlLength         },
-    '{ idx: ariane_soc::DefaultSlave, start_addr: ariane_soc::DefaultSlaveBase, end_addr: ariane_soc::DefaultSlaveBase + ariane_soc::DefaultSlaveLength }
+    '{ idx: ariane_soc::DefaultSlave, start_addr: ariane_soc::DefaultSlaveBase, end_addr: ariane_soc::DefaultSlaveBase + ariane_soc::DefaultSlaveLength },
+    '{ idx: ariane_soc::DMA,          start_addr: ariane_soc::DMABase,          end_addr: ariane_soc::DMABase + ariane_soc::DMALength                   }
   };
 
   localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
@@ -527,6 +529,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .AxiAddrWidth ( AXI_ADDRESS_WIDTH            ),
     .AxiDataWidth ( AXI_DATA_WIDTH               ),
     .AxiIdWidth   ( ariane_axi_soc::IdWidthSlave ),
+    .AxiMstIdWidth( ariane_axi_soc::IdWidth      ),
     .AxiUserWidth ( AXI_USER_WIDTH               ),
     .DRAMBase     ( ariane_soc::DRAMBase         ),
     .DRAMLength   ( ariane_soc::DRAMLength       )
@@ -538,6 +541,8 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .timer          ( master[ariane_soc::Timer]    ),
     .ctrl           ( master[ariane_soc::Ctrl]     ),
     .default_slave  ( master[ariane_soc::DefaultSlave] ),
+    .dma_cfg        ( master[ariane_soc::DMA]      ),
+    .dma_mst        ( slave [ariane_soc::DMAMst]   ),
     .irq_o          ( irqs                         ),
     .exit_o         ( ctrl_exit                    ),
     .event_trigger_o( ctrl_event_trigger           ),
@@ -612,8 +617,8 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .axi_resp_i         ( axi_system_resp     )
   );
 
-  `AXI_ASSIGN_FROM_REQ(slave[0], axi_system_req)
-  `AXI_ASSIGN_TO_RESP(axi_system_resp, slave[0])
+  `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::AraMst], axi_system_req)
+  `AXI_ASSIGN_TO_RESP(axi_system_resp, slave[ariane_soc::AraMst])
 
   // -------------
   // Simulation Helper Functions

@@ -31,8 +31,16 @@ typedef enum irqn {
     IRQn_NONE           = 0,
     IRQn_UART           = 1,
     IRQn_DEFAULT_SLAVE  = 2,
+    IRQn_DMA            = 3,
     IRQn_MAX            = 31
 } irqn_t;
+
+/* ------------------------------------------------------------------ */
+/* iDMA (ariane_dma_desc64 wrapper)                                   */
+/*   - AXI cfg slave  @ DMABase (ariane_soc_pkg)                      */
+/*   - IRQ source = IRQn_DMA (desc64 frontend irq_o -> irq_sources[2])*/
+/* ------------------------------------------------------------------ */
+#define DMA_BASE            0x60000000UL
 
 /* ------------------------------------------------------------------ */
 /* SoC control registers (ctrl_registers.sv, 64b-strided AXI)          */
