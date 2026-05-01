@@ -498,6 +498,7 @@ module ariane_peripherals #(
     `AXI_ASSIGN_FROM_REQ (dma_mst,     dma_mst_req)
     `AXI_ASSIGN_TO_RESP  (dma_mst_rsp, dma_mst)
 
+    // Option A: desc64 frontend (descriptor-based, with IRQ)
     ariane_dma_desc64 #(
         .AxiCfgAddrWidth ( AxiAddrWidth       ),
         .AxiCfgDataWidth ( AxiDataWidth       ),
@@ -520,5 +521,31 @@ module ariane_peripherals #(
         .mst_rsp_i ( dma_mst_rsp     ),
         .irq_o     ( irq_sources[2]  )
     );
+
+    // Option B: reg64_1d frontend (register-based, polling only)
+    // To switch: comment out Option A above, uncomment below.
+    //
+    // ariane_dma_reg64_1d #(
+    //     .AxiCfgAddrWidth ( AxiAddrWidth       ),
+    //     .AxiCfgDataWidth ( AxiDataWidth       ),
+    //     .AxiCfgIdWidth   ( AxiIdWidth         ),
+    //     .AxiCfgUserWidth ( AxiUserWidth       ),
+    //     .AxiMstAddrWidth ( AxiAddrWidth       ),
+    //     .AxiMstDataWidth ( AxiDataWidth       ),
+    //     .AxiMstIdWidth   ( AxiMstIdWidth      ),
+    //     .AxiMstUserWidth ( AxiUserWidth       ),
+    //     .axi_cfg_req_t   ( dma_cfg_axi_req_t  ),
+    //     .axi_cfg_rsp_t   ( dma_cfg_axi_resp_t ),
+    //     .axi_mst_req_t   ( dma_mst_axi_req_t  ),
+    //     .axi_mst_rsp_t   ( dma_mst_axi_resp_t )
+    // ) i_dma (
+    //     .clk_i,
+    //     .rst_ni,
+    //     .cfg_req_i ( dma_cfg_req     ),
+    //     .cfg_rsp_o ( dma_cfg_rsp     ),
+    //     .mst_req_o ( dma_mst_req     ),
+    //     .mst_rsp_i ( dma_mst_rsp     )
+    // );
+    // assign irq_sources[2] = 1'b0;  // reg64_1d has no IRQ
 
 endmodule
