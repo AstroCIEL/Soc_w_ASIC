@@ -1,0 +1,9 @@
+../hardware/soc/common/ariane_axi_pkg.sv
+../hardware/soc/common/ariane_axi_soc_pkg.sv
+../hardware/soc/common/axi_inval_filter.sv
+../hardware/soc/common/axi_lite_interface.sv
+../hardware/soc/common/clint.sv
+../hardware/soc/common/ctrl_registers.sv
+../hardware/soc/common/bootrom/bootrom.sv
+../hardware/soc/common/ariane_dma_reg64_1d.sv
+../hardware/soc/common/ariane_dma_desc64.sv
