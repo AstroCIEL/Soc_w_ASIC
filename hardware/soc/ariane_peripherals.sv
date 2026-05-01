@@ -517,8 +517,10 @@ module ariane_peripherals #(
         .cfg_req_i ( dma_cfg_req     ),
         .cfg_rsp_o ( dma_cfg_rsp     ),
         .mst_req_o ( dma_mst_req     ),
-        .mst_rsp_i ( dma_mst_rsp     ),
-        .irq_o     ( irq_sources[2]  )
+        .mst_rsp_i ( dma_mst_rsp     )
     );
+
+    // DMA has no IRQ; tie off its PLIC source.
+    assign irq_sources[2] = 1'b0;
 
 endmodule

@@ -395,23 +395,24 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .mst    ( dram                     )
   );
 
-  axi2mem #(
+  axi2mem_burst_rw #(
     .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
     .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH            ),
     .AXI_DATA_WIDTH ( AXI_DATA_WIDTH               ),
-    .AXI_USER_WIDTH ( AXI_USER_WIDTH               )
+    .AXI_USER_WIDTH ( AXI_USER_WIDTH               ),
+    .BufDepth       ( 1                            )
   ) i_axi2mem (
-    .clk_i  ( clk_i   ),
+    .clk_i  ( clk_i      ),
     .rst_ni ( ndmreset_n ),
-    .slave  ( dram    ),
-    .req_o  ( req          ),
-    .we_o   ( we           ),
-    .addr_o ( addr         ),
-    .be_o   ( be           ),
-    .user_o ( wuser        ),
-    .data_o ( wdata        ),
-    .user_i ( ruser        ),
-    .data_i ( rdata        )
+    .slave  ( dram       ),
+    .req_o  ( req        ),
+    .we_o   ( we         ),
+    .addr_o ( addr       ),
+    .be_o   ( be         ),
+    .user_o ( wuser      ),
+    .data_o ( wdata      ),
+    .user_i ( ruser      ),
+    .data_i ( rdata      )
   );
 
   paired_sram_wrapper #(

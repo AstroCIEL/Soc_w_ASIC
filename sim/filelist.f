@@ -21,6 +21,7 @@
 -f ../hardware/ip/apb_uart/filelist.f
 -f ../hardware/ip/rv_plic/filelist.f
 -f ../hardware/ip/iDMA/filelist.f
+-f ../hardware/ip/axi2mem_burst/filelist.f
 
 // soc
 -f ../hardware/soc/filelist.f

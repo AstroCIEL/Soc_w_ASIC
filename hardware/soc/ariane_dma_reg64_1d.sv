@@ -59,10 +59,7 @@ module ariane_dma_reg64_1d #(
 
   /// Data master (DMA ⇄ memory)
   output axi_mst_req_t    mst_req_o,
-  input  axi_mst_rsp_t    mst_rsp_i,
-
-  /// Transfer-done interrupt (level, W1C via DONE_ID register)
-  output logic            irq_o
+  input  axi_mst_rsp_t    mst_rsp_i
 );
 
   // --------------------------------------------------------------------
@@ -250,23 +247,5 @@ module ariane_dma_reg64_1d #(
   // The integrator is expected to supply identically-laid-out structs.
   assign mst_req_o    = join_mst_req;
   assign join_mst_rsp = mst_rsp_i;
-
-  // --------------------------------------------------------------------
-  // Sticky "done" IRQ
-  //   * set on any backend response
-  //   * cleared when SW reads the DONE_ID register (next_id==done_id)
-  // --------------------------------------------------------------------
-  logic irq_q;
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      irq_q <= 1'b0;
-    end else begin
-      if (be_rsp_valid && be_rsp_ready)
-        irq_q <= 1'b1;
-      else if (done_id == next_id && !be_busy) // done_id <= next_id
-        irq_q <= 1'b0;
-    end
-  end
-  assign irq_o = irq_q;
 
 endmodule
