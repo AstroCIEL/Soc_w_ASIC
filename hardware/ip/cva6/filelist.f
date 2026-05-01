@@ -1,7 +1,6 @@
 +incdir+../hardware/ip/cva6/core/include
 +incdir+../hardware/ip/cva6/core/cache_subsystem/hpdcache/rtl/include
 +incdir+../hardware/ip/cva6/common/local/util
-+define+ARIANE_ACCELERATOR_PORT=1
 
 ../hardware/ip/cva6/core/include/config_pkg.sv
 ../hardware/ip/cva6/core/include/cv64a6_imafdcv_sv39_config_pkg.sv
