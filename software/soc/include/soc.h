@@ -35,6 +35,12 @@ typedef enum irqn {
 } irqn_t;
 
 /* ------------------------------------------------------------------ */
+/* iDMA (ariane_dma_reg64_1d wrapper) - polling only, no IRQ          */
+/*   - AXI cfg slave  @ DMABase (ariane_soc_pkg)                      */
+/* ------------------------------------------------------------------ */
+#define DMA_BASE            0x60000000UL
+
+/* ------------------------------------------------------------------ */
 /* SoC control registers (ctrl_registers.sv, 64b-strided AXI)          */
 /* ------------------------------------------------------------------ */
 #define SOC_CTRL_BASE           0xD0000000UL
