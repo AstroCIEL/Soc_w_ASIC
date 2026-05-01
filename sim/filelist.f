@@ -24,12 +24,12 @@
 -f ../hardware/ip/axi2mem_burst/filelist.f
 
 // soc
--f ../hardware/soc/filelist.f
+-f ../hardware/soc/filelist_maximum.f
 
 // user ip
 -f ../hardware/user_ip/default_slave/filelist_sim.f
 
-
+// tb
 ../tb/common/SimJTAG.sv
 ../tb/common/uartdpi.sv
 ../tb/ara_tb.sv
