@@ -470,7 +470,7 @@ module ariane_peripherals #(
     );
 
     // ---------------
-    // 8. DMA (iDMA reg64_1d frontend + rw_axi backend)
+    // 8. DMA (iDMA desc64 frontend + rw_axi backend)
     //    cfg @ ariane_soc::DMABase, IRQ -> irq_sources[2]
     // ---------------
     // Types matching the dma_cfg (xbar master-port) AXI_BUS
@@ -498,7 +498,7 @@ module ariane_peripherals #(
     `AXI_ASSIGN_FROM_REQ (dma_mst,     dma_mst_req)
     `AXI_ASSIGN_TO_RESP  (dma_mst_rsp, dma_mst)
 
-    ariane_dma_reg64_1d #(
+    ariane_dma_desc64 #(
         .AxiCfgAddrWidth ( AxiAddrWidth       ),
         .AxiCfgDataWidth ( AxiDataWidth       ),
         .AxiCfgIdWidth   ( AxiIdWidth         ),
@@ -517,10 +517,8 @@ module ariane_peripherals #(
         .cfg_req_i ( dma_cfg_req     ),
         .cfg_rsp_o ( dma_cfg_rsp     ),
         .mst_req_o ( dma_mst_req     ),
-        .mst_rsp_i ( dma_mst_rsp     )
+        .mst_rsp_i ( dma_mst_rsp     ),
+        .irq_o     ( irq_sources[2]  )
     );
-
-    // DMA has no IRQ; tie off its PLIC source.
-    assign irq_sources[2] = 1'b0;
 
 endmodule
