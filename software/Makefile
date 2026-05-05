@@ -78,8 +78,7 @@ _objs_$1 := $$(patsubst $(BSP_DIR)/%,$(BUILD_DIR)/%,$$($1_SRCS:%=%.o))
 
 $(BIN_DIR)/$1: $$(_objs_$1) $$($1_EXTRA_OBJS) $(RUNTIME_OBJS) $(SCRIPTS_DIR)/link.ld
 	@mkdir -p $$(dir $$@)
-	$$(RISCV_CC) $$(RISCV_CCFLAGS) $$($1_CFLAGS) -o $$@ \
-	    $$(_objs_$1) $$($1_EXTRA_OBJS) $(RUNTIME_OBJS) $$(RISCV_LDFLAGS)
+	$$(RISCV_CC) $$(RISCV_CCFLAGS) -o $$@ $$(_objs_$1) $$($1_EXTRA_OBJS) $(RUNTIME_OBJS) $$(RISCV_LDFLAGS) -L/data/home/rh_xu30/tools/riscv/lib/gcc/riscv64-unknown-elf/13.2.0
 	$$(RISCV_OBJDUMP) $$(RISCV_OBJDUMP_FLAGS) -D $$@ > $$@.dump
 endef
 $(foreach app,$(APPS),$(eval $(call app_compile_template,$(app))))

@@ -42,17 +42,44 @@ RISCV_ABI    ?= lp64d
 RISCV_TARGET ?= riscv$(RISCV_XLEN)-unknown-elf
 
 # ---------------------------------------------------------------------------
-# LLVM toolchain  (single toolchain – keeps things simple & extensible)
+# Install directories (all overridable)
+# BSP_DIR is software/ directory, INSTALL_DIR should be ara_soc/ directory
 # ---------------------------------------------------------------------------
-RISCV_PREFIX  ?= /opt/riscv-llvm/xbin/riscv64-unknown-elf-
-RISCV_CC      ?= $(RISCV_PREFIX)clang
-RISCV_CXX     ?= $(RISCV_PREFIX)clang++
-RISCV_OBJDUMP ?= $(RISCV_PREFIX)llvm-objdump
-RISCV_OBJCOPY ?= $(RISCV_PREFIX)llvm-objcopy
-RISCV_AS      ?= $(RISCV_PREFIX)llvm-as
-RISCV_AR      ?= $(RISCV_PREFIX)llvm-ar
-RISCV_LD      ?= $(RISCV_PREFIX)ld.lld
-RISCV_STRIP   ?= $(RISCV_PREFIX)llvm-strip
+INSTALL_DIR         ?= $(BSP_DIR)/..
+LLVM_INSTALL_DIR    ?= $(INSTALL_DIR)/install/riscv-llvm
+# Pre-installed toolchain directory (from user home) - for libgcc and sysroot
+USER_TOOLS_DIR      ?= $(HOME)/tools/riscv
+
+# ---------------------------------------------------------------------------
+# Toolchain detection (priority: project-local LLVM first)
+# ---------------------------------------------------------------------------
+# Check for project-local LLVM built from source
+ifneq ($(wildcard $(LLVM_INSTALL_DIR)/bin/clang),)
+  # Use LLVM toolchain with GCC sysroot and LLD
+  GCC_SYSROOT   ?= $(USER_TOOLS_DIR)/riscv64-unknown-elf
+  RISCV_PREFIX  ?= $(LLVM_INSTALL_DIR)/bin/
+  RISCV_CC      ?= $(RISCV_PREFIX)clang --target=$(RISCV_TARGET) --sysroot=$(GCC_SYSROOT)
+  RISCV_CXX     ?= $(RISCV_PREFIX)clang++ --target=$(RISCV_TARGET) --sysroot=$(GCC_SYSROOT)
+  RISCV_OBJDUMP ?= $(RISCV_PREFIX)llvm-objdump
+  RISCV_OBJCOPY ?= $(RISCV_PREFIX)llvm-objcopy
+  RISCV_AS      ?= $(RISCV_PREFIX)llvm-as
+  RISCV_AR      ?= $(RISCV_PREFIX)llvm-ar
+  RISCV_LD      ?= $(RISCV_PREFIX)ld.lld
+  RISCV_STRIP   ?= $(RISCV_PREFIX)llvm-strip
+  $(info Using project-local LLVM toolchain: $(LLVM_INSTALL_DIR) with LLD)
+# Fallback to system paths (original behavior)
+else
+  RISCV_PREFIX  ?= /opt/riscv-llvm/xbin/riscv64-unknown-elf-
+  RISCV_CC      ?= $(RISCV_PREFIX)clang
+  RISCV_CXX     ?= $(RISCV_PREFIX)clang++
+  RISCV_OBJDUMP ?= $(RISCV_PREFIX)llvm-objdump
+  RISCV_OBJCOPY ?= $(RISCV_PREFIX)llvm-objcopy
+  RISCV_AS      ?= $(RISCV_PREFIX)llvm-as
+  RISCV_AR      ?= $(RISCV_PREFIX)llvm-ar
+  RISCV_LD      ?= $(RISCV_PREFIX)ld.lld
+  RISCV_STRIP   ?= $(RISCV_PREFIX)llvm-strip
+  $(info Using system toolchain)
+endif
 
 # ---------------------------------------------------------------------------
 # Python
@@ -75,7 +102,7 @@ RISCV_FLAGS   ?= $(LLVM_FLAGS) $(LLVM_V_FLAGS) -mcmodel=medany \
 
 RISCV_CCFLAGS  ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections -std=gnu99
 RISCV_CXXFLAGS ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections
-RISCV_LDFLAGS  ?= -static -nostartfiles -lm -Wl,--gc-sections \
-                  -Wl,--allow-multiple-definition -T$(LINK_SCRIPT)
+RISCV_LDFLAGS  ?= -static -nostartfiles -nostdlib -Wl,--gc-sections \
+                  -T$(LINK_SCRIPT) -Wl,--start-group -lc -lm -lgcc -Wl,--end-group
 
 RISCV_OBJDUMP_FLAGS ?= -D --mattr=v

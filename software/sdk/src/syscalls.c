@@ -21,33 +21,57 @@
 #include <sys/timeb.h>
 #include <sys/times.h>
 #include <sys/utime.h>
-#include <newlib.h>
 #include <unistd.h>
-#include <errno.h>
 #include <machine/syscall.h>
-#include <assert.h>
 #include "soc_ctrl.h"
 #include "serial.h"
 #include "context.h"
-#undef errno
-extern int errno;
+
+/* Define our own errno to avoid linking newlib's libc */
+int errno;
+
+/* errno constants - simplified definitions */
+#define EPERM        1
+#define ENOENT       2
+#define ESRCH        3
+#define EINTR        4
+#define EIO          5
+#define ENXIO        6
+#define E2BIG        7
+#define ENOEXEC      8
+#define EBADF        9
+#define ECHILD      10
+#define EAGAIN      11
+#define ENOMEM      12
+#define EACCES      13
+#define EFAULT      14
+#define ENOTBLK     15
+#define EBUSY       16
+#define EEXIST      17
+#define EXDEV       18
+#define ENODEV      19
+#define ENOTDIR     20
+#define EISDIR      21
+#define EINVAL      22
+#define ENFILE      23
+#define EMFILE      24
+#define ENOTTY      25
+#define ETXTBSY     26
+#define EFBIG       27
+#define ENOSPC      28
+#define ESPIPE      29
+#define EROFS       30
+#define EMLINK      31
+#define EPIPE       32
+#define EDOM        33
+#define ERANGE      34
+#define ENOSYS      38
+#define ENOTEMPTY   39
 
 #define STDOUT_FILENO 1
 #define STDERR_FILENO 2
 
-/* It turns out that older newlib versions use different symbol names which goes
- * against newlib recommendations. Anyway this is fixed in later version.
- */
-#if __NEWLIB__ <= 2 && __NEWLIB_MINOR__ <= 5
-#define _sbrk sbrk
-#define _write write
-#define _close close
-#define _lseek lseek
-#define _read read
-#define _fstat fstat
-#define _isatty isatty
-#endif
-/* Upstream newlib now defines this in libgloss/riscv/internal_syscall.h.  */
+/* System call wrapper - simplified version without newlib dependency */
 long
 __syscall_error(long a0)
 {
