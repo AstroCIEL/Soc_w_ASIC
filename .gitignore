@@ -1,1 +1,11 @@
-.vscode
+.vscode/
+__pychache__/
+
+src/soc/sram/
+build
+install/
+gcc-build
+gcc-install
+/tools/python3
+/tools/src
+*.log
