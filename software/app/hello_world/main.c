@@ -16,7 +16,7 @@
 
 // Author: Matheus Cavalcante, ETH Zurich
 
-#include "printf.h"
+#include <stdio.h>
 
 int main(void) {
   printf("Ariane says Hello!\n");
