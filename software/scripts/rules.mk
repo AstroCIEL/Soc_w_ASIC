@@ -9,14 +9,18 @@ LINK_SCRIPT    := $(SCRIPTS_DIR)/link.ld
 
 RUNTIME_SRCS_C := $(SDK_DIR)/src/syscalls.c \
                   $(SDK_DIR)/src/printf.c \
-                  $(SDK_DIR)/src/string.c \
+                  $(SDK_DIR)/src/util.c \
                   $(SOC_DIR)/src/serial.c \
                   $(SOC_DIR)/src/soc_ctrl.c \
                   $(SOC_DIR)/src/plic.c \
                   $(SOC_DIR)/src/clint.c \
-                  $(SDK_DIR)/src/util.c
+                  $(SOC_DIR)/src/dma_reg64_1d.c \
+                  $(SOC_DIR)/src/dma_desc64.c \
+                  $(COMMON_DIR)/src/hook.c
 
-RUNTIME_SRCS_S := $(SDK_DIR)/src/crt0.S
+RUNTIME_SRCS_S := $(SDK_DIR)/src/crt0.S \
+                  $(SDK_DIR)/src/handlers.S \
+                  $(SDK_DIR)/src/vectors.S
 
 # Map  $(BSP_DIR)/X  →  $(BUILD_DIR)/X
 RUNTIME_OBJS := $(patsubst $(BSP_DIR)/%,$(BUILD_DIR)/%,$(RUNTIME_SRCS_C:.c=.c.o)) \

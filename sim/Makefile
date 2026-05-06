@@ -21,19 +21,30 @@ FILELIST        := filelist.f
 VERIL_FILELIST  := filelist_verilator.f
 TB_DIR   := ../tb
 DPI_DIR  := $(TB_DIR)/dpi
+# Exclude SimDTM.cc (requires fesvr library which may not be available)
+# elfloader.cc now uses system elf.h instead of fesvr
 DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
             $(wildcard $(DPI_DIR)/*.c)
 
 
 app      ?= ../software/build/bin/hello_world
 
-FESVR_ROOT  := /DISK1/home/jy_hu30/workspace/toolchain/riscv-tools
+FESVR_ROOT  := ../install/riscv-llvm
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  VCS                                                                      ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
-VCS   := vcs
-VERDI := verdi
+# Synopsys VCS/Verdi installation paths
+VCS_HOME   := /home/EDAtools/synopsys/vcs/V-2023.12-SP1
+VERDI_HOME := /home/EDAtools/synopsys/verdi/V-2023.12-SP1
+
+VCS   := $(VCS_HOME)/bin/vcs
+VERDI := $(VERDI_HOME)/bin/verdi
+
+# GCC 11 for C++17 support (required for DPI compilation)
+GCC_HOME := /data/home/rh_xu30/Work/ara_soc_vpu/tools/gcc-install
+CXX      := $(GCC_HOME)/bin/g++
+CC       := $(GCC_HOME)/bin/gcc
 
 VCS_BUILD := $(ROOT_DIR)/build/vcs
 VCS_TOP   := ara_tb
@@ -51,11 +62,13 @@ VCS_FLAGS := \
   -error=noUCTLAB \
   -f $(FILELIST) \
   -top $(VCS_TOP) \
-  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(FESVR_ROOT)/include" \
-  -LDFLAGS "-L$(FESVR_ROOT)/lib -lfesvr -lelf -lutil" \
+  -CFLAGS "-std=c++17 -I$(DPI_DIR)" \
+  -LDFLAGS "-lutil -Wl,-rpath,$(GCC_HOME)/lib64" \
   $(DPI_SRCS) \
   -Mdir=$(VCS_BUILD)/csrc \
-  -o $(VCS_BIN)
+  -o $(VCS_BIN) \
+  -cc $(GCC_HOME)/bin/gcc \
+  -cpp $(GCC_HOME)/bin/g++
 
 VCS_RUN_FLAGS := \
   +vcs+lic+wait \
@@ -101,7 +114,7 @@ TB_CPP_SRCS := \
   $(wildcard $(TB_CPP_DIR)/lowrisc_dv_verilator_memutil_dpi/cpp/*.cc) \
   $(wildcard $(TB_CPP_DIR)/lowrisc_dv_verilator_memutil_verilator/cpp/*.cc)
 
-# DPI C/C++ sources (reuse DPI_DIR; exclude SimDTM like VCS)
+# DPI C/C++ sources (reuse DPI_DIR; exclude SimDTM.cc like VCS)
 VERIL_DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
                   $(wildcard $(DPI_DIR)/*.c)
 
@@ -120,8 +133,8 @@ VERIL_FLAGS := \
   -Wno-WIDTHEXPAND \
   -Wno-WIDTHTRUNC \
   -Wno-COMBDLY \
-  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(TB_CPP_DIR) -I$(FESVR_ROOT)/include" \
-  -LDFLAGS "-L$(FESVR_ROOT)/lib -lfesvr -lelf -lutil" \
+  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(TB_CPP_DIR)" \
+  -LDFLAGS "-lutil -L$(GCC_HOME)/lib64 -Wl,-rpath,$(GCC_HOME)/lib64" \
   $(if $(OBJCACHE),--objcache $(OBJCACHE),) \
   $(VERIL_DPI_SRCS) \
   $(TB_CPP_MAIN) $(TB_CPP_SRCS)
@@ -136,7 +149,7 @@ $(VERIL_BIN): $(VERIL_FILELIST)
 	cd $(ROOT_DIR) && $(VERILATOR) $(VERIL_FLAGS)
 	$(MAKE) -j 24 -C $(VERIL_BUILD) -f V$(VERIL_TOP).mk \
 	  OPT_FAST="-O0" OPT_SLOW="-O0" OPT_DBG="-O0" \
-	  $(if $(OBJCACHE),CXX="$(OBJCACHE) g++" CC="$(OBJCACHE) gcc",)
+	  CXX="$(CXX)" CC="$(CC)"
 
 verilator-run: $(VERIL_BIN)
 	cd $(ROOT_DIR) && $(VERIL_BIN) $(VERIL_RUN_FLAGS)
