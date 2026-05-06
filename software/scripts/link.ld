@@ -4,7 +4,7 @@ OUTPUT_ARCH("riscv")
 ENTRY(_start)
 
 MEMORY {
-  ram : ORIGIN = 0x80000000, LENGTH = 0x00020000
+  ram : ORIGIN = 0x80000000, LENGTH = 0x02000000
 }
 
 /* Ara's TB requires sections aligned to a AxiWideBeWidth (16B) boundary. */
@@ -62,10 +62,28 @@ SECTIONS {
     __bss_end = .;
   } > ram
 
+  /* L2 scratchpad section for DMA buffers */
+  .l2 : ALIGN(16) {
+    __l2_start = .;
+    *(.l2)
+    *(.l2.*)
+    . = ALIGN(16);
+    __l2_end = .;
+  } > ram
+
   . = ALIGN(16);
   __heap_start = .;
   __heap_end   = ORIGIN(ram) + LENGTH(ram) - 0x1000;
   __stack_end  = ORIGIN(ram) + LENGTH(ram);
 
   .comment 0 : { *(.comment) }
+
+  /* Hardware register addresses */
+  eoc_address_reg        = 0xD0000000;
+  dram_start_address_reg = 0xD0000008;
+  dram_end_address_reg   = 0xD0000010;
+  event_trigger          = 0xD0000018;
+  hw_cnt_en_reg          = 0xD0000020;
+
+  uart_base              = 0x10000000;
 }
