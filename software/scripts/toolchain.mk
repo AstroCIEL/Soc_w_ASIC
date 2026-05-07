@@ -104,8 +104,10 @@ RISCV_FLAGS   ?= $(LLVM_FLAGS) $(LLVM_V_FLAGS) -mcmodel=medany \
 RISCV_CCFLAGS  ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections -std=gnu99
 RISCV_CXXFLAGS ?= $(RISCV_FLAGS) -ffunction-sections -fdata-sections
 # Use -lm -lgcc only, avoid -lc to prevent LLD relocation errors with newlib
+# Use minlibc.c stubs instead of -lc to avoid LLD relocation issues with newlib
 RISCV_LDFLAGS  ?= -static -nostartfiles -nostdlib -Wl,--gc-sections \
-                  -T$(LINK_SCRIPT) -L$(USER_TOOLS_DIR)/lib/gcc/riscv64-unknown-elf/13.2.0 \
+                  -T$(LINK_SCRIPT) \
+                  -L$(USER_TOOLS_DIR)/lib/gcc/riscv64-unknown-elf/13.2.0 \
                   -lm -lgcc
 
 RISCV_OBJDUMP_FLAGS ?= -D --mattr=v

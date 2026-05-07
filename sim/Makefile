@@ -21,15 +21,18 @@ FILELIST        := filelist.f
 VERIL_FILELIST  := filelist_verilator.f
 TB_DIR   := ../tb
 DPI_DIR  := $(TB_DIR)/dpi
-# Exclude SimDTM.cc (requires fesvr library which may not be available)
-# elfloader.cc now uses system elf.h instead of fesvr
+# DPI sources for simulation
+# Note: SimDTM.cc is excluded as it requires additional fesvr setup
+# elfloader.cc uses fesvr headers from $(FESVR_ROOT)/include
 DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
             $(wildcard $(DPI_DIR)/*.c)
 
 
 app      ?= ../software/build/bin/hello_world
 
-FESVR_ROOT  := ../install/riscv-llvm
+# FESVR (Front-End Server) from RISC-V Spike installation
+# This provides the fesvr library for ELF loading and host-target communication
+FESVR_ROOT  := $(HOME)/tools/riscv
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
 # ║  VCS                                                                      ║
@@ -62,8 +65,8 @@ VCS_FLAGS := \
   -error=noUCTLAB \
   -f $(FILELIST) \
   -top $(VCS_TOP) \
-  -CFLAGS "-std=c++17 -I$(DPI_DIR)" \
-  -LDFLAGS "-lutil -Wl,-rpath,$(GCC_HOME)/lib64" \
+  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(FESVR_ROOT)/include" \
+  -LDFLAGS "-L$(FESVR_ROOT)/lib -lfesvr -lutil -Wl,-rpath,$(GCC_HOME)/lib64 -Wl,-rpath,$(FESVR_ROOT)/lib" \
   $(DPI_SRCS) \
   -Mdir=$(VCS_BUILD)/csrc \
   -o $(VCS_BIN) \
@@ -133,8 +136,8 @@ VERIL_FLAGS := \
   -Wno-WIDTHEXPAND \
   -Wno-WIDTHTRUNC \
   -Wno-COMBDLY \
-  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(TB_CPP_DIR)" \
-  -LDFLAGS "-lutil -L$(GCC_HOME)/lib64 -Wl,-rpath,$(GCC_HOME)/lib64" \
+  -CFLAGS "-std=c++17 -I$(DPI_DIR) -I$(TB_CPP_DIR) -I$(FESVR_ROOT)/include" \
+  -LDFLAGS "-L$(FESVR_ROOT)/lib -lfesvr -lutil -L$(GCC_HOME)/lib64 -Wl,-rpath,$(GCC_HOME)/lib64 -Wl,-rpath,$(FESVR_ROOT)/lib" \
   $(if $(OBJCACHE),--objcache $(OBJCACHE),) \
   $(VERIL_DPI_SRCS) \
   $(TB_CPP_MAIN) $(TB_CPP_SRCS)
@@ -144,7 +147,7 @@ VERIL_WAVE_FLAGS := $(VERIL_RUN_FLAGS) +trace+waveform.fst
 
 verilate: $(VERIL_BIN)
 
-$(VERIL_BIN): $(VERIL_FILELIST)
+$(VERIL_BIN): $(FILELIST)
 	mkdir -p $(VERIL_BUILD)
 	cd $(ROOT_DIR) && $(VERILATOR) $(VERIL_FLAGS)
 	$(MAKE) -j 24 -C $(VERIL_BUILD) -f V$(VERIL_TOP).mk \

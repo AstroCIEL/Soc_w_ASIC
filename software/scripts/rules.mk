@@ -10,6 +10,7 @@ LINK_SCRIPT    := $(SCRIPTS_DIR)/link.ld
 RUNTIME_SRCS_C := $(SDK_DIR)/src/syscalls.c \
                   $(SDK_DIR)/src/printf.c \
                   $(SDK_DIR)/src/util.c \
+                  $(SDK_DIR)/src/minlibc.c \
                   $(SOC_DIR)/src/serial.c \
                   $(SOC_DIR)/src/soc_ctrl.c \
                   $(SOC_DIR)/src/plic.c \
