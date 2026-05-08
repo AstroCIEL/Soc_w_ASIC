@@ -1,1 +1,0 @@
-../../dotproduct/kernel/dotproduct.c
