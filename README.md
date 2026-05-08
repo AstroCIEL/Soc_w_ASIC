@@ -81,6 +81,34 @@ make vcs-wave app=../software/build/bin/dma_desc64_test
 make verdi
 ```
 
+#### Minimum 配置运行步骤（不启用 ARA VPU）
+
+`sim/Makefile` 默认使用 maximum filelist。切到 minimum 时，覆盖 `FILELIST` 即可：
+
+```bash
+# 1) 先编译一个标量应用（推荐）
+make -C software hello_world
+
+# 2) 编译 minimum SoC 仿真
+make -C sim vcs FILELIST=../hardware/soc/filelist_minimum.f
+
+# 3) 运行 minimum SoC
+make -C sim vcs-run FILELIST=../hardware/soc/filelist_minimum.f \
+  app=../software/build/bin/hello_world
+```
+
+推荐在 minimum 场景优先使用：
+
+- `hello_world`
+- `trap_test`
+- `clint_test`
+- `default_slave`
+
+不建议在 minimum 场景作为首轮验证的应用：
+
+- 依赖向量能力的 `fmatmul` / `dotproduct` / `fdotproduct`
+- 依赖 DMA 的 `dma_desc64_test` / `dma_reg64_1d_test`
+
 #### Verilator 仿真（开源免费）
 
 ```bash
@@ -127,6 +155,22 @@ make verdi
 
 # 4. 调试完成后清理
 make clean
+```
+
+### Minimum bring-up 工作流
+
+```bash
+# 1. 编译基础标量程序
+make -C software hello_world trap_test clint_test default_slave
+
+# 2. 编译 minimum 配置仿真
+make -C sim vcs FILELIST=../hardware/soc/filelist_minimum.f
+
+# 3. 依次运行并检查串口输出
+make -C sim vcs-run FILELIST=../hardware/soc/filelist_minimum.f \
+  app=../software/build/bin/hello_world
+make -C sim vcs-run FILELIST=../hardware/soc/filelist_minimum.f \
+  app=../software/build/bin/trap_test
 ```
 
 ### 批量回归测试

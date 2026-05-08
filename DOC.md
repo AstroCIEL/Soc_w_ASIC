@@ -175,17 +175,10 @@ LLVM_V_FLAGS = -fno-vectorize -mno-implicit-float
 ┌─────────────────────────────────────────────────────────────┐
 │                    ariane_soc_top                           │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
 │  │   CVA6      │◄──►│   AXI       │◄──►│  AXI Xbar   │      │
-│  │  (标量核)   │    │  宽度转换   │    │  交叉开关   │        │
-│  └─────────────┘    └─────────────┘    └──────┬──────┘      │
-│         ▲                                       │           │
-│         │          ┌─────────────┐              │           │
-│         └─────────►│    ARA      │              │           │
-│                    │  (VPU)      │              │           │
-│                    └─────────────┘              │           │
-│                                                 │           │
+│  │  (标量核)    │    │  宽度转换    │    │  交叉开关     │      │
+│  └─────────────┘    └─────────────┘    └────────┬────┘      │
 │  ┌──────────────────────────────────────────────┴─────┐     │
 │  │                   AXI 总线互联                      │     │
 │  ├──────────┬──────────┬──────────┬──────────┬────────┤     │
@@ -204,7 +197,6 @@ LLVM_V_FLAGS = -fno-vectorize -mno-implicit-float
 │  │  Slave      │    │  (max only) │                         │
 │  │ 0x5000_0000 │    │ 0x6000_0000 │                         │
 │  └─────────────┘    └─────────────┘                         │
-│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -264,6 +256,12 @@ ara/
 
 #### SoC 集成 (`hardware/soc/`)
 
+在本项目里，`maximum` 和 `minimum` 共用大量 `soc/common/` 逻辑，核心区别是顶层系统集成是否接入 ARA VPU 和 DMA。  
+可通过不同 filelist 进行切换：
+
+- `hardware/soc/filelist_maximum.f`：选择 `soc/maximum/*`
+- `hardware/soc/filelist_minimum.f`：选择 `soc/minimum/*`
+
 **maximum 配置关键文件：**
 
 | 文件 | 路径 | 用途 |
@@ -274,6 +272,24 @@ ara/
 | `ariane_soc_pkg.sv` | `soc/maximum/` | SoC 配置参数包 |
 | `clint.sv` | `soc/common/` | CLINT 实现 |
 | `ctrl_registers.sv` | `soc/common/` | 控制寄存器 |
+
+**minimum 配置关键文件：**
+
+| 文件 | 路径 | 用途 |
+|------|------|------|
+| `ariane_soc_top.sv` | `soc/minimum/` | SoC 顶层（无 ARA 无 DMA） |
+| `ara_system.sv` | `soc/minimum/` | CVA6 标量系统集成（仅标量主路径） |
+| `ariane_peripherals.sv` | `soc/minimum/` | 外设集成（UART/Timer/PLIC/CLINT 等） |
+| `ariane_soc_pkg.sv` | `soc/minimum/` | minimum 地址映射与参数定义 |
+| `clint.sv` | `soc/common/` | CLINT 实现 |
+| `ctrl_registers.sv` | `soc/common/` | 控制寄存器 |
+
+**minimum 架构特征：**
+
+- 仅保留 CVA6 标量核执行路径，不实例化 ARA VPU。
+- 不包含 DMA 外设，地址空间中不使用 `0x6000_0000` DMA 窗口。
+- 适合跑 `hello_world`、`trap_test`、`clint_test`、`default_slave` 等基础/标量测试。
+- 可作为自定义 ASIC 的轻量集成基线，先通标量系统再逐步扩展加速器。
 
 **ara_system.sv 架构：**
 
@@ -541,6 +557,30 @@ gtkwave waveform.fst
    ├─► 查看波形 (Verdi/GTKWave)
    └─► 查看 trace_hart_0.log (指令追踪)
 ```
+
+### 3.5 Minimum 配置仿真实操（不使用 ARA VPU）
+
+默认 `sim/filelist.f` 指向 maximum 方案。若要切换到 minimum，直接在命令行覆盖 filelist：
+
+```bash
+# 1) 编译软件（建议先使用标量应用）
+make -C software hello_world
+
+# 2) 进入仿真目录
+cd sim
+
+# 3) 以 minimum SoC 编译 VCS 仿真
+make vcs FILELIST=../hardware/soc/filelist_minimum.f
+
+# 4) 运行 minimum SoC + 指定程序
+make vcs-run FILELIST=../hardware/soc/filelist_minimum.f app=../software/build/bin/hello_world
+```
+
+建议：
+
+- 若当前应用包含 RVV 指令（如 `fmatmul` / `dotproduct` / `fdotproduct`），在 minimum 配置下通常不适用。
+- DMA 相关测试（`dma_desc64_test` / `dma_reg64_1d_test`）属于 maximum 场景，minimum 下不建议作为首轮 bring-up 用例。
+- first bring-up 推荐顺序：`hello_world` → `trap_test` → `clint_test` → `default_slave`。
 
 ---
 
