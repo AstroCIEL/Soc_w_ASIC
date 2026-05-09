@@ -32,6 +32,7 @@ typedef enum irqn {
     IRQn_UART           = 1,
     IRQn_DEFAULT_SLAVE  = 2,
     IRQn_DMA            = 3,
+    IRQn_ASIC_ACCEL     = 8,
     IRQn_MAX            = 31
 } irqn_t;
 
@@ -41,6 +42,11 @@ typedef enum irqn {
 /*   - IRQ source = IRQn_DMA (desc64 frontend irq_o -> irq_sources[2])*/
 /* ------------------------------------------------------------------ */
 #define DMA_BASE            0x60000000UL
+
+/* ------------------------------------------------------------------ */
+/* Custom ASIC accelerator (minimum config)                            */
+/* ------------------------------------------------------------------ */
+#define ASIC_ACCEL_BASE     0x70000000UL
 
 /* ------------------------------------------------------------------ */
 /* SoC control registers (ctrl_registers.sv, 64b-strided AXI)          */

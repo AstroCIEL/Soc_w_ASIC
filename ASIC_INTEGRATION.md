@@ -2,6 +2,8 @@
 
 本文档详细说明如何将一个向量矩阵乘加速器（VecMatMul ASIC）集成到 ARA SoC 中。该 ASIC 作为 AXI 协处理器，内部带有 DMA 可以主动访问系统内存。
 
+**与本仓库（ARA SoC）实践的对照：** 下文仍以通用 **VMMA** 命名与寄存器布局作为模板；本仓库中已落地的参考 RTL 为 **`hardware/user_ip/asic_dma_accel/`**（仿真 filelist：`hardware/user_ip/asic_dma_accel/filelist_sim.f`）。SoC 集成侧采用与 **`hardware/soc/minimum/`**、**`hardware/soc/maximum/`** **并列**的第三套顶层目录 **`hardware/soc/minimum_asic_dma/`**（专用 `ariane_soc_pkg.sv` / `ariane_peripherals.sv` / `ariane_soc_top.sv`），避免在「纯净 minimum」里用宏分叉。仿真必须在 **`sim/`** 下使用**完整** filelist（含 TB、DPI、各 IP），例如 **`sim/filelist_minimum_asic_dma.f`**；不要单独用 `hardware/soc/filelist_*.f` 代替。切换不同 SoC 变体时，建议 **`make clean && make vcs FILELIST=…`**，否则 `sim/Makefile` 可能因未追踪 `FILELIST` 而未重新编译。软件侧见 **`software/soc/include/asic_dma_accel.h`**、**`asic_dma_accel_test`**；系统级说明见 **`README.md`**、**`DOC.md`**。
+
 ---
 
 ## 1. ASIC 规格定义
@@ -486,7 +488,11 @@ endmodule
 
 ## 3. 硬件集成步骤
 
+**集成策略（推荐）：** 若 ASIC 仅在某一种 SoC 形态上出现（例如「标量 minimum + 自定义加速器」，而无 ARA/iDMA），宜像本仓库一样 **复制/维护一套独立顶层目录**（如 `minimum_asic_dma/`），在其中完整定义 `NB_PERIPHERALS`、`NrSlaves`、从设备枚举、`ASICBase`、**DMA master 在交叉开关上的索引** 等；`minimum/` 保持无 ASIC，减少条件编译与漏改风险。若必须把 ASIC 并入 **maximum**（与片上 iDMA 共存），则按下文修改 **`hardware/soc/maximum/`** 即可，但需自行核对 PLIC 中断源编号与外设索引是否与现有 `DMA`、定时器等 **不冲突**。
+
 ### 3.1 修改 SoC 配置包
+
+以下以 **`hardware/soc/maximum/ariane_soc_pkg.sv`** 为例；在 **minimum_asic_dma** 一类变体中，修改对应目录下的同名文件即可，原则相同。
 
 编辑 `hardware/soc/maximum/ariane_soc_pkg.sv`：
 
@@ -579,7 +585,7 @@ module ariane_peripherals #(
         .clk_i              (clk_i),
         .rst_ni             (rst_ni),
         // 中断
-        .irq_o              (irq_sources[7]),  // 使用 PLIC 中断源 7
+        .irq_o              (irq_sources[7]),  // 须与 PLIC 接线及软件 IRQn_* 一致（勿照抄编号）
         // AXI Slave - 配置
         .slv_awvalid_i      (vmma_slv_req.aw_valid),
         .slv_awready_o      (vmma_slv_rsp.aw_ready),
@@ -692,15 +698,22 @@ localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
 
 ### 3.4 更新仿真文件列表
 
-编辑 `sim/filelist.f`，添加 VMMA 文件：
+1. **User IP**：在对应变体的仿真 filelist 中加入 ASIC 的 `filelist` 或 `filelist_sim.f`（本仓库在 `sim/filelist_minimum_asic_dma.f` 中 `-f ../hardware/user_ip/asic_dma_accel/filelist_sim.f`）。
+
+2. **SoC RTL 变体**：新增或修改 **`hardware/soc/filelist_<variant>.f`**，使其编译 **`soc/<variant>/`** 下的 `ariane_soc_pkg.sv`、`ariane_soc_top.sv` 等（参见 `filelist_minimum_asic_dma.f` 与 `filelist_minimum.f` 的并列关系）。
+
+3. **仿真顶层入口**：在 **`sim/filelist_<variant>.f`** 中用 `-f ../hardware/soc/filelist_<variant>.f` 拉入 SoC；**务必**使用 `sim/` 下的 filelist，以便包含 `../tb/ara_tb.sv`、UART DPI、各 IP 等。仅用 `hardware/soc/filelist_*.f` 会缺少 testbench，无法完成本仓库的 VCS 流程。
+
+4. **maximum 默认仿真**：若 ASIC 仅挂在 maximum 上，编辑 `sim/filelist.f`，在 user ip 区增加一行，例如：
 
 ```
 // ... 现有文件列表 ...
 
 // user ip
 -f ../hardware/user_ip/default_slave/filelist_sim.f
--f ../hardware/user_ip/vmma/filelist.f    // <-- 添加 VMMA
+-f ../hardware/user_ip/vmma/filelist.f
 ```
+（`*.f` 中注释使用 `//`；具体以所用仿真器对 filelist 的注释规则为准。）
 
 ---
 
@@ -1139,11 +1152,13 @@ int main(void) {
 ### 6.1 编译硬件
 
 ```bash
-# 1. 确保 VMMA 文件列表已添加到 sim/filelist.f
+# 1. 确保 ASIC 与所选 SoC 变体的 filelist 已就绪（参见 §3.4）
 
-# 2. 编译仿真
+# 2. 编译仿真（切换 FILELIST 时先 clean，避免沿用上一次的 simv）
 cd sim
-make vcs
+make clean && make vcs FILELIST=filelist.f              # 默认 maximum
+# 或
+make clean && make vcs FILELIST=filelist_minimum_asic_dma.f
 
 # 或 Verilator
 make verilate
@@ -1182,23 +1197,30 @@ make verdi
 
 | 问题 | 可能原因 | 解决方法 |
 |------|----------|----------|
-| 无法访问寄存器 | 地址映射错误 | 检查 `ariane_soc_pkg.sv` 的基地址 |
-| DMA 读写出错 | AXI 协议违规 | 检查地址对齐和突发长度 |
+| 无法访问寄存器 | 地址映射错误 | 检查 `ariane_soc_pkg.sv` 的基地址与 `addr_map` 条目顺序/索引 |
+| 换网表后行为未变 / 仍缺 ASIC | `sim/Makefile` 未把 `FILELIST` 编入依赖 | **`make clean && make vcs FILELIST=…`**；运行仿真时 **`vcs-run` 也要带同一 `FILELIST`** |
+| 链接或编译 TB 失败 | 只用了 `hardware/soc/filelist_*.f` | 改用 **`sim/filelist_*.f`**（含 `../tb/`、DPI、IP） |
+| DMA 读写出错 | AXI 协议违规 | 检查地址对齐、突发长度、ID 宽度与从设备支持 |
 | 结果错误 | 数据类型不匹配 | 确认 dtype 配置与数据一致 |
-| 仿真挂起 | 死锁或无响应 | 检查 AXI ready/valid 握手 |
+| 结果错误 / 校验「偶发」 | C 编译器缓存、与 DMA 写回竞态 | 对设备可见的缓冲与 MMIO 使用 **`volatile`**；需要时可加内存屏障；**优先用硬件状态/结果寄存器或 `done` 后再读 DRAM**，避免与引擎写回同一地址的读次序依赖 |
+| 配置口读回异常 | 从接口读数据时序/打拍与软件假设不一致 | 对照波形检查 `slv_r*`；必要时在 RTL 固定读路径延迟或软件读两次/只信 `busy/done` |
+| 仿真挂起 | 死锁或无响应 | 检查 AXI ready/valid 握手、交叉开关规则是否覆盖 DRAM 区间 |
+| 中断收不到 | PLIC 源号与 RTL 接线、`soc.h` 不一致 | 核对 `irq_sources[i]` 与 **`IRQn_*`**、PLIC 使能/阈值 |
 
 ### 7.2 波形调试信号
 
-在 Verdi 中关注以下信号：
+在 Verdi 中关注以下信号（模块实例名以 RTL 为准；本仓库 ASIC 为 `i_asic_dma_accel`）：
 
 ```
-// VMMA 配置访问
+// ASIC 配置访问（示例：VMMA）
 dut.i_ariane_peripherals.i_vmma.slv_*
+// 本仓库 asic_dma_accel：dut.i_ariane_peripherals.i_asic_dma_accel.cfg.*
 
-// VMMA DMA 访问
+// ASIC DMA 访问
 dut.i_ariane_peripherals.i_vmma.mst_*
+// 本仓库：...i_asic_dma_accel.mst.*
 
-// VMMA 内部状态
+// 加速器内部状态
 dut.i_ariane_peripherals.i_vmma.i_ctrl.*
 dut.i_ariane_peripherals.i_vmma.i_dma.*
 
@@ -1232,12 +1254,22 @@ hardware/user_ip/vmma/
 └── filelist.f
 ```
 
-**修改的现有文件：**
+**修改的现有文件（以并入 maximum 为例）：**
 ```
 hardware/soc/maximum/ariane_soc_pkg.sv
 hardware/soc/maximum/ariane_peripherals.sv
 hardware/soc/maximum/ariane_soc_top.sv
 sim/filelist.f
+```
+
+**本仓库「第三套变体」参考路径（标量 + ASIC DMA，与上文 VMMA 模板等价）：**
+```
+hardware/soc/minimum_asic_dma/ariane_soc_pkg.sv
+hardware/soc/minimum_asic_dma/ariane_peripherals.sv
+hardware/soc/minimum_asic_dma/ariane_soc_top.sv
+hardware/soc/filelist_minimum_asic_dma.f
+sim/filelist_minimum_asic_dma.f
+hardware/user_ip/asic_dma_accel/
 ```
 
 **软件文件：**
