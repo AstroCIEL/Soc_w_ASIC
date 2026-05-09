@@ -11,6 +11,8 @@ software/
 │   ├── fmatmul/      # 浮点矩阵乘法（RVV 向量指令）
 │   ├── dotproduct/   # 向量点积
 │   ├── dma_desc64_test/  # DMA 描述符64测试
+│   ├── asic_dma_accel_test/ # minimum_asic_dma 网表：片内 DMA ASIC
+│   ├── asic_accel_test/  # MMIO ASIC 示例（默认网表未接，见根目录 DOC）
 │   └── ...           # 其他测试应用
 ├── sdk/              # 软件开发套件
 │   ├── src/          # SDK 源文件（printf, syscalls, crt0.S 等）
@@ -74,6 +76,8 @@ make clean
 | `fdotproduct` | 浮点向量点积 | RVV 向量指令 |
 | `dma_desc64_test` | DMA 描述符64测试 | 中断、描述符链式传输 |
 | `dma_reg64_1d_test` | DMA 寄存器64 1D测试 | 1D 内存拷贝 |
+| `asic_dma_accel_test` | 自定义 ASIC（片内 DMA） | 需 `sim/filelist_minimum_asic_dma.f`；驱动 `asic_dma_accel.c` |
+| `asic_accel_test` | MMIO ASIC 示例 | 参考用；默认 SoC 未实例化，需自行接 RTL |
 | `clint_test` | 定时器测试 | CLINT 中断 |
 | `default_slave` | 默认从设备测试 | PLIC 中断 |
 | `trap_test` | 异常测试 | 异常处理 |
@@ -86,6 +90,18 @@ make clean
 nr_lanes ?= 2    # 向量处理器 lane 数量
 vlen     ?= 2048 # 向量寄存器位宽（VLEN）
 ```
+
+### 第三套网表：ASIC（片内 DMA）
+
+与 **maximum 的 iDMA** 无关；仅在仿真使用 `sim/filelist_minimum_asic_dma.f`（RTL：`hardware/soc/minimum_asic_dma/`）时有效：
+
+```bash
+make asic_dma_accel_test
+# 在 sim/ 下：make vcs FILELIST=filelist_minimum_asic_dma.f
+# make vcs-run FILELIST=filelist_minimum_asic_dma.f app=../software/build/bin/asic_dma_accel_test
+```
+
+寄存器与 API 见 `soc/include/asic_dma_accel.h`（基址与 `soc.h` 中 `ASIC_ACCEL_BASE` 一致）。
 
 ### 特殊应用配置
 

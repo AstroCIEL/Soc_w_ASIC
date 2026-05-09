@@ -10,16 +10,21 @@ ARA SoC 是一个基于 RISC-V 的片上系统，集成了 CVA6 (Ariane) 64位�
 - **总线架构**: AXI4 互联
 - **验证平台**: EDA01
 
-## 两种配置模式
+## 三种 SoC 配置（并列切换）
 
-本项目支持两种 SoC 配置：
+本项目在文件组织上将三种网表并列区分，通过仿真 `sim/filelist_*.f` 选择：
 
 ### 1. Minimum 配置 (`hardware/soc/minimum/`)
-- 仅 CVA6 标量核心（无 ARA VPU，无 DMA）
+- 仅 CVA6 标量核心（无 ARA VPU，无片上 iDMA，**无** `0x7000_0000` ASIC）
 - 用于基础功能验证和纯标量应用
+- 仓库内另含 **仅 MMIO** 的参考 RTL/驱动（`hardware/user_ip/asic_accel/`、`asic_accel.h`），**默认未接入** 任一网表；若需使用需自行在外设与 filelist 中实例化。
 
-### 2. Maximum 配置 (`hardware/soc/maximum/`)
-- 完整配置：CVA6 + ARA VPU + DMA
+### 2. Minimum + ASIC（片内 DMA）(`hardware/soc/minimum_asic_dma/`)
+- 在 minimum 功能集之上 **固定集成** `asic_dma_accel`（配置 AXI slave + DMA AXI master），RTL 与 `minimum/` **分目录维护**，不再用宏在 minimum 内开关。
+- 仿真使用 `sim/filelist_minimum_asic_dma.f`（编入 `hardware/soc/filelist_minimum_asic_dma.f`）；软件 `make asic_dma_accel_test`；配置口 `0x7000_0000`（4KB），交叉开关上另有一路 **AXI master** 供片内 DMA 访问 DRAM。
+
+### 3. Maximum 配置 (`hardware/soc/maximum/`)
+- 完整配置：CVA6 + ARA VPU + 片上 iDMA
 - 用于向量计算加速应用
 
 ## 快速开始
@@ -51,6 +56,7 @@ make all
 make hello_world
 make fmatmul
 make dotproduct
+make asic_dma_accel_test   # 配合 sim/filelist_minimum_asic_dma.f 仿真用
 
 # 清理构建
 make clean
@@ -83,19 +89,39 @@ make verdi
 
 #### Minimum 配置运行步骤（不启用 ARA VPU）
 
-`sim/Makefile` 默认使用 maximum filelist。切到 minimum 时，覆盖 `FILELIST` 即可：
+`sim/Makefile` 默认使用 maximum filelist。切到 minimum 时，在 `sim/` 目录下使用**完整仿真 filelist**（含 TB 与 IP），不要单独使用 `hardware/soc/filelist_minimum.f`：
 
 ```bash
 # 1) 先编译一个标量应用（推荐）
 make -C software hello_world
 
-# 2) 编译 minimum SoC 仿真
-make -C sim vcs FILELIST=../hardware/soc/filelist_minimum.f
+# 2) 编译 minimum SoC 仿真（工作目录为 sim/）
+make -C sim vcs FILELIST=filelist_minimum.f
 
 # 3) 运行 minimum SoC
-make -C sim vcs-run FILELIST=../hardware/soc/filelist_minimum.f \
+make -C sim vcs-run FILELIST=filelist_minimum.f \
   app=../software/build/bin/hello_world
 ```
+
+**Minimum + ASIC（片内 DMA）— 第三套网表**（RTL：`hardware/soc/minimum_asic_dma/`）：
+
+```bash
+make -C software asic_dma_accel_test
+make -C sim clean && make -C sim vcs FILELIST=filelist_minimum_asic_dma.f
+make -C sim vcs-run FILELIST=filelist_minimum_asic_dma.f \
+  app=../software/build/bin/asic_dma_accel_test
+```
+
+ASIC 配置空间基址 `0x7000_0000`（4KB），详见根目录 `DOC.md`。
+
+#### Minimum 与 Minimum+ASIC 仿真 filelist 对照
+
+| 仿真 filelist（在 `sim/` 下） | 说明 |
+|------------------------------|------|
+| `filelist_minimum.f` | 纯净 minimum（`hardware/soc/minimum/`），**无** `0x7000_0000` ASIC |
+| `filelist_minimum_asic_dma.f` | 第三套网表（`hardware/soc/minimum_asic_dma/`），集成 `asic_dma_accel`（slave 配置 + master DMA） |
+
+构建与运行 DMA ASIC 测试：`make -C software asic_dma_accel_test`，再按上文「带内部 DMA 的 ASIC」命令编译/运行仿真。RTL：`hardware/user_ip/asic_dma_accel/`；驱动：`software/soc/include/asic_dma_accel.h`。PLIC 与 `IRQn_ASIC_ACCEL`（见 `soc.h`）可选用于中断；当前 `asic_dma_accel_test` 以轮询 `busy` 为主。
 
 推荐在 minimum 场景优先使用：
 
@@ -107,7 +133,7 @@ make -C sim vcs-run FILELIST=../hardware/soc/filelist_minimum.f \
 不建议在 minimum 场景作为首轮验证的应用：
 
 - 依赖向量能力的 `fmatmul` / `dotproduct` / `fdotproduct`
-- 依赖 DMA 的 `dma_desc64_test` / `dma_reg64_1d_test`
+- 依赖 **片上 iDMA**（maximum）的 `dma_desc64_test` / `dma_reg64_1d_test`（与 `asic_dma_accel_test` 不同；后者走自定义 ASIC filelist）
 
 #### Verilator 仿真（开源免费）
 
@@ -163,13 +189,13 @@ make clean
 # 1. 编译基础标量程序
 make -C software hello_world trap_test clint_test default_slave
 
-# 2. 编译 minimum 配置仿真
-make -C sim vcs FILELIST=../hardware/soc/filelist_minimum.f
+# 2. 编译 minimum 配置仿真（在 sim/ 下使用 filelist_minimum.f）
+make -C sim vcs FILELIST=filelist_minimum.f
 
 # 3. 依次运行并检查串口输出
-make -C sim vcs-run FILELIST=../hardware/soc/filelist_minimum.f \
+make -C sim vcs-run FILELIST=filelist_minimum.f \
   app=../software/build/bin/hello_world
-make -C sim vcs-run FILELIST=../hardware/soc/filelist_minimum.f \
+make -C sim vcs-run FILELIST=filelist_minimum.f \
   app=../software/build/bin/trap_test
 ```
 

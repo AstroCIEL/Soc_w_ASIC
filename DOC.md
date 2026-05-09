@@ -18,6 +18,8 @@ software/
 │   ├── fdotproduct/   # 浮点点积
 │   ├── dma_desc64_test/  # DMA描述符测试
 │   ├── dma_reg64_1d_test/# DMA寄存器测试
+│   ├── asic_dma_accel_test/ # minimum_asic_dma 网表：带内部 DMA 的 ASIC 测试
+│   ├── asic_accel_test/  # MMIO ASIC 示例（RTL/驱动在仓库中，默认未接入网表）
 │   ├── clint_test/    # 定时器中断测试
 │   ├── default_slave/ # 默认从设备测试
 │   └── trap_test/     # 异常处理测试
@@ -36,7 +38,9 @@ software/
 │   │   ├── clint.c    # CLINT定时器
 │   │   ├── soc_ctrl.c # SoC控制
 │   │   ├── dma_desc64.c  # DMA描述符接口
-│   │   └── dma_reg64_1d.c# DMA寄存器接口
+│   │   ├── dma_reg64_1d.c# DMA寄存器接口
+│   │   ├── asic_dma_accel.c # 带内部 DMA 的 ASIC（与 minimum_asic_dma 网表配套）
+│   │   └── asic_accel.c  # MMIO ASIC 参考驱动（默认未接入 SoC）
 │   └── include/       # 驱动头文件
 ├── common/            # 通用代码
 ├── build/             # 构建输出
@@ -102,6 +106,10 @@ uint64_t clint_get_time(void);
 - **desc64**: 基于描述符的 DMA，支持链式传输和中断
 - **reg64_1d**: 基于寄存器的简单 1D 传输，轮询模式
 - DMA 基地址: 0x6000_0000
+
+**自定义 ASIC 驱动（第三套网表 minimum_asic_dma）**
+- **已接入网表的路径**：使用 `sim/filelist_minimum_asic_dma.f`（顶层 SoC RTL 位于 `hardware/soc/minimum_asic_dma/`）时，SoC 在 `0x7000_0000` 暴露 **`asic_dma_accel`** 配置口（与 `soc.h` 中 `ASIC_ACCEL_BASE` 一致），并增加一路 **AXI master** 供片内 DMA 访问 DRAM。软件：`asic_dma_accel.h` / `asic_dma_accel.c`，测试应用 `asic_dma_accel_test`（默认轮询 `busy`；PLIC `IRQn_ASIC_ACCEL` 可用于中断扩展）。**纯净** `hardware/soc/minimum/` 网表不包含该外设。
+- **参考未接入**：`asic_accel.h` / `asic_accel.c` 与 `hardware/user_ip/asic_accel/` 为纯 MMIO 加速器示例，**默认未挂入** `ariane_peripherals`；`asic_accel_test` 需自行改 RTL 与仿真 filelist 后方可运行。
 
 ### 1.3 应用示例详解
 
@@ -177,7 +185,7 @@ LLVM_V_FLAGS = -fno-vectorize -mno-implicit-float
 ├─────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐      │
 │  │   CVA6      │◄──►│   AXI       │◄──►│  AXI Xbar   │      │
-│  │  (标量核)    │    │  宽度转换    │    │  交叉开关     │      │
+│  │  (标量核)    │    │  宽度转换    │    │  交叉开关   │      │
 │  └─────────────┘    └─────────────┘    └────────┬────┘      │
 │  ┌──────────────────────────────────────────────┴─────┐     │
 │  │                   AXI 总线互联                      │     │
@@ -213,6 +221,7 @@ LLVM_V_FLAGS = -fno-vectorize -mno-implicit-float
 | GPIO | 0x4000_0000 | 4KB | GPIO (未实现) |
 | DefaultSlave | 0x5000_0000 | 4KB | 默认从设备 + IRQ |
 | DMA | 0x6000_0000 | 4KB | DMA 配置 (max only) |
+| ASIC（第三套网表） | 0x7000_0000 | 4KB | 自定义加速器配置口；**仅**在 `hardware/soc/minimum_asic_dma/` + `sim/filelist_minimum_asic_dma.f` 时存在；另占交叉开关一路 **AXI master**（`AsicDmaMst`）|
 | DRAM | 0x8000_0000 | 128KB | 主内存 |
 | Ctrl | 0xD000_0000 | 4KB | 控制寄存器 |
 
@@ -256,11 +265,18 @@ ara/
 
 #### SoC 集成 (`hardware/soc/`)
 
-在本项目里，`maximum` 和 `minimum` 共用大量 `soc/common/` 逻辑，核心区别是顶层系统集成是否接入 ARA VPU 和 DMA。  
+在本项目里，三种顶层 SoC 目录（`maximum` / `minimum` / `minimum_asic_dma`）共用大量 `soc/common/` 逻辑，核心区别是是否接入 ARA VPU、片上 iDMA，以及是否集成带内部 DMA 的自定义 ASIC。  
 可通过不同 filelist 进行切换：
 
 - `hardware/soc/filelist_maximum.f`：选择 `soc/maximum/*`
 - `hardware/soc/filelist_minimum.f`：选择 `soc/minimum/*`
+- `hardware/soc/filelist_minimum_asic_dma.f`：选择 `soc/minimum_asic_dma/*`
+
+**仿真侧 filelist（在 `sim/` 目录使用，含 TB 与 IP）：**
+
+- `sim/filelist.f`：默认 **maximum** SoC 完整仿真。
+- `sim/filelist_minimum.f`：**纯净** minimum SoC + TB（无 `0x7000_0000` ASIC）。
+- `sim/filelist_minimum_asic_dma.f`：**第三套** minimum + ASIC（`minimum_asic_dma` RTL），编入 `asic_dma_accel`（配置 AXI slave + DMA AXI master）。
 
 **maximum 配置关键文件：**
 
@@ -287,9 +303,19 @@ ara/
 **minimum 架构特征：**
 
 - 仅保留 CVA6 标量核执行路径，不实例化 ARA VPU。
-- 不包含 DMA 外设，地址空间中不使用 `0x6000_0000` DMA 窗口。
+- 不包含 **片上 iDMA**（`0x6000_0000`），与 maximum 的 DMA 外设不同。
+- 不包含 `0x7000_0000` 的 `asic_dma_accel`；该外设仅在 **`minimum_asic_dma`** 目录与对应 filelist 中集成。
 - 适合跑 `hello_world`、`trap_test`、`clint_test`、`default_slave` 等基础/标量测试。
 - 可作为自定义 ASIC 的轻量集成基线，先通标量系统再逐步扩展加速器。
+
+**minimum_asic_dma 关键文件：**
+
+| 文件 | 路径 | 用途 |
+|------|------|------|
+| `ariane_soc_top.sv` | `soc/minimum_asic_dma/` | SoC 顶层，含 ASIC 地址映射与总线挂接 |
+| `ara_system.sv` | `soc/minimum_asic_dma/` | CVA6 标量系统集成 |
+| `ariane_peripherals.sv` | `soc/minimum_asic_dma/` | 外设 + `asic_dma_accel` 实例 |
+| `ariane_soc_pkg.sv` | `soc/minimum_asic_dma/` | 含 ASIC 从端口与 `AsicDmaMst` 等参数 |
 
 **ara_system.sv 架构：**
 
@@ -560,7 +586,7 @@ gtkwave waveform.fst
 
 ### 3.5 Minimum 配置仿真实操（不使用 ARA VPU）
 
-默认 `sim/filelist.f` 指向 maximum 方案。若要切换到 minimum，直接在命令行覆盖 filelist：
+默认 `sim/filelist.f` 指向 maximum 方案。若要切换到 minimum，在 **`sim/`** 下使用完整仿真 filelist（勿仅用 `hardware/soc/filelist_minimum.f`，否则缺少 testbench 与 IP）：
 
 ```bash
 # 1) 编译软件（建议先使用标量应用）
@@ -570,16 +596,24 @@ make -C software hello_world
 cd sim
 
 # 3) 以 minimum SoC 编译 VCS 仿真
-make vcs FILELIST=../hardware/soc/filelist_minimum.f
+make vcs FILELIST=filelist_minimum.f
 
 # 4) 运行 minimum SoC + 指定程序
-make vcs-run FILELIST=../hardware/soc/filelist_minimum.f app=../software/build/bin/hello_world
+make vcs-run FILELIST=filelist_minimum.f app=../software/build/bin/hello_world
+```
+
+**带内部 DMA 的 ASIC（minimum 独立配置）：**
+
+```bash
+make -C software asic_dma_accel_test
+cd sim && make clean && make vcs FILELIST=filelist_minimum_asic_dma.f
+make vcs-run FILELIST=filelist_minimum_asic_dma.f app=../software/build/bin/asic_dma_accel_test
 ```
 
 建议：
 
 - 若当前应用包含 RVV 指令（如 `fmatmul` / `dotproduct` / `fdotproduct`），在 minimum 配置下通常不适用。
-- DMA 相关测试（`dma_desc64_test` / `dma_reg64_1d_test`）属于 maximum 场景，minimum 下不建议作为首轮 bring-up 用例。
+- 片上 iDMA 测试（`dma_desc64_test` / `dma_reg64_1d_test`）属于 **maximum** 场景；minimum 下可选用 **`asic_dma_accel_test`** 验证「ASIC 内建 DMA + AXI master」路径。
 - first bring-up 推荐顺序：`hello_world` → `trap_test` → `clint_test` → `default_slave`。
 
 ---
