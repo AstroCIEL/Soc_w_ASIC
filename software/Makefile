@@ -80,7 +80,7 @@ $(BIN_DIR)/$1: $$(_objs_$1) $$($1_EXTRA_OBJS) $(RUNTIME_OBJS) $(SCRIPTS_DIR)/lin
 	@mkdir -p $$(dir $$@)
 	$$(RISCV_CC) $$(RISCV_CCFLAGS) $$($1_CFLAGS) -o $$@ \
 	    $$(_objs_$1) $$($1_EXTRA_OBJS) $(RUNTIME_OBJS) \
-	    $$(if $$($1_LDFLAGS),$$($1_LDFLAGS),$$(RISCV_LDFLAGS))
+	    $$(RISCV_LDFLAGS) $$(if $$($1_LDFLAGS),$$($1_LDFLAGS),)
 	$$(RISCV_OBJDUMP) $$(RISCV_OBJDUMP_FLAGS) -D $$@ > $$@.dump
 endef
 $(foreach app,$(APPS),$(eval $(call app_compile_template,$(app))))

@@ -44,9 +44,15 @@ typedef enum irqn {
 #define DMA_BASE            0x60000000UL
 
 /* ------------------------------------------------------------------ */
-/* Custom ASIC accelerator (minimum config)                            */
+/* Custom ASIC accelerator (minimum_asic_dma variant)                  */
 /* ------------------------------------------------------------------ */
 #define ASIC_ACCEL_BASE     0x70000000UL
+
+/* ------------------------------------------------------------------ */
+/* VMMA — VecMatMul + DMA (minimum_vmma_dma variant), same MMIO window */
+/* ------------------------------------------------------------------ */
+#define VMMA_ACCEL_BASE     0x70000000UL
+#define IRQn_VVMA_ACCEL     8
 
 /* ------------------------------------------------------------------ */
 /* SoC control registers (ctrl_registers.sv, 64b-strided AXI)          */

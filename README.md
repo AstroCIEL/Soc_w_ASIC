@@ -10,9 +10,9 @@ ARA SoC 是一个基于 RISC-V 的片上系统，集成了 CVA6 (Ariane) 64位�
 - **总线架构**: AXI4 互联
 - **验证平台**: EDA01
 
-## 三种 SoC 配置（并列切换）
+## 四种 SoC 配置（并列切换）
 
-本项目在文件组织上将三种网表并列区分，通过仿真 `sim/filelist_*.f` 选择：
+本项目在文件组织上将四种网表并列区分，通过仿真 `sim/filelist_*.f` 选择：
 
 ### 1. Minimum 配置 (`hardware/soc/minimum/`)
 - 仅 CVA6 标量核心（无 ARA VPU，无片上 iDMA，**无** `0x7000_0000` ASIC）
@@ -23,7 +23,12 @@ ARA SoC 是一个基于 RISC-V 的片上系统，集成了 CVA6 (Ariane) 64位�
 - 在 minimum 功能集之上 **固定集成** `asic_dma_accel`（配置 AXI slave + DMA AXI master），RTL 与 `minimum/` **分目录维护**，不再用宏在 minimum 内开关。
 - 仿真使用 `sim/filelist_minimum_asic_dma.f`（编入 `hardware/soc/filelist_minimum_asic_dma.f`）；软件 `make asic_dma_accel_test`；配置口 `0x7000_0000`（4KB），交叉开关上另有一路 **AXI master** 供片内 DMA 访问 DRAM。
 
-### 3. Maximum 配置 (`hardware/soc/maximum/`)
+### 3. Minimum + VMMA（VecMatMul + 内部 DMA）(`hardware/soc/minimum_vmma_dma/`)
+- 第四套变体：在 minimum 之上集成 **VMMA** 仿真模型 `vmma_top`（`hardware/user_ip/vmma/vmma_sim.sv`：AXI 配置从口 + AXI 主口访存，内部完成 \(Y = W \times X\) 的 INT16 小矩阵与 DMA 写回）。
+- 仿真使用 **`sim/filelist_minimum_vmma_dma.f`**；软件 **`make vmma_test`**；MMIO 窗口仍为 **`0x7000_0000`（4KB）**（`soc.h` 中 `VMMA_ACCEL_BASE`，与 `asic_dma` 变体 **互斥**：需选用对应 filelist，不可混用同一仿真镜像）。
+- 软件注意：**`W_STRIDE` 须为 8 的倍数**（权重行按 64bit AXI beat 读取）；**写穿 D-cache + 预取** 下 DMA 写回的输出缓冲勿与输入紧邻布置，参见 `DOC.md` / `ASIC_INTEGRATION.md` 中「一致性 / 缓冲布局」说明。
+
+### 4. Maximum 配置 (`hardware/soc/maximum/`)
 - 完整配置：CVA6 + ARA VPU + 片上 iDMA
 - 用于向量计算加速应用
 
@@ -57,6 +62,7 @@ make hello_world
 make fmatmul
 make dotproduct
 make asic_dma_accel_test   # 配合 sim/filelist_minimum_asic_dma.f 仿真用
+make vmma_test             # 配合 sim/filelist_minimum_vmma_dma.f 仿真用
 
 # 清理构建
 make clean
@@ -112,16 +118,28 @@ make -C sim vcs-run FILELIST=filelist_minimum_asic_dma.f \
   app=../software/build/bin/asic_dma_accel_test
 ```
 
-ASIC 配置空间基址 `0x7000_0000`（4KB），详见根目录 `DOC.md`。
+**Minimum + VMMA（第四套网表）**（RTL：`hardware/soc/minimum_vmma_dma/`）：
 
-#### Minimum 与 Minimum+ASIC 仿真 filelist 对照
+```bash
+make -C software vmma_test
+make -C sim clean && make -C sim vcs FILELIST=filelist_minimum_vmma_dma.f
+make -C sim vcs-run FILELIST=filelist_minimum_vmma_dma.f \
+  app=../software/build/bin/vmma_test
+```
+
+`asic_dma` 与 `vmma` 两套变体均使用 `0x7000_0000` 作为加速器配置基址，但 **RTL 实例不同**；必须通过 **正确的 `FILELIST`** 选择其一。详见根目录 `DOC.md`、`ASIC_INTEGRATION.md`。
+
+#### Minimum 系列仿真 filelist 对照
 
 | 仿真 filelist（在 `sim/` 下） | 说明 |
 |------------------------------|------|
-| `filelist_minimum.f` | 纯净 minimum（`hardware/soc/minimum/`），**无** `0x7000_0000` ASIC |
-| `filelist_minimum_asic_dma.f` | 第三套网表（`hardware/soc/minimum_asic_dma/`），集成 `asic_dma_accel`（slave 配置 + master DMA） |
+| `filelist_minimum.f` | 纯净 minimum（`hardware/soc/minimum/`），**无** `0x7000_0000` 加速器 |
+| `filelist_minimum_asic_dma.f` | 第三套网表（`hardware/soc/minimum_asic_dma/`），`asic_dma_accel`（slave + master DMA） |
+| `filelist_minimum_vmma_dma.f` | 第四套网表（`hardware/soc/minimum_vmma_dma/`），`vmma_top`（VecMatMul + 内部 DMA） |
 
-构建与运行 DMA ASIC 测试：`make -C software asic_dma_accel_test`，再按上文「带内部 DMA 的 ASIC」命令编译/运行仿真。RTL：`hardware/user_ip/asic_dma_accel/`；驱动：`software/soc/include/asic_dma_accel.h`。PLIC 与 `IRQn_ASIC_ACCEL`（见 `soc.h`）可选用于中断；当前 `asic_dma_accel_test` 以轮询 `busy` 为主。
+构建与运行 `asic_dma` 测试：`make -C software asic_dma_accel_test`，再使用 `filelist_minimum_asic_dma.f`。RTL：`hardware/user_ip/asic_dma_accel/`；驱动：`asic_dma_accel.h`。
+
+构建与运行 VMMA 测试：`make -C software vmma_test`，再使用 **`filelist_minimum_vmma_dma.f`**。RTL：`hardware/user_ip/vmma/vmma_sim.sv`；驱动：`vmma.h` / `vmma.c`；PLIC 源与 `IRQn_VVMA_ACCEL`（见 `soc.h`）可按需扩展中断路径；当前 `vmma_test` 以轮询 `busy` 为主。
 
 推荐在 minimum 场景优先使用：
 
@@ -133,7 +151,7 @@ ASIC 配置空间基址 `0x7000_0000`（4KB），详见根目录 `DOC.md`。
 不建议在 minimum 场景作为首轮验证的应用：
 
 - 依赖向量能力的 `fmatmul` / `dotproduct` / `fdotproduct`
-- 依赖 **片上 iDMA**（maximum）的 `dma_desc64_test` / `dma_reg64_1d_test`（与 `asic_dma_accel_test` 不同；后者走自定义 ASIC filelist）
+- 依赖 **片上 iDMA**（maximum）的 `dma_desc64_test` / `dma_reg64_1d_test`（与 `asic_dma_accel_test` / `vmma_test` 不同；后两者走各自 **minimum_*** filelist）
 
 #### Verilator 仿真（开源免费）
 
@@ -218,7 +236,7 @@ done
 ara_soc/
 ├── hardware/         # RTL 硬件设计
 │   ├── ip/           # IP 核（CVA6、ARA、AXI、DMA等）
-│   ├── soc/          # SoC 集成（minimum/maximum配置）
+│   ├── soc/          # SoC 集成（minimum / minimum_asic_dma / minimum_vmma_dma / maximum）
 │   ├── tech/         # 工艺库和存储器wrapper
 │   └── user_ip/      # 用户自定义IP
 ├── software/         # 软件 BSP
@@ -242,6 +260,8 @@ ara_soc/
 | `fdotproduct` | 浮点向量点积 | RVV向量指令 |
 | `dma_desc64_test` | DMA描述符测试 | 中断、链式传输 |
 | `dma_reg64_1d_test` | DMA寄存器1D测试 | 1D内存拷贝 |
+| `vmma_test` | VMMA（VecMatMul+DMA）回归 | 需 `filelist_minimum_vmma_dma.f`；INT16 小矩阵 |
+| `asic_dma_accel_test` | 片内 DMA ASIC 测试 | 需 `filelist_minimum_asic_dma.f` |
 | `clint_test` | 定时器测试 | CLINT中断 |
 | `default_slave` | 默认从设备测试 | PLIC中断 |
 | `trap_test` | 异常测试 | 异常处理 |
@@ -296,6 +316,11 @@ make verilate
 1. **文件找不到**：检查 `filelist.f` 中的相对路径
 2. **DPI 编译错误**：确保 C++ 编译器支持 C++17 (`-std=c++17`)
 3. **内存不足**：VCS 编译需要较大内存，尝试减少并行任务
+4. **换 SoC 变体后仿真行为未变**：`sim/Makefile` 可能未因 `FILELIST` 变化而重编；执行 `make -C sim clean && make -C sim vcs FILELIST=…`，且 **`vcs-run` 必须使用同一 `FILELIST`**
+
+### VMMA / 外设 DMA 读回全 0 或错误
+
+CVA6 默认 **写穿 D-cache**，且无 **Zicbom** 一类软件维护指令时，**硬件预取**可能在加速器写回 DRAM **之前**把输出缓冲所在 cache line 装成旧数据；此后 CPU **命中 D$** 读到的不是 DRAM 真值。缓解办法：**输出缓冲与输入（W/X）在地址上拉开距离**（例如 `vmma_test` 通过链接选项把 `.vmma_dma_out` 放到高地址）、**启动加速器前**对 CPU 写入的源数据执行 `fence ow, ow` 排空写缓冲；长期需在 SoC 层做一致性或非缓存 PMA。详见 `DOC.md` §1.5、`ASIC_INTEGRATION.md` §7。
 
 ## 扩展开发
 

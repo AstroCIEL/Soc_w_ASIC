@@ -6,7 +6,5 @@ dma_desc64_test_SRCS := $(APP_DIR_dma_desc64_test)/main.c
 # Custom CFLAGS: use medlow code model, disable builtin printf
 dma_desc64_test_CFLAGS := -mcmodel=medlow -fno-builtin-printf
 
-# Custom LDFLAGS: add --no-relax to avoid relocation issues
-dma_desc64_test_LDFLAGS := -static -nostartfiles -nostdlib -Wl,--gc-sections -Wl,--no-relax \
-    -T$(SCRIPTS_DIR)/link.ld -L$(HOME)/tools/riscv/lib/gcc/riscv64-unknown-elf/13.2.0 \
-    -lm -lgcc
+# Appended after RISCV_LDFLAGS (see software/Makefile)
+dma_desc64_test_LDFLAGS := -Wl,--no-relax

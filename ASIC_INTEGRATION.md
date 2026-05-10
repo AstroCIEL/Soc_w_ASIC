@@ -2,7 +2,14 @@
 
 本文档详细说明如何将一个向量矩阵乘加速器（VecMatMul ASIC）集成到 ARA SoC 中。该 ASIC 作为 AXI 协处理器，内部带有 DMA 可以主动访问系统内存。
 
-**与本仓库（ARA SoC）实践的对照：** 下文仍以通用 **VMMA** 命名与寄存器布局作为模板；本仓库中已落地的参考 RTL 为 **`hardware/user_ip/asic_dma_accel/`**（仿真 filelist：`hardware/user_ip/asic_dma_accel/filelist_sim.f`）。SoC 集成侧采用与 **`hardware/soc/minimum/`**、**`hardware/soc/maximum/`** **并列**的第三套顶层目录 **`hardware/soc/minimum_asic_dma/`**（专用 `ariane_soc_pkg.sv` / `ariane_peripherals.sv` / `ariane_soc_top.sv`），避免在「纯净 minimum」里用宏分叉。仿真必须在 **`sim/`** 下使用**完整** filelist（含 TB、DPI、各 IP），例如 **`sim/filelist_minimum_asic_dma.f`**；不要单独用 `hardware/soc/filelist_*.f` 代替。切换不同 SoC 变体时，建议 **`make clean && make vcs FILELIST=…`**，否则 `sim/Makefile` 可能因未追踪 `FILELIST` 而未重新编译。软件侧见 **`software/soc/include/asic_dma_accel.h`**、**`asic_dma_accel_test`**；系统级说明见 **`README.md`**、**`DOC.md`**。
+**与本仓库（ARA SoC）实践的对照：** 下文仍以通用 **VMMA** 命名与寄存器/接口作为集成模板。本仓库中 **与 VMMA 文档对应的可仿真实现** 为：
+
+| 变体 | SoC 目录 | 仿真 filelist（在 `sim/` 下） | 用户 IP | 说明 |
+|------|----------|------------------------------|---------|------|
+| **片内 DMA 演示 ASIC** | `hardware/soc/minimum_asic_dma/` | **`sim/filelist_minimum_asic_dma.f`** | `hardware/user_ip/asic_dma_accel/` | 第三套网表；MMIO `0x7000_0000` 上为 **`asic_dma_accel`**，AXI master 索引 **`AsicDmaMst`** |
+| **VMMA（VecMatMul + DMA）** | **`hardware/soc/minimum_vmma_dma/`** | **`sim/filelist_minimum_vmma_dma.f`** | **`hardware/user_ip/vmma/`**（**`vmma_sim.sv`** 单模块 **`vmma_top`**） | 第四套网表；**同一 MMIO 基址数值** `0x7000_0000`，但 RTL 为 **`vmma_top`**，master 索引 **`VmmaDmaMst`**；**与上一行互斥**，须用正确 **`FILELIST`** |
+
+二者均与 **`hardware/soc/minimum/`**、**`maximum/`** **并列**维护专用 `ariane_soc_pkg.sv` / `ariane_peripherals.sv` / `ariane_soc_top.sv`，避免在「纯净 minimum」里用宏分叉。仿真必须在 **`sim/`** 下使用**完整** filelist（含 TB、DPI、各 IP）；**不要**单独用 `hardware/soc/filelist_*.f` 代替。切换变体时建议 **`make clean && make vcs FILELIST=…`**，且 **`vcs-run` 使用同一 `FILELIST`**。软件：`asic_dma_accel_*`、`vmma.h` / `vmma.c`、`vmma_test`；系统级说明见 **`README.md`**、**`DOC.md`**（含 **WT D-cache 与 DMA 一致性**、**`W_STRIDE`** 对齐等调试结论）。
 
 ---
 
@@ -90,6 +97,8 @@ Y = W × X
 | 0x50 | IRQ_MASK | RW | 32 | 中断使能掩码 |
 | 0x54 | IRQ_STATUS | RW | 32 | 中断状态（写1清除） |
 
+**本仓库 `vmma_sim.sv` + `axi2mem` 实现注记：** 配置口经 **`axi2mem`** 按 **64 位字宽** 访问，寄存器为 **8 字节对齐槽位**（与上表「连续 32 位偏移」的排版不完全一致）。**以软件为准**：`software/soc/include/vmma.h` 中 **`VMMA_REG_*_OFF`**（如 `CMD=0x00`、`STATUS=0x08`、`CTRL=0x10`、`W_ADDR=0x28` …）；`struct vmma_regs` 为 **`volatile uint64_t`** 字段，与槽位一一对应。驱动使用 **`struct vmma_drv` + `vmma_bind()`** 操作表，而非下文示例中的纯函数 `vmma_init()`/`vmma_configure()` 命名（语义等价，可对照映射）。
+
 ### 1.4 时序规范
 
 #### AXI Slave 接口时序（配置访问）
@@ -152,7 +161,15 @@ BREADY:   ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾�
 
 ### 2.1 目录结构
 
-创建以下目录结构：
+**本仓库当前（SoC 可仿真）布局** — 单文件 **`vmma_top`**，便于先打通 **`minimum_vmma_dma`**：
+
+```
+hardware/user_ip/vmma/
+├── vmma_sim.sv      # 模块名 vmma_top：AXI Slave(cfg) + AXI Master(mst) + irq_o
+└── filelist_sim.f   # 由 sim/filelist_minimum_vmma_dma.f 引用
+```
+
+**目标/文档化多文件 ASIC** 可采用下述树（与 §2.2 起代码模板对应）；拆分实现时可逐步替换 `vmma_sim.sv`：
 
 ```
 hardware/user_ip/vmma/
@@ -683,7 +700,7 @@ ariane_peripherals #(
     .dma_cfg        ( master[ariane_soc::DMA]      ),
     .dma_mst        ( slave [ariane_soc::DMAMst]   ),
     .vmma_cfg       ( master[ariane_soc::VMMA]     ),  // <-- 添加
-    .vmma_mst       ( slave [ariane_soc::VMMAMst]  ),  // <-- 添加
+    .vmma_mst       ( slave [ariane_soc::VmmaDmaMst]  ),  // <-- 添加（与本仓库 ariane_soc_pkg 命名一致）
     .irq_o          ( irqs                         ),
     // ...
 );
@@ -1159,6 +1176,8 @@ cd sim
 make clean && make vcs FILELIST=filelist.f              # 默认 maximum
 # 或
 make clean && make vcs FILELIST=filelist_minimum_asic_dma.f
+# VMMA（第四套网表）
+make clean && make vcs FILELIST=filelist_minimum_vmma_dma.f
 
 # 或 Verilator
 make verilate
@@ -1181,11 +1200,11 @@ ls -la build/bin/vmma_test*
 ```bash
 cd sim
 
-# 运行测试
-make vcs-run app=../software/build/bin/vmma_test
+# VMMA：必须与编译 simv 时同一 FILELIST
+make vcs-run FILELIST=filelist_minimum_vmma_dma.f app=../software/build/bin/vmma_test
 
 # 带波形（调试用）
-make vcs-wave app=../software/build/bin/vmma_test
+make vcs-wave FILELIST=filelist_minimum_vmma_dma.f app=../software/build/bin/vmma_test
 make verdi
 ```
 
@@ -1199,6 +1218,9 @@ make verdi
 |------|----------|----------|
 | 无法访问寄存器 | 地址映射错误 | 检查 `ariane_soc_pkg.sv` 的基地址与 `addr_map` 条目顺序/索引 |
 | 换网表后行为未变 / 仍缺 ASIC | `sim/Makefile` 未把 `FILELIST` 编入依赖 | **`make clean && make vcs FILELIST=…`**；运行仿真时 **`vcs-run` 也要带同一 `FILELIST`** |
+| 用 `vmma_test` 却跑在 `asic_dma` 仿真上（或反之） | **`FILELIST` 与 ELF 不匹配** | `asic_dma` 用 **`filelist_minimum_asic_dma.f`**；VMMA 用 **`filelist_minimum_vmma_dma.f`**；二者 **不可混用同一 `simv`** |
+| VMMA 结果全 0 或 UART FAIL，波形显示 DRAM 已写入正确 Y | CVA6 **WT D-cache** + **预取**：输出 line 在 DMA 写回前已缓存旧数据 | 见 **`DOC.md` §1.5**：输出缓冲 **远离** W/X（如 **`--section-start=.vmma_dma_out=0x8001F800`**）、kick 前 **`fence ow, ow`**、避免完成前对 **Y** 多余 **store** |
+| 部分行 MAC 错误 | **`W_STRIDE`** 与 **64b AXI 读行** 不对齐 | **`W_STRIDE` 为 8 的倍数**；行宽不足时在 **N 右侧 padding**（见 `vmma_test`） |
 | 链接或编译 TB 失败 | 只用了 `hardware/soc/filelist_*.f` | 改用 **`sim/filelist_*.f`**（含 `../tb/`、DPI、IP） |
 | DMA 读写出错 | AXI 协议违规 | 检查地址对齐、突发长度、ID 宽度与从设备支持 |
 | 结果错误 | 数据类型不匹配 | 确认 dtype 配置与数据一致 |
@@ -1209,20 +1231,20 @@ make verdi
 
 ### 7.2 波形调试信号
 
-在 Verdi 中关注以下信号（模块实例名以 RTL 为准；本仓库 ASIC 为 `i_asic_dma_accel`）：
+在 Verdi 中关注以下信号（模块实例名以 RTL 为准）：
 
 ```
-// ASIC 配置访问（示例：VMMA）
-dut.i_ariane_peripherals.i_vmma.slv_*
-// 本仓库 asic_dma_accel：dut.i_ariane_peripherals.i_asic_dma_accel.cfg.*
+// minimum_vmma_dma：VMMA 配置与 DMA master（单文件 vmma_top，无 i_ctrl/i_dma 子层次）
+dut.i_ariane_peripherals.i_vmma.cfg.*
+dut.i_ariane_peripherals.i_vmma.mst.*
 
-// ASIC DMA 访问
-dut.i_ariane_peripherals.i_vmma.mst_*
-// 本仓库：...i_asic_dma_accel.mst.*
+// minimum_asic_dma：asic_dma_accel
+dut.i_ariane_peripherals.i_asic_dma_accel.cfg.*
+dut.i_ariane_peripherals.i_asic_dma_accel.mst.*
 
-// 加速器内部状态
-dut.i_ariane_peripherals.i_vmma.i_ctrl.*
-dut.i_ariane_peripherals.i_vmma.i_dma.*
+// 文档化多文件 VMMA 可选层次（若替换为拆分 RTL）
+// dut.i_ariane_peripherals.i_vmma.i_ctrl.*
+// dut.i_ariane_peripherals.i_vmma.i_dma.*
 
 // AXI Crossbar
 dut.i_axi_xbar.*
@@ -1241,7 +1263,14 @@ dut.i_axi_xbar.*
 
 ## 附录 A: 完整文件清单
 
-**硬件文件：**
+**硬件文件（本仓库 VMMA 仿真模型）：**
+```
+hardware/user_ip/vmma/
+├── vmma_sim.sv
+└── filelist_sim.f
+```
+
+**规划中的多文件 VMMA（附录参考）：**
 ```
 hardware/user_ip/vmma/
 ├── include/vmma_pkg.sv
@@ -1262,7 +1291,7 @@ hardware/soc/maximum/ariane_soc_top.sv
 sim/filelist.f
 ```
 
-**本仓库「第三套变体」参考路径（标量 + ASIC DMA，与上文 VMMA 模板等价）：**
+**本仓库「第三套变体」参考路径（标量 + asic_dma_accel）：**
 ```
 hardware/soc/minimum_asic_dma/ariane_soc_pkg.sv
 hardware/soc/minimum_asic_dma/ariane_peripherals.sv
@@ -1272,12 +1301,25 @@ sim/filelist_minimum_asic_dma.f
 hardware/user_ip/asic_dma_accel/
 ```
 
-**软件文件：**
+**本仓库「第四套变体」参考路径（标量 + VMMA 仿真模型）：**
+```
+hardware/soc/minimum_vmma_dma/ariane_soc_pkg.sv
+hardware/soc/minimum_vmma_dma/ariane_peripherals.sv
+hardware/soc/minimum_vmma_dma/ariane_soc_top.sv
+hardware/soc/filelist_minimum_vmma_dma.f
+sim/filelist_minimum_vmma_dma.f
+hardware/user_ip/vmma/vmma_sim.sv
+hardware/user_ip/vmma/filelist_sim.f
+```
+
+**软件文件（VMMA）：**
 ```
 software/soc/include/vmma.h
 software/soc/src/vmma.c
 software/app/vmma_test/
-├── app.mk
+├── app.mk          # 含 vmma_test_LDFLAGS：--section-start=.vmma_dma_out=0x8001F800
 └── main.c
 ```
+
+**软件构建注：** `software/Makefile` 链接行为 **`$(RISCV_LDFLAGS) $(app_LDFLAGS)`**，应用仅追加标志（见 `DOC.md` §1.4）。
 
