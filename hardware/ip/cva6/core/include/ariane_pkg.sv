@@ -214,57 +214,6 @@ package ariane_pkg;
   localparam SupervisorIrq = 1;
   localparam MachineIrq = 0;
 
-  // ---------------
-  // Cache config
-  // ---------------
-
-  // for usage in OpenPiton we have to propagate the openpiton L15 configuration from l15.h
-`ifdef PITON_ARIANE
-
-`ifndef CONFIG_L1I_CACHELINE_WIDTH
-  `define CONFIG_L1I_CACHELINE_WIDTH 128
-`endif
-
-`ifndef CONFIG_L1I_ASSOCIATIVITY
-  `define CONFIG_L1I_ASSOCIATIVITY 4
-`endif
-
-`ifndef CONFIG_L1I_SIZE
-  `define CONFIG_L1I_SIZE 16*1024
-`endif
-
-`ifndef CONFIG_L1D_CACHELINE_WIDTH
-  `define CONFIG_L1D_CACHELINE_WIDTH 128
-`endif
-
-`ifndef CONFIG_L1D_ASSOCIATIVITY
-  `define CONFIG_L1D_ASSOCIATIVITY 8
-`endif
-
-`ifndef CONFIG_L1D_SIZE
-  `define CONFIG_L1D_SIZE 32*1024
-`endif
-
-`ifndef L15_THREADID_WIDTH
-  `define L15_THREADID_WIDTH 3
-`endif
-
-  // I$
-  localparam int unsigned ICACHE_LINE_WIDTH = `CONFIG_L1I_CACHELINE_WIDTH;
-  localparam int unsigned ICACHE_SET_ASSOC = `CONFIG_L1I_ASSOCIATIVITY;
-  localparam int unsigned ICACHE_INDEX_WIDTH = $clog2(`CONFIG_L1I_SIZE / ICACHE_SET_ASSOC);
-  localparam int unsigned ICACHE_TAG_WIDTH = riscv::PLEN - ICACHE_INDEX_WIDTH;
-  localparam int unsigned ICACHE_USER_LINE_WIDTH = (AXI_USER_WIDTH == 1) ? 4 : 128;  // in bit
-  // D$
-  localparam int unsigned DCACHE_LINE_WIDTH = `CONFIG_L1D_CACHELINE_WIDTH;
-  localparam int unsigned DCACHE_SET_ASSOC = `CONFIG_L1D_ASSOCIATIVITY;
-  localparam int unsigned DCACHE_INDEX_WIDTH = $clog2(`CONFIG_L1D_SIZE / DCACHE_SET_ASSOC);
-  localparam int unsigned DCACHE_TAG_WIDTH = riscv::PLEN - DCACHE_INDEX_WIDTH;
-  localparam int unsigned DCACHE_USER_LINE_WIDTH = (AXI_USER_WIDTH == 1) ? 4 : 128;  // in bit
-  localparam int unsigned DCACHE_USER_WIDTH = cva6_config_pkg::CVA6ConfigDataUserWidth;
-
-  localparam int unsigned MEM_TID_WIDTH = `L15_THREADID_WIDTH;
-`endif
 
   // ---------------
   // EX Stage
@@ -647,8 +596,6 @@ package ariane_pkg;
     logic        ack;     // response is valid
     logic [63:0] result;  // sign-extended, result
   } amo_resp_t;
-
-  localparam RVFI = cva6_config_pkg::CVA6ConfigRvfiTrace;
 
   // ----------------------
   // Arithmetic Functions

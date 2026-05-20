@@ -29,8 +29,7 @@ module acc_dispatcher
     parameter type accelerator_resp_t = logic,
     parameter type acc_mmu_req_t = logic,
     parameter type acc_mmu_resp_t = logic,
-    parameter type acc_cfg_t = logic,
-    parameter acc_cfg_t AccCfg = '0
+    parameter type acc_cfg_t = logic
 ) (
     input logic clk_i,
     input logic rst_ni,

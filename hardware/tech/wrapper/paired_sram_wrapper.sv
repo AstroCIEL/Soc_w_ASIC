@@ -85,12 +85,5 @@ module paired_sram_wrapper #(
 
   end else begin : gen_mem_user
     assign ruser_o = '0;
-    // synthesis translate_off
-    begin : i_tc_sram_user
-      localparam type data_t = logic [DATA_WIDTH-1:0];
-      data_t init_val [0:0];
-      data_t sram [NUM_WORDS-1:0] /* verilator public_flat */;
-    end
-    // synthesis translate_on
   end
 endmodule : paired_sram_wrapper

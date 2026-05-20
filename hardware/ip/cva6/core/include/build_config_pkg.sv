@@ -194,6 +194,19 @@ package build_config_pkg;
     cfg.X_DUALWRITE = 0;
     cfg.X_ISSUE_REGISTER_SPLIT = 0;
 
+    cfg.INTERRUPTS = '{
+        S_SW:     (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_S_SOFT),
+        VS_SW:    (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_VS_SOFT),
+        M_SW:     (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_M_SOFT),
+        S_TIMER:  (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_S_TIMER),
+        VS_TIMER: (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_VS_TIMER),
+        M_TIMER:  (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_M_TIMER),
+        S_EXT:    (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_S_EXT),
+        VS_EXT:   (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_VS_EXT),
+        M_EXT:    (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_M_EXT),
+        HS_EXT:   (64'(1) << (CVA6Cfg.XLEN - 1)) | 64'(riscv::IRQ_HS_EXT)
+    };
+
     return cfg;
   endfunction
 

@@ -7,12 +7,11 @@
 //
 // Original Author: Guillaume Chauvon
 
-module compressed_instr_decoder #(
-    parameter type                    copro_compressed_resp_t          = logic,
-    parameter int                     NbInstr                          = 1,
-    parameter copro_compressed_resp_t CoproInstr             [NbInstr] = {0},
-    parameter type                    x_compressed_req_t               = logic,
-    parameter type                    x_compressed_resp_t              = logic
+module compressed_instr_decoder
+  import cvxif_instr_pkg::*;
+#(
+    parameter type x_compressed_req_t  = logic,
+    parameter type x_compressed_resp_t = logic
 ) (
     input  logic               clk_i,
     input  logic               rst_ni,
@@ -22,10 +21,12 @@ module compressed_instr_decoder #(
     output x_compressed_resp_t compressed_resp_o
 );
 
+  localparam int NbInstr = cvxif_instr_pkg::NbCompInstr;
+
   logic [NbInstr-1:0] sel;
 
   for (genvar i = 0; i < NbInstr; i++) begin : gen_predecoder_selector
-    assign sel[i] = ((CoproInstr[i].mask & compressed_req_i.instr) == CoproInstr[i].instr);
+    assign sel[i] = ((CoproCompInstr[i].mask & compressed_req_i.instr) == CoproCompInstr[i].instr);
   end
 
   always_comb begin
@@ -34,8 +35,8 @@ module compressed_instr_decoder #(
     compressed_resp_o.instr  = '0;
     for (int unsigned i = 0; i < NbInstr; i++) begin
       if (sel[i] && compressed_valid_i) begin
-        compressed_resp_o.accept       = CoproInstr[i].resp.accept;
-        compressed_resp_o.instr        = CoproInstr[i].resp.instr;
+        compressed_resp_o.accept       = CoproCompInstr[i].resp.accept;
+        compressed_resp_o.instr        = CoproCompInstr[i].resp.instr;
         // Remap rs1 and rs2
         compressed_resp_o.instr[19:15] = compressed_req_i.instr[11:7];
         compressed_resp_o.instr[24:20] = compressed_req_i.instr[6:2];

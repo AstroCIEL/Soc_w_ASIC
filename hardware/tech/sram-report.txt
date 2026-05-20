@@ -1,52 +1,46 @@
 SRAM Macro Summary
 ==================
-Default config: NR_LANES=4, VLEN=4096, cv64a6_imafdcv_sv39 (WT dcache, TechnoCut=0)
+Default config: NR_LANES=2, VLEN=2048, cv64a6_imafdcv_sv39 (WT dcache, TechnoCut=0)
 
 Instantiation Hierarchy
 -----------------------
-ara_soc
- ├── i_dram: l2_mem_wrapper → tc_sram (1048576×128)       ← L2 main memory
+ariane_soc_top (maximum)
+ ├── i_sram: paired_sram_wrapper → tc_sram_wrapper → tc_sram (16384×64)  ← L2 main memory
  │
  ├── CVA6 core
  │   ├── cva6_icache (×4 way)
- │   │   ├── tag:  sram_cache → sram → tc_sram (64×47)    ← I$ tag
- │   │   └── data: sram_cache → sram → tc_sram (64×128)   ← I$ data
+ │   │   ├── tag:  sram_cache → paired_sram_wrapper → tc_sram_wrapper → tc_sram (64×47)    ← I$ tag
+ │   │   └── data: sram_cache → paired_sram_wrapper → tc_sram_wrapper → tc_sram (64×128)   ← I$ data
  │   │
  │   └── wt_dcache → wt_dcache_mem
- │       ├── data (×4 bank): sram_cache → sram → tc_sram (64×256)  ← D$ data
- │       └── tag  (×4 way):  sram_cache → sram → tc_sram (64×46)   ← D$ tag
+ │       ├── data (×4 bank): sram_cache → paired_sram_wrapper → tc_sram_wrapper → tc_sram (64×256)  ← D$ data
+ │       └── tag  (×4 way):  sram_cache → paired_sram_wrapper → tc_sram_wrapper → tc_sram (64×46)   ← D$ tag
  │
- └── Ara (×4 lane)
+ └── Ara (×2 lane)
      └── vector_regfile (×8 bank)
-         └── tc_sram (64×64)                               ← VRF
+         └── vrf_mem_wrapper → tc_sram_wrapper → tc_sram (64×64)          ← VRF
 
 Unique Shapes
 -------------
   Shape (Depth×Width)  | Usage        | Count | Total Capacity
   ---------------------+--------------+-------+---------------
-  1048576 × 128b       | L2 memory    |     1 | 16 MiB
+   16384 ×  64b        | L2 memory    |     1 | 128 KiB
       64 × 256b        | D$ data bank |     4 | 8 KiB
       64 × 128b        | I$ data      |     4 | 4 KiB
-      64 ×  64b        | Ara VRF bank |    32 | 16 KiB
+      64 ×  64b        | Ara VRF bank |    16 | 8 KiB
       64 ×  47b        | I$ tag       |     4 | ~1.5 KiB
       64 ×  46b        | D$ tag       |     4 | ~1.4 KiB
 
-Wrapper Chain (sim)
--------------------
-  tc_sram (hardware/tech/src/rtl/tc_sram.sv)          — behavioral model
-  tc_sram_wrapper → tc_sram                           — used by sram (sram_pulp.sv) in FPGA path (unused)
-  sram (sram_pulp.sv) → tc_sram                       — CVA6 cache (TechnoCut=0)
-  sram_cache → sram → tc_sram                         — CVA6 I$/D$
-  l2_mem_wrapper → tc_sram                             — SoC L2
-
-Wrapper Chain (syn)
--------------------
-  tc_sram_syn (hardware/tech/src/rtl/tc_sram_syn.sv)  — shape check + macro placeholder
-  All other wrappers shared with sim path.
+Wrapper Chain 
+-------------------------
+  tc_sram_wrapper → tc_sram                           — leaf SRAM (flow-specific impl)
+  paired_sram_wrapper → tc_sram_wrapper → tc_sram     — CVA6 cache (TechnoCut=0)
+  sram_cache → paired_sram_wrapper → tc_sram          — CVA6 I$/D$
+  vrf_mem_wrapper → tc_sram_wrapper → tc_sram         — Ara VRF
 
 Not Instantiated (current config)
 ---------------------------------
   - cva6_shared_tlb sram          (UseSharedTlb=0)
   - std_nbdcache sram             (DCacheType=WT, not WB)
   - hpdcache_sram_*               (DCacheType=WT, not HPDCACHE)
-  - tc_sram_wrapper_cache_techno  (TechnoCut=0)
+  - sram_cache TECHNO_CUT path    (TechnoCut=0)

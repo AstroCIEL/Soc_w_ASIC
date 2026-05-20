@@ -12,7 +12,7 @@ import "DPI-C" context function byte read_section(input longint address, inout b
 
 `define STRINGIFY(x) `"x`"
 
-module ara_tb;
+module ariane_soc_tb;
 
   /*****************
    *  Definitions  *
@@ -189,4 +189,4 @@ module ara_tb;
     $fsdbDumpvars(0, dut, "+all");
   end
 
-endmodule : ara_tb
+endmodule : ariane_soc_tb

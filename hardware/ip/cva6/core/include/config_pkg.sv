@@ -54,6 +54,19 @@ package config_pkg;
   localparam NrMaxRules = 16;
 
   typedef struct packed {
+    logic [63:0] S_SW;
+    logic [63:0] VS_SW;
+    logic [63:0] M_SW;
+    logic [63:0] S_TIMER;
+    logic [63:0] VS_TIMER;
+    logic [63:0] M_TIMER;
+    logic [63:0] S_EXT;
+    logic [63:0] VS_EXT;
+    logic [63:0] M_EXT;
+    logic [63:0] HS_EXT;
+  } interrupts_t;
+
+  typedef struct packed {
     // General Purpose Register Size (in bits)
     int unsigned                 XLEN;
     // Virtual address Size (in bits)
@@ -392,6 +405,9 @@ package config_pkg;
     int unsigned X_DUALREAD;
     int unsigned X_DUALWRITE;
     int unsigned X_ISSUE_REGISTER_SPLIT;
+
+    // Interrupt cause constants
+    interrupts_t INTERRUPTS;
 
   } cva6_cfg_t;
 

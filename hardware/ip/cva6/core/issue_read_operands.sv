@@ -597,7 +597,7 @@ module issue_read_operands
     );
 
     if (CVA6Cfg.NrRgprPorts == 3) begin : gen_gp_three_port
-      assign rs3_res[i] = rs3[i][riscv::XLEN-1:0];
+      assign rs3_res[i] = rs3[i][CVA6Cfg.XLEN-1:0];
     end else begin : gen_fp_three_port
       assign rs3_res[i] = rs3[i][CVA6Cfg.FLen-1:0];
     end

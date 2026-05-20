@@ -12,7 +12,7 @@
 module lane import ara_pkg::*; import rvv_pkg::*; #(
     parameter  int           unsigned NrLanes               = 1, // Number of lanes
     parameter  int           unsigned VLEN                  = 0,
-    parameter  config_pkg::cva6_cfg_t CVA6Cfg               = cva6_config_pkg::cva6_cfg,
+    parameter  config_pkg::cva6_cfg_t CVA6Cfg               = config_pkg::cva6_cfg_empty,
     // Support for floating-point data types
     parameter  fpu_support_e          FPUSupport            = FPUSupportHalfSingleDouble,
     // External support for vfrec7, vfrsqrt7

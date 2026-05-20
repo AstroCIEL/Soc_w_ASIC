@@ -12,7 +12,7 @@ import "DPI-C" context function byte read_section(input longint address, inout b
 
 `define STRINGIFY(x) `"x`"
 
-module ara_tb_verilator (
+module ariane_soc_tb_verilator (
     input  logic        clk_i,
     input  logic        rst_ni,
     output logic [63:0] exit_o
@@ -123,4 +123,4 @@ module ara_tb_verilator (
 
 
 
-endmodule : ara_tb_verilator
+endmodule : ariane_soc_tb_verilator

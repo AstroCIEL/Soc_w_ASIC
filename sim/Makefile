@@ -15,6 +15,7 @@
 
 SHELL    := /usr/bin/env bash
 ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+export ROOT := $(abspath $(ROOT_DIR)/..)
 
 # ── Shared paths ──────────────────────────────────────────────────────────────
 FILELIST        := filelist.f
@@ -50,7 +51,7 @@ CXX      := $(GCC_HOME)/bin/g++
 CC       := $(GCC_HOME)/bin/gcc
 
 VCS_BUILD := $(ROOT_DIR)/build/vcs
-VCS_TOP   := ara_tb
+VCS_TOP   := ariane_soc_tb
 VCS_BIN   := $(VCS_BUILD)/simv
 
 
@@ -108,7 +109,7 @@ VERILATOR  := verilator
 OBJCACHE   := $(shell which ccache 2>/dev/null)
 
 VERIL_BUILD := $(ROOT_DIR)/build/verilator
-VERIL_TOP   := ara_tb_verilator
+VERIL_TOP   := ariane_soc_tb_verilator
 
 # ── Verilator C++ sources ──────────────────────────────────────────────────
 TB_CPP_DIR  := $(TB_DIR)/verilator

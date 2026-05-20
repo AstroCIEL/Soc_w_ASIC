@@ -1,1 +1,1 @@
-../hardware/user_ip/default_slave/default_slave_syn.sv
+${ROOT}/hardware/user_ip/default_slave/default_slave_syn.sv

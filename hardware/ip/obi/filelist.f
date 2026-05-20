@@ -1,14 +1,14 @@
-+incdir+../hardware/ip/obi/include
++incdir+${ROOT}/hardware/ip/obi/include
 
-../hardware/ip/obi/src/obi_pkg.sv
-../hardware/ip/obi/src/apb_to_obi.sv
-../hardware/ip/obi/src/obi_sram_shim.sv
-../hardware/ip/obi/src/obi_rready_converter.sv
-../hardware/ip/obi/src/obi_err_sbr.sv
-../hardware/ip/obi/src/obi_cut.sv
-../hardware/ip/obi/src/obi_demux.sv
-../hardware/ip/obi/src/obi_mux.sv
-../hardware/ip/obi/src/obi_intf.sv
-../hardware/ip/obi/src/obi_atop_resolver.sv
-../hardware/ip/obi/src/obi_xbar.sv
-../hardware/ip/obi/src/obi_to_apb.sv
+${ROOT}/hardware/ip/obi/src/obi_pkg.sv
+${ROOT}/hardware/ip/obi/src/apb_to_obi.sv
+${ROOT}/hardware/ip/obi/src/obi_sram_shim.sv
+${ROOT}/hardware/ip/obi/src/obi_rready_converter.sv
+${ROOT}/hardware/ip/obi/src/obi_err_sbr.sv
+${ROOT}/hardware/ip/obi/src/obi_cut.sv
+${ROOT}/hardware/ip/obi/src/obi_demux.sv
+${ROOT}/hardware/ip/obi/src/obi_mux.sv
+${ROOT}/hardware/ip/obi/src/obi_intf.sv
+${ROOT}/hardware/ip/obi/src/obi_atop_resolver.sv
+${ROOT}/hardware/ip/obi/src/obi_xbar.sv
+${ROOT}/hardware/ip/obi/src/obi_to_apb.sv

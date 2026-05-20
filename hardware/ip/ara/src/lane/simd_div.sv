@@ -9,7 +9,7 @@
 
 module simd_div import ara_pkg::*; import rvv_pkg::*; #(
     // CVA6 configuration
-    parameter  config_pkg::cva6_cfg_t CVA6Cfg = cva6_config_pkg::cva6_cfg,
+    parameter  config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
     // Dependant parameters. DO NOT CHANGE!
     localparam int  unsigned DataWidth = $bits(elen_t),
     localparam int  unsigned StrbWidth = DataWidth/8,

@@ -52,7 +52,7 @@ module sram_cache #(
         rdata_o    = rdata_user[DATA_AND_USER_WIDTH-1:DATA_WIDTH];
         ruser_o    = rdata_user[USER_WIDTH-1:0];
       end
-      tc_sram_wrapper_cache_techno #(
+      tc_sram_wrapper #(
         .NumWords(NUM_WORDS),           // Number of Words in data array
         .DataWidth(DATA_AND_USER_WIDTH),// Data signal width
         .ByteWidth(32'd8),              // Width of a data byte
@@ -82,7 +82,7 @@ module sram_cache #(
         rdata_o    = rdata_user;
         ruser_o    = '0;
       end
-      tc_sram_wrapper_cache_techno #(
+      tc_sram_wrapper #(
         .NumWords(NUM_WORDS),           // Number of Words in data array
         .DataWidth(DATA_AND_USER_WIDTH),// Data signal width
         .ByteWidth(32'd8),              // Width of a data byte
