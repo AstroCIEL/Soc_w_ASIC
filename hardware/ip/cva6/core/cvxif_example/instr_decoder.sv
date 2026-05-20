@@ -7,11 +7,9 @@
 //
 // Original Author: Guillaume Chauvon
 
-module instr_decoder #(
-    parameter type               copro_issue_resp_t          = logic,
-    parameter type               opcode_t                    = logic,
-    parameter int                NbInstr                     = 1,
-    parameter copro_issue_resp_t CoproInstr        [NbInstr] = {0},
+module instr_decoder
+  import cvxif_instr_pkg::*;
+#(
     parameter int unsigned       NrRgprPorts                 = 2,
     parameter type               hartid_t                    = logic,
     parameter type               id_t                        = logic,
@@ -34,6 +32,8 @@ module instr_decoder #(
     output id_t                 id_o,
     output logic          [4:0] rd_o
 );
+
+  localparam int NbInstr = cvxif_instr_pkg::NbInstr;
 
   logic [NbInstr-1:0] sel;
   logic rs1_ready;

@@ -1,0 +1,20 @@
+// IPs (order matters: dependencies first)
+-f ${ROOT}/hardware/ip/common_cells/filelist.f
+-f ${ROOT}/hardware/ip/obi/filelist.f
+-f ${ROOT}/hardware/ip/apb/filelist.f
+-f ${ROOT}/hardware/ip/axi/filelist.f
+-f ${ROOT}/hardware/ip/axi_stream/filelist.f
+-f ${ROOT}/hardware/ip/axi_slice/filelist.f
+-f ${ROOT}/hardware/ip/register_interface/filelist.f
+-f ${ROOT}/hardware/ip/axi_riscv_atomics/filelist.f
+-f ${ROOT}/hardware/ip/axi2apb/filelist.f
+-f ${ROOT}/hardware/ip/fpnew/filelist.f
+-f ${ROOT}/hardware/ip/fpu_div_sqrt_mvp/filelist.f
+-f ${ROOT}/hardware/ip/cva6/filelist.f
+-f ${ROOT}/hardware/ip/ara/filelist.f
+-f ${ROOT}/hardware/ip/riscv-dbg/filelist.f
+-f ${ROOT}/hardware/ip/apb_timer/filelist.f
+-f ${ROOT}/hardware/ip/apb_uart/filelist.f
+-f ${ROOT}/hardware/ip/rv_plic/filelist.f
+-f ${ROOT}/hardware/ip/iDMA/filelist.f
+-f ${ROOT}/hardware/ip/axi2mem_burst/filelist.f

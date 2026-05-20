@@ -1,8 +1,8 @@
-+incdir+../hardware/ip/apb/include
++incdir+${ROOT}/hardware/ip/apb/include
 
-../hardware/ip/apb/src/apb_pkg.sv
-../hardware/ip/apb/src/apb_intf.sv
-../hardware/ip/apb/src/apb_err_slv.sv
-../hardware/ip/apb/src/apb_regs.sv
-../hardware/ip/apb/src/apb_cdc.sv
-../hardware/ip/apb/src/apb_demux.sv
+${ROOT}/hardware/ip/apb/src/apb_pkg.sv
+${ROOT}/hardware/ip/apb/src/apb_intf.sv
+${ROOT}/hardware/ip/apb/src/apb_err_slv.sv
+${ROOT}/hardware/ip/apb/src/apb_regs.sv
+${ROOT}/hardware/ip/apb/src/apb_cdc.sv
+${ROOT}/hardware/ip/apb/src/apb_demux.sv

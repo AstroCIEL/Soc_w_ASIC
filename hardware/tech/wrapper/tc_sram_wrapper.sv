@@ -15,6 +15,7 @@ module tc_sram_wrapper #(
   parameter int unsigned Latency      = 32'd1,    // Latency when the read data is available
   parameter              SimInit      = "none",   // Simulation initialization
   parameter bit          PrintSimCfg  = 1'b0,     // Print configuration
+  parameter              BYTE_ACCESS  = 1,        // Hint for ASIC macro selection (1=byte-enable, 0=word-only)
   // DEPENDENT PARAMETERS, DO NOT OVERWRITE!
   parameter int unsigned AddrWidth = (NumWords > 32'd1) ? $clog2(NumWords) : 32'd1,
   parameter int unsigned BeWidth   = (DataWidth + ByteWidth - 32'd1) / ByteWidth, // ceil_div
@@ -34,6 +35,12 @@ module tc_sram_wrapper #(
   output data_t [NumPorts-1:0] rdata_o     // read data
 );
 
+  // When BYTE_ACCESS=0, force be to all-ones (word-only access guarantee)
+  be_t [NumPorts-1:0] be_muxed;
+  for (genvar i = 0; i < NumPorts; i++) begin : gen_be_mux
+    assign be_muxed[i] = BYTE_ACCESS ? be_i[i] : '1;
+  end
+
   tc_sram #(
     .NumWords(NumWords),
     .DataWidth(DataWidth),
@@ -43,14 +50,14 @@ module tc_sram_wrapper #(
     .SimInit(SimInit),
     .PrintSimCfg(PrintSimCfg)
   ) i_tc_sram (
-      .clk_i    ( clk_i   ),
-      .rst_ni   ( rst_ni  ),
-      .req_i    ( req_i   ),
-      .we_i     ( we_i    ),
-      .be_i     ( be_i    ),
-      .wdata_i  ( wdata_i ),
-      .addr_i   ( addr_i  ),
-      .rdata_o  ( rdata_o )
+      .clk_i    ( clk_i    ),
+      .rst_ni   ( rst_ni   ),
+      .req_i    ( req_i    ),
+      .we_i     ( we_i     ),
+      .be_i     ( be_muxed ),
+      .wdata_i  ( wdata_i  ),
+      .addr_i   ( addr_i   ),
+      .rdata_o  ( rdata_o  )
     );
 
 endmodule

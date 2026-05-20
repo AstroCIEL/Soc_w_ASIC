@@ -80,6 +80,36 @@ module ariane_dma_desc64 #(
   // --------------------------------------------------------------------
   // AXI config slave -> 64b reg interface
   // --------------------------------------------------------------------
+  typedef logic [AxiCfgAddrWidth-1:0] cfg_addr_t;
+  typedef logic [AxiCfgDataWidth-1:0] cfg_data_t;
+  typedef logic [AxiCfgDataWidth/8-1:0] cfg_strb_t;
+  typedef logic [AxiCfgIdWidth-1:0]   cfg_id_t;
+  typedef logic [AxiCfgUserWidth-1:0] cfg_user_t;
+
+  `AXI_TYPEDEF_ALL(cfg_axi, cfg_addr_t, cfg_id_t, cfg_data_t, cfg_strb_t, cfg_user_t)
+
+  // Spill register on cfg port to improve timing
+  axi_cfg_req_t cfg_req_cut;
+  axi_cfg_rsp_t cfg_rsp_cut;
+
+  axi_multicut #(
+    .NoCuts     ( 1                  ),
+    .aw_chan_t  ( cfg_axi_aw_chan_t  ),
+    .w_chan_t   ( cfg_axi_w_chan_t   ),
+    .b_chan_t   ( cfg_axi_b_chan_t   ),
+    .ar_chan_t  ( cfg_axi_ar_chan_t  ),
+    .r_chan_t   ( cfg_axi_r_chan_t   ),
+    .axi_req_t  ( axi_cfg_req_t     ),
+    .axi_resp_t ( axi_cfg_rsp_t     )
+  ) i_cfg_axi_cut (
+    .clk_i,
+    .rst_ni,
+    .slv_req_i  ( cfg_req_i   ),
+    .slv_resp_o ( cfg_rsp_o   ),
+    .mst_req_o  ( cfg_req_cut ),
+    .mst_resp_i ( cfg_rsp_cut )
+  );
+
   `REG_BUS_TYPEDEF_ALL(dma_reg, logic[AxiCfgAddrWidth-1:0],
                                 logic[63:0], logic[7:0])
 
@@ -100,8 +130,8 @@ module ariane_dma_desc64 #(
   ) i_cfg_axi_to_reg (
     .clk_i,
     .rst_ni,
-    .axi_req_i  ( cfg_req_i        ),
-    .axi_rsp_o  ( cfg_rsp_o        ),
+    .axi_req_i  ( cfg_req_cut      ),
+    .axi_rsp_o  ( cfg_rsp_cut      ),
     .reg_req_o  ( dma_reg_req_full ),
     .reg_rsp_i  ( dma_reg_rsp      ),
     .reg_id_o   ( /* unused */     ),
@@ -257,11 +287,11 @@ module ariane_dma_desc64 #(
     .NoSlvPorts    ( 2                   ),
     .MaxWTrans     ( NumAxInFlight       ),
     .FallThrough   ( 1'b0               ),
-    .SpillAw       ( 1'b0               ),
-    .SpillW        ( 1'b0               ),
-    .SpillB        ( 1'b0               ),
-    .SpillAr       ( 1'b0               ),
-    .SpillR        ( 1'b0               )
+    .SpillAw       ( 1'b1               ),
+    .SpillW        ( 1'b1               ),
+    .SpillB        ( 1'b1               ),
+    .SpillAr       ( 1'b1               ),
+    .SpillR        ( 1'b1               )
   ) i_axi_mux (
     .clk_i,
     .rst_ni,

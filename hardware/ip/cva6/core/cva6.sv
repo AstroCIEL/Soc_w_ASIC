@@ -19,9 +19,7 @@ module cva6
   import ariane_pkg::*;
 #(
     // CVA6 config
-    parameter config_pkg::cva6_cfg_t CVA6Cfg = build_config_pkg::build_config(
-        cva6_config_pkg::cva6_cfg
-    ),
+    parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
 
     // RVFI PROBES
     parameter type rvfi_probes_instr_t = `RVFI_PROBES_INSTR_T(CVA6Cfg),
@@ -292,7 +290,6 @@ module cva6
     },
     //
     parameter type acc_cfg_t = logic,
-    parameter acc_cfg_t AccCfg = '0,
     // CVXIF Types
     parameter type readregflags_t = `READREGFLAGS_T(CVA6Cfg),
     parameter type writeregflags_t = `WRITEREGFLAGS_T(CVA6Cfg),
@@ -347,31 +344,6 @@ module cva6
     input noc_resp_t noc_resp_i
 );
 
-  localparam type interrupts_t = struct packed {
-    logic [CVA6Cfg.XLEN-1:0] S_SW;
-    logic [CVA6Cfg.XLEN-1:0] VS_SW;
-    logic [CVA6Cfg.XLEN-1:0] M_SW;
-    logic [CVA6Cfg.XLEN-1:0] S_TIMER;
-    logic [CVA6Cfg.XLEN-1:0] VS_TIMER;
-    logic [CVA6Cfg.XLEN-1:0] M_TIMER;
-    logic [CVA6Cfg.XLEN-1:0] S_EXT;
-    logic [CVA6Cfg.XLEN-1:0] VS_EXT;
-    logic [CVA6Cfg.XLEN-1:0] M_EXT;
-    logic [CVA6Cfg.XLEN-1:0] HS_EXT;
-  };
-
-  localparam interrupts_t INTERRUPTS = '{
-      S_SW: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_SOFT),
-      VS_SW: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_SOFT),
-      M_SW: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_SOFT),
-      S_TIMER: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_TIMER),
-      VS_TIMER: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_TIMER),
-      M_TIMER: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_TIMER),
-      S_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_EXT),
-      VS_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_EXT),
-      M_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_EXT),
-      HS_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_HS_EXT)
-  };
 
   // ------------------------------------------
   // Global Signals
@@ -741,8 +713,6 @@ module cva6
       .jvt_t(jvt_t),
       .irq_ctrl_t(irq_ctrl_t),
       .scoreboard_entry_t(scoreboard_entry_t),
-      .interrupts_t(interrupts_t),
-      .INTERRUPTS(INTERRUPTS),
       .x_compressed_req_t(x_compressed_req_t),
       .x_compressed_resp_t(x_compressed_resp_t)
   ) id_stage_i (
@@ -1592,7 +1562,6 @@ module cva6
         .exception_t       (exception_t),
         .scoreboard_entry_t(scoreboard_entry_t),
         .acc_cfg_t         (acc_cfg_t),
-        .AccCfg            (AccCfg),
         .acc_req_t         (cvxif_req_t),
         .acc_resp_t        (cvxif_resp_t),
         .accelerator_req_t (accelerator_req_t),
@@ -1770,9 +1739,7 @@ module cva6
       .CVA6Cfg(CVA6Cfg),
       .bp_resolve_t(bp_resolve_t),
       .scoreboard_entry_t(scoreboard_entry_t),
-      .interrupts_t(interrupts_t),
-      .exception_t(exception_t),
-      .INTERRUPTS(INTERRUPTS)
+      .exception_t(exception_t)
   ) instr_tracer_i (
       // .tracer_if(tracer_if),
       .pck(clk_i),

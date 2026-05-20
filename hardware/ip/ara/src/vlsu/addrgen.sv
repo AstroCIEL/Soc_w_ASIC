@@ -18,7 +18,7 @@ module addrgen import ara_pkg::*; import rvv_pkg::*; #(
     parameter  type         pe_req_t     = logic,
     parameter  type         pe_resp_t    = logic,
     // CVA6 configuration
-    parameter  config_pkg::cva6_cfg_t CVA6Cfg = cva6_config_pkg::cva6_cfg,
+    parameter  config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
     parameter  type         exception_t  = logic,
     // Dependant parameters. DO NOT CHANGE!
     localparam type         axi_addr_t   = logic [AxiAddrWidth-1:0],
