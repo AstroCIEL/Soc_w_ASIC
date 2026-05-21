@@ -21,9 +21,9 @@ set_property -dict {PACKAGE_PIN D11 IOSTANDARD LVCMOS33} [get_ports uart_rx_i]
 
 # JTAG
 # J50 connector pins
-set_property -dict {PACKAGE_PIN C19 IOSTANDARD LVCMOS33} [get_ports jtag_tck_i] ; # J50[7]
-set_property -dict {PACKAGE_PIN A13 IOSTANDARD LVCMOS33} [get_ports jtag_tms_i] ; # J50[10]
+set_property -dict {PACKAGE_PIN C19 IOSTANDARD LVCMOS33} [get_ports jtag_tck_i] ; # J50[7] brown
+set_property -dict {PACKAGE_PIN A13 IOSTANDARD LVCMOS33} [get_ports jtag_tms_i] ; # J50[10] orange
 # jtag_trst_ni connected to rst_ni internally in wrapper
-set_property -dict {PACKAGE_PIN C18 IOSTANDARD LVCMOS33} [get_ports jtag_tdi_i] ; # J50[8]
-set_property -dict {PACKAGE_PIN A12 IOSTANDARD LVCMOS33} [get_ports jtag_tdo_o] ; # J50[9]
+set_property -dict {PACKAGE_PIN C18 IOSTANDARD LVCMOS33} [get_ports jtag_tdi_i] ; # J50[8] red
+set_property -dict {PACKAGE_PIN A12 IOSTANDARD LVCMOS33} [get_ports jtag_tdo_o] ; # J50[9] yellow
 

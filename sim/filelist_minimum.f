@@ -6,7 +6,7 @@
 -f ${ROOT}/hardware/soc/filelist_minimum.f
 
 // user ip
--f ${ROOT}/hardware/user_ip/default_slave/filelist_sim.f
+-f ${ROOT}/hardware/user_ip/default_slave/filelist.f
 
 // tb
 ${ROOT}/tb/common/SimJTAG.sv

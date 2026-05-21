@@ -1,0 +1,5 @@
+mode: int_ff
+compared_rows: 32
+total_tokens: 2048
+mismatches: 0
+result: PASS

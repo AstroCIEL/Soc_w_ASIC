@@ -18,7 +18,7 @@ ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 export ROOT := $(abspath $(ROOT_DIR)/..)
 
 # ── Shared paths ──────────────────────────────────────────────────────────────
-FILELIST        := filelist.f
+FILELIST        := filelist_minimum_my_mxu.f
 VERIL_FILELIST  := filelist_verilator.f
 TB_DIR   := ../tb
 DPI_DIR  := $(TB_DIR)/dpi
@@ -29,7 +29,7 @@ DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
             $(wildcard $(DPI_DIR)/*.c)
 
 
-app      ?= ../software/build/bin/hello_world
+app      ?= ../software/build/bin/my_mxu_test
 
 # FESVR (Front-End Server) from RISC-V Spike installation
 # This provides the fesvr library for ELF loading and host-target communication
@@ -76,7 +76,9 @@ VCS_FLAGS := \
 
 VCS_RUN_FLAGS := \
   +vcs+lic+wait \
-  +PRELOAD=$(app)
+  +PRELOAD=$(app) \
+  +notimingchecks \
+  -ucli -do $(ROOT_DIR)/ucli_run.do
 
 VCS_WAVE_FLAGS := $(VCS_RUN_FLAGS) \
   +fsdbfile+waveform.fsdb \

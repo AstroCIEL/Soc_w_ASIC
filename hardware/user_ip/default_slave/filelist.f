@@ -1,0 +1,1 @@
+${ROOT}/hardware/user_ip/default_slave/default_slave.sv
