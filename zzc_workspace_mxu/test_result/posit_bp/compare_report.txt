@@ -1,0 +1,5 @@
+mode: posit_bp
+compared_rows: 32
+total_tokens: 2048
+mismatches: 0
+result: PASS

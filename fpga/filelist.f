@@ -2,7 +2,7 @@
 // Usage: -f ${ROOT}/fpga/filelist.f
 
 // IPs + SoC (same as simulation/synthesis)
--f ${ROOT}/hardware/soc/filelist_maximum.f
+-f ${ROOT}/hardware/soc/filelist_minimum.f
 
 // Technology cells — FPGA specific
 -f ${ROOT}/hardware/tech/filelist_fpga.f
