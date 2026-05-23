@@ -353,8 +353,10 @@ package fpnew_pkg;
   function automatic int unsigned max_fp_width(fmt_logic_t cfg);
     automatic int unsigned res = 0;
     for (int unsigned i = 0; i < NUM_FP_FORMATS; i++)
-      if (cfg[i])
-        res = unsigned'(maximum(res, fp_width(fp_format_e'(i))));
+      // if (cfg[i])
+      //   res = unsigned'(maximum(res, fp_width(fp_format_e'(i))));
+      if (cfg[i] && fp_width(fp_format_e'(i)) > res)
+        res = fp_width(fp_format_e'(i));
     return res;
   endfunction
 
@@ -371,8 +373,10 @@ package fpnew_pkg;
   function automatic int unsigned min_fp_width(fmt_logic_t cfg);
     automatic int unsigned res = max_fp_width(cfg);
     for (int unsigned i = 0; i < NUM_FP_FORMATS; i++)
-      if (cfg[i])
-        res = unsigned'(minimum(res, fp_width(fp_format_e'(i))));
+      // if (cfg[i])
+      //   res = unsigned'(minimum(res, fp_width(fp_format_e'(i))));
+      if (cfg[i] && fp_width(fp_format_e'(i)) < res)
+        res = fp_width(fp_format_e'(i));
     return res;
   endfunction
 

@@ -50,43 +50,187 @@ module tc_sram #(
 
   // ── Shape dispatch ───────────────────────────────────────────────────────
   if (NumWords == 16384 && DataWidth == 64) begin : gen_l2_mem
-    // L2 main memory — 16384 × 64b  (128 kB, AXI_DATA_WIDTH=64b / NrLanes=2)
-    // TODO: instantiate real macro here
-    // sram_16384x64 i_macro (
-    //   .CLK   (clk_i        ),
-    //   .CEN   (~req_i[0]    ),
-    //   .WEN   (~we_i[0]     ),
-    //   .A     (addr_i[0]    ),
-    //   .D     (wdata_i[0]   ),
-    //   .Q     (rdata_o[0]   ),
-    //   .BEN   (~be_i[0]     )
-    // );
-    assign rdata_o[0] = '0;
+    // L2 main memory — 16384 × 64b  
+    logic [63:0] wen_bits;
+    for (genvar i = 0; i < 8; i++) begin : gen_wen_expand
+      assign wen_bits[i*8 +: 8] = {8{~be_i[0][i]}};
+    end
+
+    sram_l2_16384x64 i_macro (
+      .CLK   (clk_i        ),
+      .CEN   (~req_i[0]    ),       // active-low chip enable
+      .GWEN  (~we_i[0]     ),       // active-low global write enable
+      .A     (addr_i[0]    ),
+      .D     (wdata_i[0]   ),
+      .WEN   (wen_bits     ),       // active-low bit write mask
+      .Q     (rdata_o[0]   ),
+      // margin / retention / debug signals — fixed at default values
+      .STOV  (1'b0         ),       // debug, tie-off 0
+      .RET1N (1'b1         ),       // 1 = normal mode (0 = low-power retention)
+      .EMA   (3'b111       ),       // SS/low-voltage corner timing margin (model reference value)
+      .EMAW  (2'b11        ),       // SS/low-voltage corner write margin (model reference value)
+      .EMAS  (1'b1         ),       // SS/low-voltage corner (model reference value)
+      .RAWL  (1'b0         ),       // read-assist off (default)
+      .RAWLM (2'b00        ),       // read-assist mode bits (default)
+      .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
+      .WABLM (3'b000       )        // write-assist mode bits (default)
+    );
 
   end else if (NumWords == 64 && DataWidth == 256) begin : gen_dcache_data
     // D$ data bank — 64 × 256b
-    // TODO: instantiate real macro here
-    assign rdata_o[0] = '0;
+    logic [127:0] wen_lo, wen_hi;
+    for (genvar i = 0; i < 16; i++) begin : gen_dcache_wen_expand
+      assign wen_lo[i*8 +: 8] = {8{~be_i[0][i   ]}};
+      assign wen_hi[i*8 +: 8] = {8{~be_i[0][i+16]}};
+    end
+
+    rf_dcache_half_64x128 i_macro_lo (
+      .clk   (clk_i              ),
+      .cen   (~req_i[0]          ),        // active-low chip enable
+      .gwen  (~we_i[0]           ),        // active-low global write enable
+      .a     (addr_i[0]          ),
+      .d     (wdata_i[0][127:0]  ),
+      .wen   (wen_lo             ),        // active-low bit write mask
+      .q     (rdata_o[0][127:0]  ),
+      // margin / retention signals — fixed at default values
+      .ema   (3'b111             ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b11              ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b1               ),        // SS/low-voltage corner (model reference value)
+      .ret1n (1'b1               ),        // 1 = normal mode (0 = low-power retention)
+      .rawl  (1'b0               ),        // read-assist off (default)
+      .rawlm (2'b00              ),        // read-assist mode bits (default)
+      .wabl  (1'b1               ),        // write-assist bypass (STA: selects valid addr setup arc)
+      .wablm (2'b00              )         // write-assist mode bits (default)
+    );
+
+    rf_dcache_half_64x128 i_macro_hi (
+      .clk   (clk_i              ),
+      .cen   (~req_i[0]          ),        // active-low chip enable
+      .gwen  (~we_i[0]           ),        // active-low global write enable
+      .a     (addr_i[0]          ),
+      .d     (wdata_i[0][255:128]),
+      .wen   (wen_hi             ),        // active-low bit write mask
+      .q     (rdata_o[0][255:128]),
+      // margin / retention signals — fixed at default values
+      .ema   (3'b111             ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b11              ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b1               ),        // SS/low-voltage corner (model reference value)
+      .ret1n (1'b1               ),        // 1 = normal mode (0 = low-power retention)
+      .rawl  (1'b0               ),        // read-assist off (default)
+      .rawlm (2'b00              ),        // read-assist mode bits (default)
+      .wabl  (1'b1               ),        // write-assist bypass (STA: selects valid addr setup arc)
+      .wablm (2'b00              )         // write-assist mode bits (default)
+    );
 
   end else if (NumWords == 64 && DataWidth == 128) begin : gen_icache_data
-    // I$ data — 64 × 128b
-    // TODO: instantiate real macro here
-    assign rdata_o[0] = '0;
+    // I$ data — 64 × 128b.
+    logic [127:0] wen_bits;
+    for (genvar i = 0; i < 16; i++) begin : gen_icache_wen_expand
+      assign wen_bits[i*8 +: 8] = {8{~be_i[0][i]}};
+    end
+
+    rf_icache_64x128 i_macro (
+      .clk   (clk_i        ),
+      .cen   (~req_i[0]    ),        // active-low chip enable
+      .gwen  (~we_i[0]     ),        // active-low global write enable
+      .a     (addr_i[0]    ),
+      .d     (wdata_i[0]   ),
+      .wen   (wen_bits     ),        // active-low bit write mask
+      .q     (rdata_o[0]   ),
+      // margin / retention signals — fixed at default values
+      .ema   (3'b111       ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b11        ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b1         ),        // SS/low-voltage corner (model reference value)
+      .ret1n (1'b1         ),        // 1 = normal mode (0 = low-power retention)
+      .rawl  (1'b0         ),        // read-assist off (default)
+      .rawlm (2'b00        ),        // read-assist mode bits (default)
+      .wabl  (1'b1         ),        // write-assist bypass (STA: selects valid addr setup arc)
+      .wablm (2'b00        )         // write-assist mode bits (default)
+    );
 
   end else if (NumWords == 64 && DataWidth == 64) begin : gen_vrf
-    // Ara VRF bank — 64 × 64b
-    // TODO: instantiate real macro here
-    assign rdata_o[0] = '0;
+    // Ara VRF bank — 64 × 64b.
+    logic [63:0] wen_bits;
+    for (genvar i = 0; i < 8; i++) begin : gen_vrf_wen_expand
+      assign wen_bits[i*8 +: 8] = {8{~be_i[0][i]}};
+    end
+
+    rf_vrf_64x64 i_macro (
+      .clk   (clk_i        ),
+      .cen   (~req_i[0]    ),        // active-low chip enable
+      .gwen  (~we_i[0]     ),        // active-low global write enable
+      .a     (addr_i[0]    ),
+      .d     (wdata_i[0]   ),
+      .wen   (wen_bits     ),        // active-low bit write mask
+      .q     (rdata_o[0]   ),
+      // margin / retention signals — fixed at default values
+      .ema   (3'b111       ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b11        ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b1         ),        // SS/low-voltage corner (model reference value)
+      .ret1n (1'b1         ),        // 1 = normal mode (0 = low-power retention)
+      .rawl  (1'b0         ),        // read-assist off (default)
+      .rawlm (2'b00        ),        // read-assist mode bits (default)
+      .wabl  (1'b1         ),        // write-assist bypass (STA: selects valid addr setup arc)
+      .wablm (2'b00        )         // write-assist mode bits (default)
+    );
 
   end else if (NumWords == 64 && DataWidth == 47) begin : gen_icache_tag
-    // I$ tag — 64 × 47b
-    // TODO: instantiate real macro here
-    assign rdata_o[0] = '0;
+    // I$ tag — 64 × 47b  
+    logic [47:0] wen_bits;
+    logic [47:0] q_raw;
+    for (genvar i = 0; i < 5; i++) begin : gen_itag_wen_expand
+      assign wen_bits[i*8 +: 8] = {8{~be_i[0][i]}};
+    end
+    assign wen_bits[46:40] = {7{~be_i[0][5]}};
+    assign wen_bits[47]    = 1'b1;             // unused macro bit — write always masked
+
+    rf_icache_tag_64x48 i_macro (
+      .clk   (clk_i                  ),
+      .cen   (~req_i[0]              ),        // active-low chip enable
+      .gwen  (~we_i[0]               ),        // active-low global write enable
+      .a     (addr_i[0]              ),
+      .d     ({1'b0, wdata_i[0]}     ),        // pad unused bit [47] with 0
+      .wen   (wen_bits               ),        // active-low bit write mask
+      .q     (q_raw                  ),        // 48-bit output
+      // margin / retention signals — fixed at default values
+      .ema   (3'b111                 ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b11                  ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b1                   ),        // SS/low-voltage corner (model reference value)
+      .ret1n (1'b1                   ),        // 1 = normal mode (0 = low-power retention)
+      .rawl  (1'b0                   ),        // read-assist off (default)
+      .rawlm (2'b00                  ),        // read-assist mode bits (default)
+      .wabl  (1'b1                   ),        // write-assist bypass (STA: selects valid addr setup arc)
+      .wablm (2'b00                  )         // write-assist mode bits (default)
+    );
+
+    assign rdata_o[0] = q_raw[46:0];          // discard unused bit [47]
 
   end else if (NumWords == 64 && DataWidth == 46) begin : gen_dcache_tag
-    // D$ tag — 64 × 46b
-    // TODO: instantiate real macro here
-    assign rdata_o[0] = '0;
+    // D$ tag — 64 × 46b 
+    logic [45:0] wen_bits;
+    for (genvar i = 0; i < 5; i++) begin : gen_dtag_wen_expand
+      assign wen_bits[i*8 +: 8] = {8{~be_i[0][i]}};
+    end
+    assign wen_bits[45:40] = {6{~be_i[0][5]}};
+
+    rf_dcache_tag_64x46 i_macro (
+      .clk   (clk_i        ),
+      .cen   (~req_i[0]    ),        // active-low chip enable
+      .gwen  (~we_i[0]     ),        // active-low global write enable
+      .a     (addr_i[0]    ),
+      .d     (wdata_i[0]   ),
+      .wen   (wen_bits     ),        // active-low bit write mask
+      .q     (rdata_o[0]   ),
+      // margin / retention signals — fixed at default values
+      .ema   (3'b111       ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b11        ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b1         ),        // SS/low-voltage corner (model reference value)
+      .ret1n (1'b1         ),        // 1 = normal mode (0 = low-power retention)
+      .rawl  (1'b0         ),        // read-assist off (default)
+      .rawlm (2'b00        ),        // read-assist mode bits (default)
+      .wabl  (1'b1         ),        // write-assist bypass (STA: selects valid addr setup arc)
+      .wablm (2'b00        )         // write-assist mode bits (default)
+    );
 
   end else begin : gen_err_shape
     $fatal(1, "tc_sram_syn: unsupported shape NumWords=%0d DataWidth=%0d — add a new macro branch",
