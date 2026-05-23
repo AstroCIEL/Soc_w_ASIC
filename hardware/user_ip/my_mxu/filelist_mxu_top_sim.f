@@ -42,8 +42,8 @@ ${ROOT}/hardware/user_ip/my_mxu/mxu/SA_top.sv
 
 ${ROOT}/hardware/user_ip/my_mxu/stu/semi_transposer.sv
 ${ROOT}/hardware/user_ip/my_mxu/stu/rotator.sv
-${ROOT}/hardware/user_ip/sram_buffer/rf2p_256_128.v
-${ROOT}/hardware/user_ip/sram_buffer/rf2p_256_128_wrapper.sv
+// ${ROOT}/hardware/user_ip/sram_buffer/rf2p_256_128.v
+// ${ROOT}/hardware/user_ip/sram_buffer/rf2p_256_128_wrapper.sv
 
 ${ROOT}/hardware/user_ip/my_mxu/mxu_top/mxu_top_no_ctrl.sv
 ${ROOT}/hardware/user_ip/my_mxu/mxu_top/mxu_ctrl.sv
