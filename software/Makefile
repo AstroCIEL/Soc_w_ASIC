@@ -18,9 +18,25 @@ vlen ?= 2048
 vcd_dump ?= 0
 
 # ---------------------------------------------------------------------------
+# Target platform: sim (default) or fpga
+# Usage: make target=fpga   # Build for FPGA (40MHz)
+#        make target=sim    # Build for simulation (500MHz, default)
+# ---------------------------------------------------------------------------
+target ?= sim
+
+# ---------------------------------------------------------------------------
 # Preprocessor defines  (all additive – app/soc makefiles may append)
 # ---------------------------------------------------------------------------
 MAKE_DEFINES := -DNR_LANES=$(nr_lanes) -DVLEN=$(vlen)
+
+# Add TARGET_FPGA for fpga builds
+ifeq ($(target),fpga)
+MAKE_DEFINES += -DTARGET_FPGA
+$(info Building for FPGA target)
+else
+$(info Building for simulation target)
+endif
+
 DEFINES      += $(ENV_DEFINES) $(MAKE_DEFINES)
 
 # ---------------------------------------------------------------------------
