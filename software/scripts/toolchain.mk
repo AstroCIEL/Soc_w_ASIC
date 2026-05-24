@@ -93,6 +93,7 @@ PYTHON ?= python3
 RISCV_WARNINGS += -Wunused-variable -Wall -Wextra -Wno-unused-command-line-argument
 
 LLVM_FLAGS   ?= -march=rv64gcv_zfh_zvfh -mabi=$(RISCV_ABI) -mno-relax -fuse-ld=lld
+LLVM_FLAGS   ?= -march=rv64imfdcv_zfh_zvfh -mabi=$(RISCV_ABI) -mno-relax -fuse-ld=lld
 LLVM_V_FLAGS ?= -fno-vectorize -mllvm -scalable-vectorization=off \
                 -mllvm -riscv-v-vector-bits-min=0 -mno-implicit-float
 

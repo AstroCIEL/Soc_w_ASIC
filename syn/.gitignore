@@ -1,6 +1,8 @@
-WORK
+build/
 *.log
 alib-52
-outputs
-reports
 default.svf
+*.svf
+*.pvl
+*.syn
+*.mr
