@@ -93,7 +93,7 @@ module tc_sram #(
     .MEMORY_INIT_FILE   ("none"),
     .MEMORY_INIT_PARAM  ("0"),
     .MEMORY_OPTIMIZATION("true"),
-    .MEMORY_PRIMITIVE   ("auto"),       // auto selects BRAM or URAM
+    .MEMORY_PRIMITIVE   ("block"),      // Force BRAM, NOT distributed RAM
     .MEMORY_SIZE        (NumWords * DataWidth),
     .MESSAGE_CONTROL    (0),
     .RAM_DECOMP         ("auto"),

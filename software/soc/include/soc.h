@@ -62,7 +62,14 @@ typedef enum irqn {
 /* ------------------------------------------------------------------ */
 /* Platform clock / baudrate defaults                                 */
 /* ------------------------------------------------------------------ */
-#define SYS_CLK_HZ      500000000UL   /* 500 MHz — matches tb.sv */
-#define BAUD_RATE       6250000UL     /* 500 MHz / (16*5) exact  */
+#ifdef TARGET_FPGA
+    /* FPGA */
+    #define SYS_CLK_HZ      40000000UL    /* 40 MHz */
+    #define BAUD_RATE       115200UL      /* 标准串口终端波特率 */
+#else
+    /* RTL sim */
+    #define SYS_CLK_HZ      500000000UL   /* 500 MHz — matches tb.sv */
+    #define BAUD_RATE       6250000UL     /* 500 MHz / (16*5) exact  */
+#endif
 
 #endif /* ARA_SOC_H */
