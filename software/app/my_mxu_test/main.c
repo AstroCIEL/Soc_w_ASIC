@@ -215,11 +215,11 @@ int main(void)
 
     // dump_output_bank_files_compatible(&my_mxu0);
 
-    // if (compare_output(&my_mxu0) != 0) {
-    //     printf("MXU_FAIL\n");
-    //     printf("MXU_SOC_TEST_END\n");
-    //     return 1;
-    // }
+    if (compare_output(&my_mxu0) != 0) {
+        printf("MXU_FAIL\n");
+        printf("MXU_SOC_TEST_END\n");
+        return 1;
+    }
 
     printf("MXU_PASS\n");
     printf("MXU_SOC_TEST_END\n");
