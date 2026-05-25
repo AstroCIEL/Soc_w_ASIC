@@ -3,9 +3,9 @@
 ###############################################################################
 
 # ---------------------------------------------------------------------------
-# System clock  (300 MHz → period = 3.3 ns)
+# System clock  (600 MHz → period = 1.667 ns)
 # ---------------------------------------------------------------------------
-set CLK_PERIOD 3.3
+set CLK_PERIOD 1.667  
 set CLK_NAME   SYS_CLK
 
 create_clock -name ${CLK_NAME} -period ${CLK_PERIOD} [get_ports clk_i]
@@ -100,4 +100,19 @@ foreach_in_collection inst \
     set_case_analysis 1 [get_pins ${iname}/WABL]
     set_case_analysis 1 [get_pins ${iname}/RET1N]
     set_case_analysis 0 [get_pins ${iname}/STOV]
+}
+
+# 把rf2p的一些配置端口锁定成valid的常量 与wrapper中端口接的常量一致
+foreach_in_collection inst \
+        [get_cells -hier -filter "ref_name == rf2p_256_128" -quiet] {
+    set iname [get_object_name $inst]
+    set_case_analysis 0 [get_pins ${iname}/stov]
+    set_case_analysis 1 [get_pins ${iname}/ret1n]
+    set_case_analysis 0 [get_pins ${iname}/emasa]
+    set_case_analysis 0 [get_pins ${iname}/emaa\[2\]]
+    set_case_analysis 1 [get_pins ${iname}/emaa\[1\]]
+    set_case_analysis 1 [get_pins ${iname}/emaa\[0\]]
+    set_case_analysis 1 [get_pins ${iname}/emab\[2\]]
+    set_case_analysis 0 [get_pins ${iname}/emab\[1\]]
+    set_case_analysis 0 [get_pins ${iname}/emab\[0\]]
 }

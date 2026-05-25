@@ -11,6 +11,15 @@ BUILD_DIR  := $(SYN_ROOT)/build
 PDK_ROOT   ?= $(HOME)/workspace/tsmc22
 export PDK_ROOT
 
+# SoC RTL configuration: selects hardware/soc/filelist_<SOC_CONFIG>.f via syn/filelist.f
+SOC_CONFIG ?= maximum
+SOC_FILELIST := $(PROJ_ROOT)/hardware/soc/filelist_$(SOC_CONFIG).f
+export SOC_CONFIG
+
+GEN_FILELIST := python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
+	$(SYN_ROOT)/filelist.f $(PROJ_ROOT) --format dc \
+	--var SOC_CONFIG=$(SOC_CONFIG)
+
 # Checkpoint to resume from (for syn_incr); valid: post_elab post_constraints post_compile final
 INCR_CHECKPOINT ?= post_constraints
 
@@ -22,12 +31,15 @@ all: syn
 # gen_filelist: parse filelist.f → build/input.tcl
 # ---------------------------------------------------------------------------
 gen_filelist:
+	@if [ ! -f "$(SOC_FILELIST)" ]; then \
+		echo "ERROR: SOC_CONFIG='$(SOC_CONFIG)' -> missing $(SOC_FILELIST)"; \
+		echo "       Available:"; \
+		ls -1 $(PROJ_ROOT)/hardware/soc/filelist_*.f 2>/dev/null \
+			| sed 's|.*/filelist_||;s|\.f$$||' | sed 's/^/         /'; \
+		exit 1; \
+	fi
 	@mkdir -p $(BUILD_DIR)
-	python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
-		$(SYN_ROOT)/filelist.f \
-		$(PROJ_ROOT) \
-		--format dc \
-		-o $(BUILD_DIR)/input.tcl
+	$(GEN_FILELIST) -o $(BUILD_DIR)/input.tcl
 
 # ---------------------------------------------------------------------------
 # syn: full synthesis from RTL
@@ -42,7 +54,7 @@ syn: gen_filelist
 		    set INCR_CHECKPOINT post_constraints" \
 		-f $(SYN_ROOT)/scripts/synth.tcl \
 		2>&1 | tee $(BUILD_DIR)/syn.log
-	@echo "===== Synthesis done. See build/ ====="
+	@echo "===== Synthesis done (SOC_CONFIG=$(SOC_CONFIG)). See build/ ====="
 
 # ---------------------------------------------------------------------------
 # syn_incr: incremental re-run from a saved checkpoint DDC
@@ -63,23 +75,23 @@ syn_incr:
 		    set INCR_CHECKPOINT $(INCR_CHECKPOINT)" \
 		-f $(SYN_ROOT)/scripts/synth.tcl \
 		2>&1 | tee $(BUILD_DIR)/syn_incr_$(INCR_CHECKPOINT).log
-	@echo "===== Incremental synthesis done (from $(INCR_CHECKPOINT)). See build/ ====="
+	@echo "===== Incremental synthesis done (SOC_CONFIG=$(SOC_CONFIG), from $(INCR_CHECKPOINT)). See build/ ====="
 
 # ---------------------------------------------------------------------------
 # check: verify all source files in filelist.f exist
 # ---------------------------------------------------------------------------
 check:
-	@echo "--- Filelist integrity check ---"
-	@python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
-		$(SYN_ROOT)/filelist.f $(PROJ_ROOT) \
-		--format dc -o /dev/null && \
-		echo "gen_filelist.py parse OK"
+	@echo "--- Filelist integrity check (SOC_CONFIG=$(SOC_CONFIG)) ---"
+	@if [ ! -f "$(SOC_FILELIST)" ]; then \
+		echo "ERROR: SOC_CONFIG='$(SOC_CONFIG)' -> missing $(SOC_FILELIST)"; \
+		exit 1; \
+	fi
+	@$(GEN_FILELIST) -o /dev/null && echo "gen_filelist.py parse OK"
 	@count=0; err=0; \
 	while IFS= read -r f; do \
 		if [ ! -f "$$f" ]; then echo "MISSING: $$f"; err=1; fi; \
 		count=$$((count+1)); \
-	done < <(python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
-		$(SYN_ROOT)/filelist.f $(PROJ_ROOT) --format dc -o /dev/null --check 2>/dev/null); \
+	done < <($(GEN_FILELIST) -o /dev/null --check 2>/dev/null); \
 	echo "Total source files checked: $$count"; \
 	if [ "$$err" -eq 0 ]; then echo "All files exist."; else echo "Some files are MISSING!"; exit 1; fi
 
@@ -105,6 +117,8 @@ help:
 	@echo "  make clean                      Remove build/"
 	@echo ""
 	@echo "Variables:"
+	@echo "  SOC_CONFIG=<name>               SoC filelist (default: maximum)"
+	@echo "                                    uses hardware/soc/filelist_<name>.f"
 	@echo "  PDK_ROOT=<path>                 PDK root (default: \$$HOME/workspace/tsmc22)"
 	@echo "  INCR_CHECKPOINT=<phase>         Checkpoint to resume from:"
 	@echo "                                    post_elab        (re-apply constraints + compile)"
@@ -113,5 +127,7 @@ help:
 	@echo "                                    final            (outputs + reports only)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make syn PDK_ROOT=/path/to/pdk"
-	@echo "  make syn_incr INCR_CHECKPOINT=post_elab"
+	@echo "  make syn SOC_CONFIG=minimum_my_mxu"
+	@echo "  make check SOC_CONFIG=minimum"
+	@echo "  make syn PDK_ROOT=/path/to/pdk SOC_CONFIG=maximum"
+	@echo "  make syn_incr INCR_CHECKPOINT=post_elab SOC_CONFIG=minimum_my_mxu"
