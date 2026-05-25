@@ -193,6 +193,8 @@ def main():
                         help='Output TCL file (default: sources.tcl / build/inputs.tcl / build/input.tcl)')
     parser.add_argument('--check', action='store_true',
                         help='Also print the resolved source-file list to stdout, one file per line')
+    parser.add_argument('--var', action='append', default=[], metavar='KEY=VALUE',
+                        help='Extra filelist variables (e.g. SOC_CONFIG=minimum_my_mxu)')
     args = parser.parse_args()
 
     if args.output is None:
@@ -201,6 +203,13 @@ def main():
 
     root = os.path.normpath(os.path.abspath(args.root))
     variables = {'ROOT': root}
+    for item in args.var:
+        if '=' not in item:
+            print(f'[gen_filelist] ERROR: --var expects KEY=VALUE, got: {item!r}',
+                  file=sys.stderr)
+            sys.exit(1)
+        key, value = item.split('=', 1)
+        variables[key] = value
 
     files = []
     incdirs = set()

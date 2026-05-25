@@ -1,0 +1,1 @@
+-f ${ROOT}/hardware/user_ip/my_mxu/filelist_mxu_top_syn.f

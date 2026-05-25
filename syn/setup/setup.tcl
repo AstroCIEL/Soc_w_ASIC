@@ -13,6 +13,7 @@
 set TOP_MODULE ariane_soc_top
 
 # SRAM macro reference names — marked dont_touch after elaborate
+# 增加mxu的sram宏名称rf2p_256_128
 set SRAM_MACROS [list \
     sram_l2_16384x64         \
     rf_dcache_half_64x128    \
@@ -20,6 +21,7 @@ set SRAM_MACROS [list \
     rf_vrf_64x64             \
     rf_icache_tag_64x48      \
     rf_dcache_tag_64x46      \
+    rf2p_256_128 \
 ]
 
 # ===========================================================================
