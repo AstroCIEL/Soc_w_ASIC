@@ -27,10 +27,12 @@ from typing import List
 
 
 RF_DEF = namedtuple('RF_DEF', ["Name", "NumWords", "DataWidth"])
-RAM_DEF = namedtuple('RAM_DEF', ["Name", "NumWords", "DataWidth"])
+# InstName: verilog module / output file prefix (e.g. sramdp_272_16.v)
+# LibName:  memory compiler library name (e.g. sram_dp_hde)
+RAM_DEF = namedtuple('RAM_DEF', ["InstName", "LibName", "NumWords", "DataWidth"])
 
 ram_defs = [
-    RAM_DEF("l2", 16384, 64)
+    RAM_DEF("sramdp_272_16", "sram_dp_hde", 272, 16),
 ]
 
 rf_defs = [
@@ -41,7 +43,7 @@ rf_defs = [
     RF_DEF("dcache_tag", 64, 46),
 ]
 
-RAM_GENERATOR = "/DISK1/home/jy_hu30/workspace/memory_compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
+RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_dp_hde_svt_svt/r0p1/bin/sram_dp_hde_svt_svt"
 RF_GENERATOR  = "/DISK1/home/jy_hu30/workspace/memory_compiler/rf_sp_hde_shvt_mvt/r3p1/bin/rf_sp_hde_shvt_mvt"
 
 targets = [
@@ -58,46 +60,47 @@ LOG_DIR = "logs"
 
 
 def make_instname(prefix, name, num_words, data_width):
-    return f"{prefix}_{name}_{num_words}x{data_width}"
+    return f"{prefix}{name}_{num_words}_{data_width}"
 
 
 def build_ram_cmd(ram: RAM_DEF, target: str) -> List[str]:
-    instname = make_instname("sram", ram.Name, ram.NumWords, ram.DataWidth)
+    """Build sram_dp_hde_svt_svt command (aligned with verified sramdp_272_16 flow)."""
     return [
         RAM_GENERATOR, target,
-        "-name_case", "upper",
-        "-mvt", "BASE",
+        "-name_case", "lower",
+        "-mvt", "LL",
         "-ser", "none",
+        "-bus_notation", "on",
         "-site_def", "off",
         "-check_instname", "off",
-        "-frequency", "500",
-        "-bmux", "off",
+        "-frequency", "1000",
+        "-bmux", "on",
         "-diodes", "on",
         "-activity_factor", "50",
         "-words", str(ram.NumWords),
-        "-bits", str(ram.DataWidth),
         "-drive", "6",
-        "-write_mask", "on",
-        "-redundancy", "off",
-        "-instname", instname,
-        "-libname", instname,
-        "-cust_comment", "",
-        "-prefix", "",
+        "-power_type", "otc",
+        "-bits", str(ram.DataWidth),
+        "-instname", ram.InstName,
         "-retention", "on",
-        "-atf", "off",
         "-libertyviewstyle", "nldm",
+        "-write_mask", "off",
+        "-atf", "off",
+        "-left_bus_delim", "[",
         "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
-        "-power_gating", "off",
-        "-write_thru", "off",
-        "-wp_size", "1",
-        "-mux", "16",
+        "-right_bus_delim", "]",
         "-rows_p_bl", "256",
-        "-flexible_banking", "4",
-        "-ema", "on",
+        "-redundancy", "off",
+        "-libname", ram.LibName,
+        "-write_thru", "off",
+        "-cust_comment", "This is a memory instance",
+        "-pipeline", "off",
+        "-mux", "4",
+        "-top_layer", "m5-m10",
+        "-power_gating", "off",
         "-back_biasing", "off",
-        "-bit_blast", "off",
-        "-single_domain_only", "on",
-        "-vmin_assist", "on",
+        "-ema", "on",
+        "-wa", "off",
         "-corners", corners,
     ]
 
@@ -118,7 +121,7 @@ def build_rf_cmd(rf: RF_DEF, target: str) -> List[str]:
         "-words", str(rf.NumWords),
         "-bits", str(rf.DataWidth),
         "-drive", "6",
-        "-write_mask", "on",
+        "-write_mask", "off",
         "-redundancy", "off",
         "-instname", instname,
         "-libname", instname,
@@ -159,18 +162,18 @@ def main():
     os.makedirs(LOG_DIR, exist_ok=True)
 
     for ram in ram_defs:
-        instname = make_instname("sram", ram.Name, ram.NumWords, ram.DataWidth)
+        instname = ram.InstName
         for target in targets:
             cmd = build_ram_cmd(ram, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+            log_path = os.path.join(LOG_DIR, f"{ram.InstName}_{target}.log")
             run_cmd(cmd, log_path)
 
-    for rf in rf_defs:
-        instname = make_instname("rf", rf.Name, rf.NumWords, rf.DataWidth)
-        for target in targets:
-            cmd = build_rf_cmd(rf, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-            run_cmd(cmd, log_path)
+    # for rf in rf_defs:
+    #     instname = make_instname("rf", rf.Name, rf.NumWords, rf.DataWidth)
+    #     for target in targets:
+    #         cmd = build_rf_cmd(rf, target)
+    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+    #         run_cmd(cmd, log_path)
 
 
 if __name__ == "__main__":
