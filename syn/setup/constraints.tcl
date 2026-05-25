@@ -116,3 +116,9 @@ foreach_in_collection inst \
     set_case_analysis 0 [get_pins ${iname}/emab\[1\]]
     set_case_analysis 0 [get_pins ${iname}/emab\[0\]]
 }
+
+# ---------------------------------------------------------------------------
+# 0525: Add Clock gating (before compile_ultra -gate_clock)
+# ---------------------------------------------------------------------------
+set_clock_gating_style -sequential_cell latch
+set_clock_gating_check -setup 0.15 -hold 0.02
