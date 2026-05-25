@@ -5,10 +5,10 @@ cd ./sim && make clean && cd ..
 # software/app/my_axu_test/app.mk before main.c is compiled.
 # Generator script: zzc_workspace_axu/file_format_transform/gen_input_data_axu.py
 
-cd ./software && make my_mxu_test && cd ..
+cd ./software && make my_axu_test && cd ..
 
 cd ./sim && make vcs-run \
-                 app=../software/build/bin/my_mxu_test \
+                 app=../software/build/bin/my_axu_test \
                  FILELIST=filelist_minimum_my_mxu_axu.f \
          && cd ..
 
