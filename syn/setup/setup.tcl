@@ -66,11 +66,12 @@ set ACTIVE_SCENARIOS {
 #      -retime                    — enable retiming
 #      -area_high_effort_script   — higher-effort area optimization
 # ===========================================================================
-
+# 0525：开启clockgating
 set COMPILE_OPTIONS {
     -no_autoungroup
     -no_boundary_optimization
     -timing
+    -gate_clock   
 }
 
 # Parallel threads for compile_ultra
