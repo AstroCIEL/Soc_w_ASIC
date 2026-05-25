@@ -18,7 +18,7 @@ ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 export ROOT := $(abspath $(ROOT_DIR)/..)
 
 # ── Shared paths ──────────────────────────────────────────────────────────────
-FILELIST        := filelist_minimum_my_mxu.f
+FILELIST        := filelist_minimum_my_mxu_axu.f
 VERIL_FILELIST  := filelist_verilator.f
 TB_DIR   := ../tb
 DPI_DIR  := $(TB_DIR)/dpi
@@ -29,7 +29,7 @@ DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
             $(wildcard $(DPI_DIR)/*.c)
 
 
-app      ?= ../software/build/bin/my_mxu_test
+app      ?= ../software/build/bin/my_axu_test
 
 # FESVR (Front-End Server) from RISC-V Spike installation
 # This provides the fesvr library for ELF loading and host-target communication
