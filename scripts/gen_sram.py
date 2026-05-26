@@ -20,31 +20,50 @@
 # -ema on -back_biasing off -bit_blast off -single_domain_only on -vmin_assist on  
 # -corners ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88v_0p88v_m40c,ssg_cworstt_0p72v_0p72v_0c,ssg_cworstt_0p72v_0p72v_125c,ssg_cworstt_0p72v_0p72v_m40c,tt_typical_0p80v_0p80v_25c,tt_typical_0p80v_0p80v_85c
 
+# rf2p_256_128的生成命令：
+# cmd: /data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/rf_2p_hdc_svt_mvt/r0p0/bin/rf_2p_hdc_svt_mvt verilog
+#  -name_case lower -mvt HP -ser none -bus_notation on -site_def off -check_instname on -frequency 1000 -bmux off
+#  -diodes on -activity_factor 50 -words 256 -drive 6 -bits 128 -instname rf2p_256_128 -retention on
+#  -libertyviewstyle nldm -write_mask on -atf off -left_bus_delim "[" -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -right_bus_delim "]"
+#  -flexible_banking 2 -redundancy off -wp_size 1 -libname rf_2p_hdc -cust_comment "" -pipeline off -prefix ""
+#  -mux 2 -power_gating off -back_biasing off -ema on -vmin_assist off -corners ffg_cbestt_0p88v_0p88v_0c
+
+#用法：先cd到想保存生成结果文件的目录，再执行脚本，可生成cpu和其他模块例化的sram/rf的tragets格式文件。
+
 import os
 import subprocess
 from collections import namedtuple
 from typing import List
 
 
+CPU_RF_DEF = namedtuple('CPU_RF_DEF', ["Name", "NumWords", "DataWidth"])
+CPU_RAM_DEF = namedtuple('CPU_RAM_DEF', ["Name", "NumWords", "DataWidth"])
 RF_DEF = namedtuple('RF_DEF', ["Name", "NumWords", "DataWidth"])
-# InstName: verilog module / output file prefix (e.g. sramdp_272_16.v)
-# LibName:  memory compiler library name (e.g. sram_dp_hde)
-RAM_DEF = namedtuple('RAM_DEF', ["InstName", "LibName", "NumWords", "DataWidth"])
+RAM_DEF = namedtuple('RAM_DEF', ["Name", "NumWords", "DataWidth"])
 
-ram_defs = [
-    RAM_DEF("sramdp_272_16", "sramdp_272_16", 272, 16),
+cpu_ram_defs = [
+    CPU_RAM_DEF("l2", 16384, 64)
 ]
 
+cpu_rf_defs = [
+    CPU_RF_DEF("dcache_half", 64, 128), # actually need 256bit
+    CPU_RF_DEF("icache", 64, 128),
+    CPU_RF_DEF("vrf", 64, 64),
+    CPU_RF_DEF("icache_tag", 64, 48), # actually need 47bit
+    CPU_RF_DEF("dcache_tag", 64, 46),
+]
+
+ram_defs =[
+    RAM_DEF("sramdp", 272, 16)
+]
 rf_defs = [
-    RF_DEF("dcache_half", 64, 128), # actually need 256bit
-    RF_DEF("icache", 64, 128),
-    RF_DEF("vrf", 64, 64),
-    RF_DEF("icache_tag", 64, 48), # actually need 47bit
-    RF_DEF("dcache_tag", 64, 46),
+    RF_DEF("rf2p", 256,128)
 ]
-
+# EDA01的路径：
+CPU_RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
+CPU_RF_GENERATOR  = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/rf_sp_hde_shvt_mvt/r3p1/bin/rf_sp_hde_shvt_mvt"
 RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_dp_hde_svt_svt/r0p1/bin/sram_dp_hde_svt_svt"
-RF_GENERATOR  = "/DISK1/home/jy_hu30/workspace/memory_compiler/rf_sp_hde_shvt_mvt/r3p1/bin/rf_sp_hde_shvt_mvt"
+RF_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/rf_2p_hdc_svt_mvt/r0p0/bin/rf_2p_hdc_svt_mvt"
 
 targets = [
     "verilog",
@@ -59,56 +78,57 @@ corners = "ffg_cbestt_0p88v_0p88v_0c,ffg_cbestt_0p88v_0p88v_125c,ffg_cbestt_0p88
 LOG_DIR = "logs"
 
 
-def make_instname(prefix, name, num_words, data_width):
-    return f"{prefix}{name}_{num_words}_{data_width}"
+def make_cpu_instname(prefix, name, num_words, data_width):
+    return f"{prefix}_{name}_{num_words}x{data_width}"
 
+def make_instname(name, num_words, data_width):
+    return f"{name}_{num_words}_{data_width}"
 
-def build_ram_cmd(ram: RAM_DEF, target: str) -> List[str]:
-    """Build sram_dp_hde_svt_svt command (aligned with verified sramdp_272_16 flow)."""
+def build_cpu_ram_cmd(ram: RAM_DEF, target: str) -> List[str]:
+    instname = make_cpu_instname("sram", ram.Name, ram.NumWords, ram.DataWidth)
     return [
-        RAM_GENERATOR, target,
-        "-name_case", "lower",
-        "-mvt", "LL",
+        CPU_RAM_GENERATOR, target,
+        "-name_case", "upper",
+        "-mvt", "BASE",
         "-ser", "none",
-        "-bus_notation", "on",
         "-site_def", "off",
         "-check_instname", "off",
-        "-frequency", "1000",
-        "-bmux", "on",
+        "-frequency", "500",
+        "-bmux", "off",
         "-diodes", "on",
         "-activity_factor", "50",
         "-words", str(ram.NumWords),
-        "-drive", "6",
-        "-power_type", "otc",
         "-bits", str(ram.DataWidth),
-        "-instname", ram.InstName,
-        "-retention", "on",
-        "-libertyviewstyle", "nldm",
-        "-write_mask", "off",
-        "-atf", "off",
-        "-left_bus_delim", "[",
-        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
-        "-right_bus_delim", "]",
-        "-rows_p_bl", "256",
+        "-drive", "6",
+        "-write_mask", "on",
         "-redundancy", "off",
-        "-libname", ram.LibName,
-        "-write_thru", "off",
-        "-cust_comment", "This is a memory instance",
-        "-pipeline", "off",
-        "-mux", "4",
-        "-top_layer", "m5-m10",
+        "-instname", instname,
+        "-libname", instname,
+        "-cust_comment", "",
+        "-prefix", "",
+        "-retention", "on",
+        "-atf", "off",
+        "-libertyviewstyle", "nldm",
+        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
         "-power_gating", "off",
-        "-back_biasing", "off",
+        "-write_thru", "off",
+        "-wp_size", "1",
+        "-mux", "16",
+        "-rows_p_bl", "256",
+        "-flexible_banking", "4",
         "-ema", "on",
-        "-wa", "off",
+        "-back_biasing", "off",
+        "-bit_blast", "off",
+        "-single_domain_only", "on",
+        "-vmin_assist", "on",
         "-corners", corners,
     ]
 
 
-def build_rf_cmd(rf: RF_DEF, target: str) -> List[str]:
-    instname = make_instname("rf", rf.Name, rf.NumWords, rf.DataWidth)
+def build_cpu_rf_cmd(rf: CPU_RF_DEF, target: str) -> List[str]:
+    instname = make_cpu_instname("rf", rf.Name, rf.NumWords, rf.DataWidth)
     return [
-        RF_GENERATOR, target,
+        CPU_RF_GENERATOR, target,
         "-name_case", "lower",
         "-mvt", "BASE",
         "-ser", "none",
@@ -121,7 +141,7 @@ def build_rf_cmd(rf: RF_DEF, target: str) -> List[str]:
         "-words", str(rf.NumWords),
         "-bits", str(rf.DataWidth),
         "-drive", "6",
-        "-write_mask", "off",
+        "-write_mask", "on",
         "-redundancy", "off",
         "-instname", instname,
         "-libname", instname,
@@ -143,6 +163,90 @@ def build_rf_cmd(rf: RF_DEF, target: str) -> List[str]:
         "-corners", corners,
     ]
 
+# 非CPU的sram(sramdp_272_16)
+def build_ram_cmd(ram: RAM_DEF, target: str) -> List[str]:
+    instname = make_instname( ram.Name, ram.NumWords, ram.DataWidth)
+    """Build sram_dp_hde_svt_svt command (aligned with verified sramdp_272_16 flow)."""
+    return [
+        RAM_GENERATOR, target,
+        "-name_case", "lower",
+        "-mvt", "LL",
+        "-ser", "none",
+        "-bus_notation", "on",
+        "-site_def", "off",
+        "-check_instname", "off",
+        "-frequency", "1000",
+        "-bmux", "on",
+        "-diodes", "on",
+        "-activity_factor", "50",
+        "-words", str(ram.NumWords),
+        "-drive", "6",
+        "-power_type", "otc",
+        "-bits", str(ram.DataWidth),
+        "-instname",instname,
+        "-retention", "on",
+        "-libertyviewstyle", "nldm",
+        "-write_mask", "off",
+        "-atf", "off",
+        "-left_bus_delim", "[",
+        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
+        "-right_bus_delim", "]",
+        "-rows_p_bl", "256",
+        "-redundancy", "off",
+        "-libname", instname,
+        "-write_thru", "off",
+        "-cust_comment", "This is a memory instance",
+        "-pipeline", "off",
+        "-mux", "4",
+        "-top_layer", "m5-m10",
+        "-power_gating", "off",
+        "-back_biasing", "off",
+        "-ema", "on",
+        "-wa", "off",
+        "-corners", corners,
+    ]
+
+# 非CPU模块的rf(rf2p_256_128)
+def build_rf_cmd(rf: RF_DEF, target: str) -> List[str]:
+    instname = make_instname(rf.Name, rf.NumWords, rf.DataWidth)
+    return [
+        RF_GENERATOR, target,
+        "-name_case", "lower",
+        "-mvt", "HP",
+        "-ser", "none",
+        "-bus_notation","on",
+        "-site_def", "off",
+        "-check_instname", "on",
+        "-frequency", "1000",
+        "-bmux", "off",
+        "-diodes", "on",
+        "-activity_factor", "50",
+        "-words", str(rf.NumWords),
+        "-bits", str(rf.DataWidth),
+        "-drive", "6",
+        "-instname", instname,
+        "-retention", "on",
+        "-libertyviewstyle", "nldm",
+        "-write_mask", "on",
+        "-atf", "off",
+        "-left_bus_delim", "[",
+        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE", 
+        "-right_bus_delim","]",
+        "-flexible_banking","2",
+        "-redundancy","off",
+        "-wp_size", "1",
+        "-libname",instname,
+        "-cust_comment","",
+        "-pipeline","off",
+        "-prefix", "",
+        "-mux", "2",
+        "-power_gating", "off",
+        "-back_biasing", "off",
+        "-ema", "on",
+        "-vmin_assist", "off",
+        "-corners", corners,  
+    ]
+
 
 def run_cmd(cmd: List[str], log_path: str):
     cmd_str = " ".join(cmd)
@@ -161,19 +265,34 @@ def run_cmd(cmd: List[str], log_path: str):
 def main():
     os.makedirs(LOG_DIR, exist_ok=True)
 
-    for ram in ram_defs:
-        instname = ram.InstName
-        for target in targets:
-            cmd = build_ram_cmd(ram, target)
-            log_path = os.path.join(LOG_DIR, f"{ram.InstName}_{target}.log")
-            run_cmd(cmd, log_path)
-
-    # for rf in rf_defs:
-    #     instname = make_instname("rf", rf.Name, rf.NumWords, rf.DataWidth)
+    # for cpu_ram in cpu_ram_defs:
+    #     instname = make_cpu_instname("sram", cpu_ram.Name, cpu_ram.NumWords, cpu_ram.DataWidth)
     #     for target in targets:
-    #         cmd = build_rf_cmd(rf, target)
+    #         cmd = build_cpu_ram_cmd(cpu_ram, target)
     #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
     #         run_cmd(cmd, log_path)
+
+    # for cpu_rf in cpu_rf_defs:
+    #     instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
+    #     for target in targets:
+    #         cmd = build_cpu_rf_cmd(cpu_rf, target)
+    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+    #         run_cmd(cmd, log_path)
+        
+    for ram in ram_defs:
+        instname =  make_instname(ram.Name, ram.NumWords, ram.DataWidth)
+        for target in targets:
+            cmd = build_ram_cmd(ram, target)
+            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+            run_cmd(cmd, log_path)   
+
+    for rf in rf_defs:
+        instname = make_instname(rf.Name, rf.NumWords, rf.DataWidth)
+        for target in targets:
+            cmd = build_rf_cmd(rf, target)
+            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+            run_cmd(cmd, log_path)
+        
 
 
 if __name__ == "__main__":
