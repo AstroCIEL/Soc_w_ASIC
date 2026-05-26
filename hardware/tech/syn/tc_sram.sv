@@ -67,13 +67,13 @@ module tc_sram #(
       // margin / retention / debug signals — fixed at default values
       .STOV  (1'b0         ),       // debug, tie-off 0
       .RET1N (1'b1         ),       // 1 = normal mode (0 = low-power retention)
-      .EMA   (3'b111       ),       // SS/low-voltage corner timing margin (model reference value)
-      .EMAW  (2'b11        ),       // SS/low-voltage corner write margin (model reference value)
-      .EMAS  (1'b1         ),       // SS/low-voltage corner (model reference value)
+      .EMA   (3'b100       ),       // SS/low-voltage corner timing margin (model reference value)
+      .EMAW  (2'b00        ),       // SS/low-voltage corner write margin (model reference value)
+      .EMAS  (1'b0         ),       // SS/low-voltage corner (model reference value)
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (3'b000       )        // write-assist mode bits (default)
+      .WABLM (3'b001       )        // write-assist mode bits (default)
     );
 
   end else if (NumWords == 64 && DataWidth == 256) begin : gen_dcache_data
@@ -93,14 +93,14 @@ module tc_sram #(
       .wen   (wen_lo             ),        // active-low bit write mask
       .q     (rdata_o[0][127:0]  ),
       // margin / retention signals — fixed at default values
-      .ema   (3'b111             ),        // SS/low-voltage corner timing margin (model reference value)
-      .emaw  (2'b11              ),        // SS/low-voltage corner write margin (model reference value)
-      .emas  (1'b1               ),        // SS/low-voltage corner (model reference value)
+      .ema   (3'b100             ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b00              ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b0               ),        // SS/low-voltage corner (model reference value)
       .ret1n (1'b1               ),        // 1 = normal mode (0 = low-power retention)
       .rawl  (1'b0               ),        // read-assist off (default)
       .rawlm (2'b00              ),        // read-assist mode bits (default)
       .wabl  (1'b1               ),        // write-assist bypass (STA: selects valid addr setup arc)
-      .wablm (2'b00              )         // write-assist mode bits (default)
+      .wablm (2'b01              )         // write-assist mode bits (default)
     );
 
     rf_dcache_half_64x128 i_macro_hi (
@@ -112,14 +112,14 @@ module tc_sram #(
       .wen   (wen_hi             ),        // active-low bit write mask
       .q     (rdata_o[0][255:128]),
       // margin / retention signals — fixed at default values
-      .ema   (3'b111             ),        // SS/low-voltage corner timing margin (model reference value)
-      .emaw  (2'b11              ),        // SS/low-voltage corner write margin (model reference value)
-      .emas  (1'b1               ),        // SS/low-voltage corner (model reference value)
+      .ema   (3'b100             ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b00              ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b0               ),        // SS/low-voltage corner (model reference value)
       .ret1n (1'b1               ),        // 1 = normal mode (0 = low-power retention)
       .rawl  (1'b0               ),        // read-assist off (default)
       .rawlm (2'b00              ),        // read-assist mode bits (default)
       .wabl  (1'b1               ),        // write-assist bypass (STA: selects valid addr setup arc)
-      .wablm (2'b00              )         // write-assist mode bits (default)
+      .wablm (2'b01              )         // write-assist mode bits (default)
     );
 
   end else if (NumWords == 64 && DataWidth == 128) begin : gen_icache_data
@@ -138,14 +138,14 @@ module tc_sram #(
       .wen   (wen_bits     ),        // active-low bit write mask
       .q     (rdata_o[0]   ),
       // margin / retention signals — fixed at default values
-      .ema   (3'b111       ),        // SS/low-voltage corner timing margin (model reference value)
-      .emaw  (2'b11        ),        // SS/low-voltage corner write margin (model reference value)
-      .emas  (1'b1         ),        // SS/low-voltage corner (model reference value)
+      .ema   (3'b100       ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b00        ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b0         ),        // SS/low-voltage corner (model reference value)
       .ret1n (1'b1         ),        // 1 = normal mode (0 = low-power retention)
       .rawl  (1'b0         ),        // read-assist off (default)
       .rawlm (2'b00        ),        // read-assist mode bits (default)
       .wabl  (1'b1         ),        // write-assist bypass (STA: selects valid addr setup arc)
-      .wablm (2'b00        )         // write-assist mode bits (default)
+      .wablm (2'b01        )         // write-assist mode bits (default)
     );
 
   end else if (NumWords == 64 && DataWidth == 64) begin : gen_vrf
@@ -164,14 +164,14 @@ module tc_sram #(
       .wen   (wen_bits     ),        // active-low bit write mask
       .q     (rdata_o[0]   ),
       // margin / retention signals — fixed at default values
-      .ema   (3'b111       ),        // SS/low-voltage corner timing margin (model reference value)
-      .emaw  (2'b11        ),        // SS/low-voltage corner write margin (model reference value)
-      .emas  (1'b1         ),        // SS/low-voltage corner (model reference value)
+      .ema   (3'b100       ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b00        ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b0         ),        // SS/low-voltage corner (model reference value)
       .ret1n (1'b1         ),        // 1 = normal mode (0 = low-power retention)
       .rawl  (1'b0         ),        // read-assist off (default)
       .rawlm (2'b00        ),        // read-assist mode bits (default)
       .wabl  (1'b1         ),        // write-assist bypass (STA: selects valid addr setup arc)
-      .wablm (2'b00        )         // write-assist mode bits (default)
+      .wablm (2'b01        )         // write-assist mode bits (default)
     );
 
   end else if (NumWords == 64 && DataWidth == 47) begin : gen_icache_tag
@@ -193,14 +193,14 @@ module tc_sram #(
       .wen   (wen_bits               ),        // active-low bit write mask
       .q     (q_raw                  ),        // 48-bit output
       // margin / retention signals — fixed at default values
-      .ema   (3'b111                 ),        // SS/low-voltage corner timing margin (model reference value)
-      .emaw  (2'b11                  ),        // SS/low-voltage corner write margin (model reference value)
-      .emas  (1'b1                   ),        // SS/low-voltage corner (model reference value)
+      .ema   (3'b100                 ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b00                  ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b0                   ),        // SS/low-voltage corner (model reference value)
       .ret1n (1'b1                   ),        // 1 = normal mode (0 = low-power retention)
       .rawl  (1'b0                   ),        // read-assist off (default)
       .rawlm (2'b00                  ),        // read-assist mode bits (default)
       .wabl  (1'b1                   ),        // write-assist bypass (STA: selects valid addr setup arc)
-      .wablm (2'b00                  )         // write-assist mode bits (default)
+      .wablm (2'b01                  )         // write-assist mode bits (default)
     );
 
     assign rdata_o[0] = q_raw[46:0];          // discard unused bit [47]
@@ -222,14 +222,14 @@ module tc_sram #(
       .wen   (wen_bits     ),        // active-low bit write mask
       .q     (rdata_o[0]   ),
       // margin / retention signals — fixed at default values
-      .ema   (3'b111       ),        // SS/low-voltage corner timing margin (model reference value)
-      .emaw  (2'b11        ),        // SS/low-voltage corner write margin (model reference value)
-      .emas  (1'b1         ),        // SS/low-voltage corner (model reference value)
+      .ema   (3'b100       ),        // SS/low-voltage corner timing margin (model reference value)
+      .emaw  (2'b00        ),        // SS/low-voltage corner write margin (model reference value)
+      .emas  (1'b0         ),        // SS/low-voltage corner (model reference value)
       .ret1n (1'b1         ),        // 1 = normal mode (0 = low-power retention)
       .rawl  (1'b0         ),        // read-assist off (default)
       .rawlm (2'b00        ),        // read-assist mode bits (default)
       .wabl  (1'b1         ),        // write-assist bypass (STA: selects valid addr setup arc)
-      .wablm (2'b00        )         // write-assist mode bits (default)
+      .wablm (2'b01        )         // write-assist mode bits (default)
     );
 
   end else begin : gen_err_shape

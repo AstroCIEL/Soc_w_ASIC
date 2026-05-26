@@ -56,9 +56,9 @@
 `define ARM_MEM_HOLD 0.500
 `define ARM_MEM_COLLISION 3.000
 `define ARM_OFFSET_TIME 0
-  `define RF_SP_HDE_SHVT_MVT_ARM_REF_EMA_VALUE 7
-  `define RF_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE 3
-  `define RF_SP_HDE_SHVT_MVT_ARM_REF_EMAS_VALUE 1
+  `define RF_SP_HDE_SHVT_MVT_ARM_REF_EMA_VALUE 4
+  `define RF_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE 0
+  `define RF_SP_HDE_SHVT_MVT_ARM_REF_EMAS_VALUE 0
 // If ARM_UD_MODEL is defined at Simulator Command Line, it Selects the Fast Functional Model
 `ifdef ARM_UD_MODEL
 
