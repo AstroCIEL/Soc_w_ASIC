@@ -265,19 +265,19 @@ def run_cmd(cmd: List[str], log_path: str):
 def main():
     os.makedirs(LOG_DIR, exist_ok=True)
 
-    # for cpu_ram in cpu_ram_defs:
-    #     instname = make_cpu_instname("sram", cpu_ram.Name, cpu_ram.NumWords, cpu_ram.DataWidth)
-    #     for target in targets:
-    #         cmd = build_cpu_ram_cmd(cpu_ram, target)
-    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-    #         run_cmd(cmd, log_path)
+    for cpu_ram in cpu_ram_defs:
+        instname = make_cpu_instname("sram", cpu_ram.Name, cpu_ram.NumWords, cpu_ram.DataWidth)
+        for target in targets:
+            cmd = build_cpu_ram_cmd(cpu_ram, target)
+            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+            run_cmd(cmd, log_path)
 
-    # for cpu_rf in cpu_rf_defs:
-    #     instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
-    #     for target in targets:
-    #         cmd = build_cpu_rf_cmd(cpu_rf, target)
-    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-    #         run_cmd(cmd, log_path)
+    for cpu_rf in cpu_rf_defs:
+        instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
+        for target in targets:
+            cmd = build_cpu_rf_cmd(cpu_rf, target)
+            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+            run_cmd(cmd, log_path)
         
     for ram in ram_defs:
         instname =  make_instname(ram.Name, ram.NumWords, ram.DataWidth)
