@@ -32,7 +32,7 @@ RF_DEF = namedtuple('RF_DEF', ["Name", "NumWords", "DataWidth"])
 RAM_DEF = namedtuple('RAM_DEF', ["InstName", "LibName", "NumWords", "DataWidth"])
 
 ram_defs = [
-    RAM_DEF("sramdp_272_16", "sram_dp_hde", 272, 16),
+    RAM_DEF("sramdp_272_16", "sramdp_272_16", 272, 16),
 ]
 
 rf_defs = [
