@@ -15,12 +15,12 @@ module axu_top #(
     parameter int unsigned NLI_NUM_LANES   = SFU_LANE,
     parameter int unsigned NLI_NUM_MACROS  = 10,
     parameter int unsigned NLI_NUM_MICROS  = 32,
-    parameter string       OP_A_INIT_FILE  = "",
-    parameter string       OP_B_INIT_FILE  = "",
-    parameter string       OUT_INIT_FILE   = "",
-    parameter string       OP_A_DUMP_FILE  = "",
-    parameter string       OP_B_DUMP_FILE  = "",
-    parameter string       OUT_DUMP_FILE   = "",
+    // parameter string       OP_A_INIT_FILE  = "",
+    // parameter string       OP_B_INIT_FILE  = "",
+    // parameter string       OUT_INIT_FILE   = "",
+    // parameter string       OP_A_DUMP_FILE  = "",
+    // parameter string       OP_B_DUMP_FILE  = "",
+    // parameter string       OUT_DUMP_FILE   = "",
     parameter int          BUF_AXI_ADDR_WIDTH = 64,
     parameter int          BUF_AXI_DATA_WIDTH = 64
 ) (
@@ -519,10 +519,10 @@ module axu_top #(
         .NUM_LANES   (NLI_NUM_LANES),
         .NUM_MACROS  (NLI_NUM_MACROS),
         .NUM_MICROS  (NLI_NUM_MICROS),
-        .DATA_WIDTH  (ELEM_WIDTH),
-        .MACRO_BOUNDS_FILE (""),
-        .MUL_LUT_FILE      (""),
-        .Y_BOUNDS_LUT_FILE ("")
+        .DATA_WIDTH  (ELEM_WIDTH)
+        // .MACRO_BOUNDS_FILE (""),
+        // .MUL_LUT_FILE      (""),
+        // .Y_BOUNDS_LUT_FILE ("")
     ) u_nli_top_no_ctrl(
         .clk          (clk_i),
         .rstn         (rstn_i),
@@ -574,237 +574,237 @@ module axu_top #(
     // Stripped during synthesis via synopsys translate_off/on.
     // =========================================================================
     // synopsys translate_off
-    logic dump_done;
-    logic init_done_op_a;
-    logic init_done_op_b;
-    logic init_done_out_clear;
+    // logic dump_done;
+    // logic init_done_op_a;
+    // logic init_done_op_b;
+    // logic init_done_out_clear;
 
-    initial begin
-        dump_done = 1'b0;
-        init_done_op_a = 1'b0;
-        init_done_op_b = 1'b0;
-        init_done_out_clear = 1'b0;
-    end
+    // initial begin
+    //     dump_done = 1'b0;
+    //     init_done_op_a = 1'b0;
+    //     init_done_op_b = 1'b0;
+    //     init_done_out_clear = 1'b0;
+    // end
 
-    // Combine all per-buffer init_done flags into a single signal
-    wire init_done = init_done_op_a & init_done_op_b & init_done_out_clear;
+    // // Combine all per-buffer init_done flags into a single signal
+    // wire init_done = init_done_op_a & init_done_op_b & init_done_out_clear;
 
-    // ---- Loader for op_a_buf ------------------------------------------------
-    initial begin
-        automatic int fd;
-        automatic int scan_status;
-        automatic int token_idx;
-        automatic int row_addr;
-        automatic logic [ELEM_WIDTH-1:0] token;
-        automatic logic [WRP_DATA_W-1:0] row_data;
-        automatic int tokens_per_row;
+    // // ---- Loader for op_a_buf ------------------------------------------------
+    // initial begin
+    //     automatic int fd;
+    //     automatic int scan_status;
+    //     automatic int token_idx;
+    //     automatic int row_addr;
+    //     automatic logic [ELEM_WIDTH-1:0] token;
+    //     automatic logic [WRP_DATA_W-1:0] row_data;
+    //     automatic int tokens_per_row;
 
-        op_a_loader_wr_req  = 1'b0;
-        op_a_loader_wr_addr = '0;
-        op_a_loader_wr_data = '0;
+    //     op_a_loader_wr_req  = 1'b0;
+    //     op_a_loader_wr_addr = '0;
+    //     op_a_loader_wr_data = '0;
 
-        tokens_per_row = WRP_DATA_W / ELEM_WIDTH;
+    //     tokens_per_row = WRP_DATA_W / ELEM_WIDTH;
 
-        // Wait for reset release
-        wait (rstn_i === 1'b1);
-        @(posedge clk_i);
+    //     // Wait for reset release
+    //     wait (rstn_i === 1'b1);
+    //     @(posedge clk_i);
 
-        if (OP_A_INIT_FILE != "") begin
-            fd = $fopen(OP_A_INIT_FILE, "r");
-            if (fd == 0) begin
-                $fatal(1, "axu_top loader: failed to open OP_A_INIT_FILE %s", OP_A_INIT_FILE);
-            end
+    //     if (OP_A_INIT_FILE != "") begin
+    //         fd = $fopen(OP_A_INIT_FILE, "r");
+    //         if (fd == 0) begin
+    //             $fatal(1, "axu_top loader: failed to open OP_A_INIT_FILE %s", OP_A_INIT_FILE);
+    //         end
 
-            row_addr = 0;
-            token_idx = 0;
-            row_data = '0;
+    //         row_addr = 0;
+    //         token_idx = 0;
+    //         row_data = '0;
 
-            while (!$feof(fd) && row_addr < (1 << ADDR_WIDTH)) begin
-                scan_status = $fscanf(fd, "%h", token);
-                if (scan_status == 1) begin
-                    row_data[token_idx * ELEM_WIDTH +: ELEM_WIDTH] = token;
-                    token_idx++;
+    //         while (!$feof(fd) && row_addr < (1 << ADDR_WIDTH)) begin
+    //             scan_status = $fscanf(fd, "%h", token);
+    //             if (scan_status == 1) begin
+    //                 row_data[token_idx * ELEM_WIDTH +: ELEM_WIDTH] = token;
+    //                 token_idx++;
 
-                    if (token_idx == tokens_per_row) begin
-                        // Write the assembled row via wrapper acc write port
-                        op_a_loader_wr_req  = 1'b1;
-                        op_a_loader_wr_addr = row_addr[ADDR_WIDTH-1:0];
-                        op_a_loader_wr_data = row_data;
-                        @(posedge clk_i);
-                        op_a_loader_wr_req  = 1'b0;
+    //                 if (token_idx == tokens_per_row) begin
+    //                     // Write the assembled row via wrapper acc write port
+    //                     op_a_loader_wr_req  = 1'b1;
+    //                     op_a_loader_wr_addr = row_addr[ADDR_WIDTH-1:0];
+    //                     op_a_loader_wr_data = row_data;
+    //                     @(posedge clk_i);
+    //                     op_a_loader_wr_req  = 1'b0;
 
-                        row_addr++;
-                        token_idx = 0;
-                        row_data = '0;
-                    end
-                end else if (scan_status == -1) begin
-                    break;
-                end else begin
-                    void'($fgetc(fd));
-                end
-            end
+    //                     row_addr++;
+    //                     token_idx = 0;
+    //                     row_data = '0;
+    //                 end
+    //             end else if (scan_status == -1) begin
+    //                 break;
+    //             end else begin
+    //                 void'($fgetc(fd));
+    //             end
+    //         end
 
-            if (token_idx != 0) begin
-                $warning("axu_top loader: OP_A_INIT_FILE ends with incomplete row (%0d/%0d tokens)",
-                         token_idx, tokens_per_row);
-            end
+    //         if (token_idx != 0) begin
+    //             $warning("axu_top loader: OP_A_INIT_FILE ends with incomplete row (%0d/%0d tokens)",
+    //                      token_idx, tokens_per_row);
+    //         end
 
-            $fclose(fd);
-        end
+    //         $fclose(fd);
+    //     end
 
-        // Ensure one cycle of idle before signalling done
-        @(posedge clk_i);
-        init_done_op_a = 1'b1;
-    end
+    //     // Ensure one cycle of idle before signalling done
+    //     @(posedge clk_i);
+    //     init_done_op_a = 1'b1;
+    // end
 
-    // ---- Loader for op_b_buf ------------------------------------------------
-    initial begin
-        automatic int fd;
-        automatic int scan_status;
-        automatic int token_idx;
-        automatic int row_addr;
-        automatic logic [ELEM_WIDTH-1:0] token;
-        automatic logic [WRP_DATA_W-1:0] row_data;
-        automatic int tokens_per_row;
+    // // ---- Loader for op_b_buf ------------------------------------------------
+    // initial begin
+    //     automatic int fd;
+    //     automatic int scan_status;
+    //     automatic int token_idx;
+    //     automatic int row_addr;
+    //     automatic logic [ELEM_WIDTH-1:0] token;
+    //     automatic logic [WRP_DATA_W-1:0] row_data;
+    //     automatic int tokens_per_row;
 
-        op_b_loader_wr_req  = 1'b0;
-        op_b_loader_wr_addr = '0;
-        op_b_loader_wr_data = '0;
+    //     op_b_loader_wr_req  = 1'b0;
+    //     op_b_loader_wr_addr = '0;
+    //     op_b_loader_wr_data = '0;
 
-        tokens_per_row = WRP_DATA_W / ELEM_WIDTH;
+    //     tokens_per_row = WRP_DATA_W / ELEM_WIDTH;
 
-        wait (rstn_i === 1'b1);
-        @(posedge clk_i);
+    //     wait (rstn_i === 1'b1);
+    //     @(posedge clk_i);
 
-        if (OP_B_INIT_FILE != "") begin
-            fd = $fopen(OP_B_INIT_FILE, "r");
-            if (fd == 0) begin
-                $fatal(1, "axu_top loader: failed to open OP_B_INIT_FILE %s", OP_B_INIT_FILE);
-            end
+    //     if (OP_B_INIT_FILE != "") begin
+    //         fd = $fopen(OP_B_INIT_FILE, "r");
+    //         if (fd == 0) begin
+    //             $fatal(1, "axu_top loader: failed to open OP_B_INIT_FILE %s", OP_B_INIT_FILE);
+    //         end
 
-            row_addr = 0;
-            token_idx = 0;
-            row_data = '0;
+    //         row_addr = 0;
+    //         token_idx = 0;
+    //         row_data = '0;
 
-            while (!$feof(fd) && row_addr < (1 << ADDR_WIDTH)) begin
-                scan_status = $fscanf(fd, "%h", token);
-                if (scan_status == 1) begin
-                    row_data[token_idx * ELEM_WIDTH +: ELEM_WIDTH] = token;
-                    token_idx++;
+    //         while (!$feof(fd) && row_addr < (1 << ADDR_WIDTH)) begin
+    //             scan_status = $fscanf(fd, "%h", token);
+    //             if (scan_status == 1) begin
+    //                 row_data[token_idx * ELEM_WIDTH +: ELEM_WIDTH] = token;
+    //                 token_idx++;
 
-                    if (token_idx == tokens_per_row) begin
-                        op_b_loader_wr_req  = 1'b1;
-                        op_b_loader_wr_addr = row_addr[ADDR_WIDTH-1:0];
-                        op_b_loader_wr_data = row_data;
-                        @(posedge clk_i);
-                        op_b_loader_wr_req  = 1'b0;
+    //                 if (token_idx == tokens_per_row) begin
+    //                     op_b_loader_wr_req  = 1'b1;
+    //                     op_b_loader_wr_addr = row_addr[ADDR_WIDTH-1:0];
+    //                     op_b_loader_wr_data = row_data;
+    //                     @(posedge clk_i);
+    //                     op_b_loader_wr_req  = 1'b0;
 
-                        row_addr++;
-                        token_idx = 0;
-                        row_data = '0;
-                    end
-                end else if (scan_status == -1) begin
-                    break;
-                end else begin
-                    void'($fgetc(fd));
-                end
-            end
+    //                     row_addr++;
+    //                     token_idx = 0;
+    //                     row_data = '0;
+    //                 end
+    //             end else if (scan_status == -1) begin
+    //                 break;
+    //             end else begin
+    //                 void'($fgetc(fd));
+    //             end
+    //         end
 
-            if (token_idx != 0) begin
-                $warning("axu_top loader: OP_B_INIT_FILE ends with incomplete row (%0d/%0d tokens)",
-                         token_idx, tokens_per_row);
-            end
+    //         if (token_idx != 0) begin
+    //             $warning("axu_top loader: OP_B_INIT_FILE ends with incomplete row (%0d/%0d tokens)",
+    //                      token_idx, tokens_per_row);
+    //         end
 
-            $fclose(fd);
-        end
+    //         $fclose(fd);
+    //     end
 
-        @(posedge clk_i);
-        init_done_op_b = 1'b1;
-    end
+    //     @(posedge clk_i);
+    //     init_done_op_b = 1'b1;
+    // end
 
-    // ---- Clearer for out_buf (zero-init all 256 rows) -----------------------
-    // rf2p_256_128 internal mem is X after power-on; axu_ctrl only writes the
-    // rows it actively produces, so unused rows would dump as X. Initialize the
-    // entire out_buf to 0 to match sp_sram's $readmemh-style zero default.
-    initial begin
-        automatic int row_addr;
+    // // ---- Clearer for out_buf (zero-init all 256 rows) -----------------------
+    // // rf2p_256_128 internal mem is X after power-on; axu_ctrl only writes the
+    // // rows it actively produces, so unused rows would dump as X. Initialize the
+    // // entire out_buf to 0 to match sp_sram's $readmemh-style zero default.
+    // initial begin
+    //     automatic int row_addr;
 
-        out_clear_busy    = 1'b0;
-        out_clear_wr_req  = 1'b0;
-        out_clear_wr_addr = '0;
+    //     out_clear_busy    = 1'b0;
+    //     out_clear_wr_req  = 1'b0;
+    //     out_clear_wr_addr = '0;
 
-        wait (rstn_i === 1'b1);
-        @(posedge clk_i);
+    //     wait (rstn_i === 1'b1);
+    //     @(posedge clk_i);
 
-        out_clear_busy = 1'b1;
-        for (row_addr = 0; row_addr < (1 << ADDR_WIDTH); row_addr++) begin
-            out_clear_wr_req  = 1'b1;
-            out_clear_wr_addr = row_addr[ADDR_WIDTH-1:0];
-            @(posedge clk_i);
-        end
-        out_clear_wr_req  = 1'b0;
-        out_clear_wr_addr = '0;
-        @(posedge clk_i);
-        out_clear_busy = 1'b0;
-        init_done_out_clear = 1'b1;
-    end
+    //     out_clear_busy = 1'b1;
+    //     for (row_addr = 0; row_addr < (1 << ADDR_WIDTH); row_addr++) begin
+    //         out_clear_wr_req  = 1'b1;
+    //         out_clear_wr_addr = row_addr[ADDR_WIDTH-1:0];
+    //         @(posedge clk_i);
+    //     end
+    //     out_clear_wr_req  = 1'b0;
+    //     out_clear_wr_addr = '0;
+    //     @(posedge clk_i);
+    //     out_clear_busy = 1'b0;
+    //     init_done_out_clear = 1'b1;
+    // end
 
-    // ---- Dumper for out_buf -------------------------------------------------
-    initial begin
-        automatic int fd;
-        automatic int row_addr;
-        automatic int token_idx;
-        automatic int tokens_per_row;
-        automatic logic [WRP_DATA_W-1:0] row_data;
-        automatic logic [ELEM_WIDTH-1:0] token;
-        automatic logic dump_i_prev;
+    // // ---- Dumper for out_buf -------------------------------------------------
+    // initial begin
+    //     automatic int fd;
+    //     automatic int row_addr;
+    //     automatic int token_idx;
+    //     automatic int tokens_per_row;
+    //     automatic logic [WRP_DATA_W-1:0] row_data;
+    //     automatic logic [ELEM_WIDTH-1:0] token;
+    //     automatic logic dump_i_prev;
 
-        out_dumper_rd_req  = 1'b0;
-        out_dumper_rd_addr = '0;
-        dump_i_prev = 1'b0;
+    //     out_dumper_rd_req  = 1'b0;
+    //     out_dumper_rd_addr = '0;
+    //     dump_i_prev = 1'b0;
 
-        tokens_per_row = WRP_DATA_W / ELEM_WIDTH;
+    //     tokens_per_row = WRP_DATA_W / ELEM_WIDTH;
 
-        forever begin
-            @(posedge clk_i);
-            if (dump_i && !dump_i_prev) begin
-                // Rising edge of dump_i
-                if (OUT_DUMP_FILE != "") begin
-                    fd = $fopen(OUT_DUMP_FILE, "w");
-                    if (fd == 0) begin
-                        $fatal(1, "axu_top dumper: failed to open OUT_DUMP_FILE %s", OUT_DUMP_FILE);
-                    end
+    //     forever begin
+    //         @(posedge clk_i);
+    //         if (dump_i && !dump_i_prev) begin
+    //             // Rising edge of dump_i
+    //             if (OUT_DUMP_FILE != "") begin
+    //                 fd = $fopen(OUT_DUMP_FILE, "w");
+    //                 if (fd == 0) begin
+    //                     $fatal(1, "axu_top dumper: failed to open OUT_DUMP_FILE %s", OUT_DUMP_FILE);
+    //                 end
 
-                    for (row_addr = 0; row_addr < (1 << ADDR_WIDTH); row_addr++) begin
-                        // Issue read request on this cycle's setup time
-                        out_dumper_rd_req  = 1'b1;
-                        out_dumper_rd_addr = row_addr[ADDR_WIDTH-1:0];
-                        // Cycle 1: edge latches the request into rf2p_256_128 Port A
-                        @(posedge clk_i);
-                        // Cycle 2: qa (acc_rd_data) has settled, sample it
-                        @(posedge clk_i);
-                        row_data = out_dumper_rd_data;
+    //                 for (row_addr = 0; row_addr < (1 << ADDR_WIDTH); row_addr++) begin
+    //                     // Issue read request on this cycle's setup time
+    //                     out_dumper_rd_req  = 1'b1;
+    //                     out_dumper_rd_addr = row_addr[ADDR_WIDTH-1:0];
+    //                     // Cycle 1: edge latches the request into rf2p_256_128 Port A
+    //                     @(posedge clk_i);
+    //                     // Cycle 2: qa (acc_rd_data) has settled, sample it
+    //                     @(posedge clk_i);
+    //                     row_data = out_dumper_rd_data;
 
-                        // Write tokens to file
-                        for (token_idx = 0; token_idx < tokens_per_row; token_idx++) begin
-                            token = row_data[token_idx * ELEM_WIDTH +: ELEM_WIDTH];
-                            if (token_idx != 0) begin
-                                $fwrite(fd, "  ");
-                            end
-                            $fwrite(fd, "%04h", token);
-                        end
-                        $fwrite(fd, "\n");
-                    end
+    //                     // Write tokens to file
+    //                     for (token_idx = 0; token_idx < tokens_per_row; token_idx++) begin
+    //                         token = row_data[token_idx * ELEM_WIDTH +: ELEM_WIDTH];
+    //                         if (token_idx != 0) begin
+    //                             $fwrite(fd, "  ");
+    //                         end
+    //                         $fwrite(fd, "%04h", token);
+    //                     end
+    //                     $fwrite(fd, "\n");
+    //                 end
 
-                    out_dumper_rd_req  = 1'b0;
-                    out_dumper_rd_addr = '0;
-                    $fclose(fd);
-                    dump_done = 1'b1;
-                end
-            end
-            dump_i_prev = dump_i;
-        end
-    end
+    //                 out_dumper_rd_req  = 1'b0;
+    //                 out_dumper_rd_addr = '0;
+    //                 $fclose(fd);
+    //                 dump_done = 1'b1;
+    //             end
+    //         end
+    //         dump_i_prev = dump_i;
+    //     end
+    // end
     // synopsys translate_on
 
 endmodule

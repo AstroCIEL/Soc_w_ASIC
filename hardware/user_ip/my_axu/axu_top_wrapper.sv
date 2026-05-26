@@ -267,12 +267,12 @@ axu_top #(
     .NLI_NUM_LANES   (NLI_NUM_LANES),
     .NLI_NUM_MACROS  (NLI_NUM_MACROS),
     .NLI_NUM_MICROS  (NLI_NUM_MICROS),
-    .OP_A_INIT_FILE  (""),
-    .OP_B_INIT_FILE  (""),
-    .OUT_INIT_FILE   (""),
-    .OP_A_DUMP_FILE  (""),
-    .OP_B_DUMP_FILE  (""),
-    .OUT_DUMP_FILE   (""),
+    // .OP_A_INIT_FILE  (""),
+    // .OP_B_INIT_FILE  (""),
+    // .OUT_INIT_FILE   (""),
+    // .OP_A_DUMP_FILE  (""),
+    // .OP_B_DUMP_FILE  (""),
+    // .OUT_DUMP_FILE   (""),
     .BUF_AXI_ADDR_WIDTH (AXI_ADDR_WIDTH),
     .BUF_AXI_DATA_WIDTH (AXI_DATA_WIDTH)
 ) u_axu_top (
