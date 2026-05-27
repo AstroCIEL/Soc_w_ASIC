@@ -62,8 +62,11 @@ localparam int ELEM_WIDTH = ROW_DATA_WIDTH / BANK_WIDTH * 8;
 localparam int ELEM_NUM = ROW_DATA_WIDTH / ELEM_WIDTH;
 // localparam int ACT_TO_BACK_SEL_LATENCY_INT   = 1 + 2 * SEMI_TRANS_BUFFER_DEPTH;
 // localparam int ACT_TO_BACK_SEL_LATENCY_POSIT = 1 + 3 * SEMI_TRANS_BUFFER_DEPTH;
-localparam int ACT_TO_BACK_SEL_LATENCY_INT   =  2 * SEMI_TRANS_BUFFER_DEPTH;
-localparam int ACT_TO_BACK_SEL_LATENCY_POSIT =  3 * SEMI_TRANS_BUFFER_DEPTH;
+// 数据通路在 SA -> rotator_back 之间加了 1 级流水（见 mxu_top_no_ctrl.sv 中 *_q 寄存器），
+// 因此对应的 back_rotator_sel 管线也要延后同样的拍数
+localparam int ROT_BACK_DATA_EXTRA_LATENCY   = 1;
+localparam int ACT_TO_BACK_SEL_LATENCY_INT   =  2 * SEMI_TRANS_BUFFER_DEPTH + ROT_BACK_DATA_EXTRA_LATENCY;
+localparam int ACT_TO_BACK_SEL_LATENCY_POSIT =  3 * SEMI_TRANS_BUFFER_DEPTH + ROT_BACK_DATA_EXTRA_LATENCY;
 localparam int ACT_TO_BACK_SEL_PIPE_DEPTH    = ACT_TO_BACK_SEL_LATENCY_POSIT + 1;
 
 // 软件可见的配置映射。地址0..12存储9位块基地址或批量大小值；
@@ -134,17 +137,33 @@ logic [1:0] semi_write_intra_row;
 logic [ADDR_WIDTH-1:0] act_buf_row_addr;
 logic [ADDR_WIDTH-1:0] act_chunk_size;
 logic [ADDR_WIDTH-1:0] act_chunk_size_safe;
-logic [ADDR_WIDTH-1:0] act_send_group;
-logic [ADDR_WIDTH-1:0] act_req_group;
-logic [ADDR_WIDTH-1:0] act_req_intra_row;
-logic [ADDR_WIDTH-1:0] out_write_group;
-logic [ADDR_WIDTH-1:0] out_write_intra_row;
+
+// 用计数器替代除法/取模：在 cfg-time 寄存 chunk_size_safe，并维护 3 组同步递增的
+// (group, intra) 计数器，精确复现 R/C 与 R%C 的语义，消除动态 9-bit 除法器/取模器。
+logic [ADDR_WIDTH-1:0] act_chunk_size_safe_q;
+logic [ADDR_WIDTH-1:0] act_send_group_q;
+logic [ADDR_WIDTH-1:0] act_send_intra_q;
+logic [ADDR_WIDTH-1:0] act_req_group_q;
+logic [ADDR_WIDTH-1:0] act_req_intra_q;
+logic [ADDR_WIDTH-1:0] out_write_group_q;
+logic [ADDR_WIDTH-1:0] out_write_intra_q;
 logic [1:0] act_back_sel_pipe_q [ACT_TO_BACK_SEL_PIPE_DEPTH-1:0];
 logic [ACT_TO_BACK_SEL_PIPE_DEPTH-1:0] act_back_sel_valid_pipe_q;
 logic wgt_done_active;
 logic output_valid;
 logic output_write_fire;
 logic start_accepted;
+
+// 出口流水切割（性能与时序友好）：把 out_buf_* 组合输出改为寄存器输出
+// 写 SRAM 的 cen/wen/addr/din 全部经 _q FF 后再驱动 out_buf_*_o，
+// 让长组合路径（output_valid + state_q + per-lane 译码 + 除法/取模）
+// 整段被 FF 切断，缓解 u_out_buffer/ab/wenb/cenb 上的 setup 违例。
+logic [LANE_NUM-1:0]       out_buf_cen_d, out_buf_cen_q;
+logic [LANE_NUM-1:0]       out_buf_wen_d, out_buf_wen_q;
+logic [ADDR_WIDTH-1:0]     out_buf_addr_d [LANE_NUM-1:0];
+logic [ADDR_WIDTH-1:0]     out_buf_addr_q [LANE_NUM-1:0];
+logic [ROW_DATA_WIDTH-1:0] out_buf_din_d  [LANE_NUM-1:0];
+logic [ROW_DATA_WIDTH-1:0] out_buf_din_q  [LANE_NUM-1:0];
 
 assign wgt_send_last     = wgt_row_cnt_q == ADDR_WIDTH'(SEMI_TRANS_BUFFER_DEPTH - 1);
 assign act_send_last     = (act_tile_batchsize_M_reg != '0) &&
@@ -163,11 +182,8 @@ assign act_buf_row_addr     = ((state_q == ST_ACT_SEND) && act_has_next) ?
                               act_row_cnt_q + ADDR_WIDTH'(1) : act_row_cnt_q;
 assign act_chunk_size       = act_tile_batchsize_M_reg >> 2;
 assign act_chunk_size_safe  = (act_chunk_size == '0) ? ADDR_WIDTH'(1) : act_chunk_size;
-assign act_send_group       = act_row_cnt_q / act_chunk_size_safe;
-assign act_req_group        = act_buf_row_addr / act_chunk_size_safe;
-assign act_req_intra_row    = act_buf_row_addr % act_chunk_size_safe;
-assign out_write_group      = out_row_cnt_q / act_chunk_size_safe;
-assign out_write_intra_row  = out_row_cnt_q % act_chunk_size_safe;
+// 注意：原本基于 act_chunk_size_safe 的 4 个动态除法器和 1 个取模器已被
+// (group, intra) 计数器（act_send_*_q / act_req_*_q / out_write_*_q）替代。
 assign output_valid         = data_out_lower_valid_i | data_out_upper_valid_i;
 assign output_write_fire = ((state_q == ST_WAIT_COMPUTE_DONE) || (state_q == ST_OUT_WRITE)) && output_valid;
 assign start_accepted    = (state_q == ST_IDLE) && start_i && !cfg_set_i;
@@ -282,14 +298,14 @@ always_comb begin
     wgt_buf_wen_o = '0;
     act_buf_cen_o = '1;
     act_buf_wen_o = '0;
-    out_buf_cen_o = '1;
-    out_buf_wen_o = '0;
+    out_buf_cen_d = '1;
+    out_buf_wen_d = '0;
 
     for (int lane = 0; lane < LANE_NUM; lane++) begin
         wgt_buf_addr_o[lane]             = wgt_tile_base_addr_reg[(lane[1:0] - wgt_req_group) & 2'b11] + wgt_req_intra_row;
-        act_buf_addr_o[lane]             = act_tile_base_addr_reg[(lane[1:0] - act_req_group[1:0]) & 2'b11] + act_req_intra_row;
-        out_buf_addr_o[lane]             = out_tile_base_addr_reg[(lane[1:0] - out_write_group[1:0]) & 2'b11] + out_write_intra_row;
-        out_buf_din_o[lane]              = '0;
+        act_buf_addr_o[lane]             = act_tile_base_addr_reg[(lane[1:0] - act_req_group_q[1:0]) & 2'b11] + act_req_intra_q;
+        out_buf_addr_d[lane]             = out_tile_base_addr_reg[(lane[1:0] - out_write_group_q[1:0]) & 2'b11] + out_write_intra_q;
+        out_buf_din_d[lane]              = '0;
         data_in_lower_o[lane]            = '0;
         data_in_upper_o[lane]            = '0;
         if ((state_q == ST_WGT_SEND) || (state_q == ST_WAIT_SEMI_FULL)) begin
@@ -340,7 +356,7 @@ always_comb begin
         ST_ACT_SEND: begin
             in_valid_lower_o   = 1'b1;
             in_valid_upper_o   = !sa_top_data_type_mode_reg;
-            front_rotator_sel_o = 2'b00 - act_send_group[1:0];
+            front_rotator_sel_o = 2'b00 - act_send_group_q[1:0];
             if (act_has_next) begin
                 act_buf_cen_o = '0;
             end
@@ -361,12 +377,12 @@ always_comb begin
             // 结果有效信号可能在compute_done_i之前到达；写入每个有效输出行，
             // 并在有效突发信号撤销后完成
             if (output_valid) begin
-                out_buf_cen_o = '0;
-                out_buf_wen_o = '1;
+                out_buf_cen_d = '0;
+                out_buf_wen_d = '1;
                 for (int lane = 0; lane < LANE_NUM; lane++) begin
                     for (int pe = 0; pe < ELEM_NUM; pe++) begin
-                        out_buf_din_o[lane][pe * ELEM_WIDTH +: 8]     = data_out_lower_i[lane][pe * 8 +: 8];
-                        out_buf_din_o[lane][pe * ELEM_WIDTH + 8 +: 8] = data_out_upper_i[lane][pe * 8 +: 8];
+                        out_buf_din_d[lane][pe * ELEM_WIDTH +: 8]     = data_out_lower_i[lane][pe * 8 +: 8];
+                        out_buf_din_d[lane][pe * ELEM_WIDTH + 8 +: 8] = data_out_upper_i[lane][pe * 8 +: 8];
                     end
                 end
             end
@@ -374,6 +390,35 @@ always_comb begin
 
         default:;
     endcase
+end
+
+// 端口 = 寄存后的输出（注意外部接口形状不变）
+assign out_buf_cen_o  = out_buf_cen_q;
+assign out_buf_wen_o  = out_buf_wen_q;
+generate
+    for (genvar lane = 0; lane < LANE_NUM; lane++) begin : gen_out_buf_port_q
+        assign out_buf_addr_o[lane] = out_buf_addr_q[lane];
+        assign out_buf_din_o[lane]  = out_buf_din_q[lane];
+    end
+endgenerate
+
+// 把 out_buf_* 组合输出寄存一拍，作为最终送出 mxu_ctrl 的端口值
+always_ff @(posedge clk_i or negedge rstn_i) begin
+    if (!rstn_i) begin
+        out_buf_cen_q <= '1;     // SRAM cen=1 = idle，安全默认
+        out_buf_wen_q <= '0;
+        for (int lane = 0; lane < LANE_NUM; lane++) begin
+            out_buf_addr_q[lane] <= '0;
+            out_buf_din_q[lane]  <= '0;
+        end
+    end else begin
+        out_buf_cen_q  <= out_buf_cen_d;
+        out_buf_wen_q  <= out_buf_wen_d;
+        for (int lane = 0; lane < LANE_NUM; lane++) begin
+            out_buf_addr_q[lane] <= out_buf_addr_d[lane];
+            out_buf_din_q[lane]  <= out_buf_din_d[lane];
+        end
+    end
 end
 
 always_ff @(posedge clk_i or negedge rstn_i) begin
@@ -398,6 +443,13 @@ always_ff @(posedge clk_i or negedge rstn_i) begin
             act_back_sel_pipe_q[pipe_idx] <= '0;
         end
         act_back_sel_valid_pipe_q <= '0;
+        act_chunk_size_safe_q <= ADDR_WIDTH'(1);
+        act_send_group_q      <= '0;
+        act_send_intra_q      <= '0;
+        act_req_group_q       <= '0;
+        act_req_intra_q       <= '0;
+        out_write_group_q     <= '0;
+        out_write_intra_q     <= '0;
     end else begin
         state_q             <= state_d;
         in_valid_lower_d1_q <= in_valid_lower_o;
@@ -437,8 +489,16 @@ always_ff @(posedge clk_i or negedge rstn_i) begin
                 act_back_sel_pipe_q[pipe_idx] <= '0;
             end
             act_back_sel_valid_pipe_q <= '0;
+            // 用当前已生效的 M 寄存 C = max(M/4, 1)；在整个计算期间保持不变
+            act_chunk_size_safe_q <= act_chunk_size_safe;
+            act_send_group_q      <= '0;
+            act_send_intra_q      <= '0;
+            act_req_group_q       <= '0;
+            act_req_intra_q       <= '0;
+            out_write_group_q     <= '0;
+            out_write_intra_q     <= '0;
         end else begin
-            act_back_sel_pipe_q[0]       <= (state_q == ST_ACT_SEND) ? act_send_group[1:0] : 2'b00;
+            act_back_sel_pipe_q[0]       <= (state_q == ST_ACT_SEND) ? act_send_group_q[1:0] : 2'b00;
             act_back_sel_valid_pipe_q[0] <= (state_q == ST_ACT_SEND);
             for (int pipe_idx = 1; pipe_idx < ACT_TO_BACK_SEL_PIPE_DEPTH; pipe_idx++) begin
                 act_back_sel_pipe_q[pipe_idx]       <= act_back_sel_pipe_q[pipe_idx - 1];
@@ -466,6 +526,40 @@ always_ff @(posedge clk_i or negedge rstn_i) begin
 
             if (state_q == ST_WAIT_WGT_DONE && wgt_done_active) begin
                 wgt_done_seen_q <= 1'b1;
+            end
+
+            // (group, intra) 计数器同步递增：精确等价于 R/C, R%C
+            // ---- act_send_* 与 act_row_cnt_q 同步（条件：ST_ACT_SEND && !act_send_last）
+            if (state_q == ST_ACT_SEND && !act_send_last) begin
+                if (act_send_intra_q == act_chunk_size_safe_q - ADDR_WIDTH'(1)) begin
+                    act_send_intra_q <= '0;
+                    act_send_group_q <= act_send_group_q + ADDR_WIDTH'(1);
+                end else begin
+                    act_send_intra_q <= act_send_intra_q + ADDR_WIDTH'(1);
+                end
+            end
+
+            // ---- act_req_* 提前 send 1 拍（条件：ST_ACT_REQ || ST_ACT_SEND && act_has_next）
+            //      ST_ACT_REQ 当拍 cnt=0，下一拍变 ST_ACT_SEND，req 需要 = 1；
+            //      ST_ACT_SEND 内随 send 同步前进。
+            if ((state_q == ST_ACT_REQ) ||
+                (state_q == ST_ACT_SEND && act_has_next)) begin
+                if (act_req_intra_q == act_chunk_size_safe_q - ADDR_WIDTH'(1)) begin
+                    act_req_intra_q <= '0;
+                    act_req_group_q <= act_req_group_q + ADDR_WIDTH'(1);
+                end else begin
+                    act_req_intra_q <= act_req_intra_q + ADDR_WIDTH'(1);
+                end
+            end
+
+            // ---- out_write_* 与 out_row_cnt_q 同步（条件：output_write_fire）
+            if (output_write_fire) begin
+                if (out_write_intra_q == act_chunk_size_safe_q - ADDR_WIDTH'(1)) begin
+                    out_write_intra_q <= '0;
+                    out_write_group_q <= out_write_group_q + ADDR_WIDTH'(1);
+                end else begin
+                    out_write_intra_q <= out_write_intra_q + ADDR_WIDTH'(1);
+                end
             end
         end
 

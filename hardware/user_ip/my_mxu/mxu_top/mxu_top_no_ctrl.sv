@@ -337,6 +337,35 @@ endgenerate
 
 logic sa_calc_done;
 assign sa_calc_done = |u_sa_top_calc_done_o;
+
+// ---------------------------------------------------------------------------
+// SA -> rotator_back 流水切割
+//   将 SA_top 经 posit_encoder 输出的 operand_acc_o 与 calc_done 各打一拍，
+//   把 posit_encoder + 后端 rotator 4 选 1 mux 的长组合路径切到两个时钟周期。
+//   下游 lane_bit_extract 与 rotator_back 的 in_valid 改用 *_q 版本。
+//   注意：这使得 data_out_* / compute_done_o 整体顺延 1 拍，
+//   控制器 mxu_ctrl 的 ACT_TO_BACK_SEL_LATENCY_* 已对应 +1 抵消。
+// ---------------------------------------------------------------------------
+logic [SA_N_O-1:0] u_sa_top_operand_acc_o_q [LANE_NUM-1:0][SA_PE_NUM-1:0];
+logic              sa_calc_done_q;
+
+always_ff @(posedge clk_i or negedge rstn_i) begin
+    if (!rstn_i) begin
+        sa_calc_done_q <= 1'b0;
+        for (int lane = 0; lane < LANE_NUM; lane++) begin
+            for (int pe = 0; pe < SA_PE_NUM; pe++) begin
+                u_sa_top_operand_acc_o_q[lane][pe] <= '0;
+            end
+        end
+    end else begin
+        sa_calc_done_q <= sa_calc_done;
+        for (int lane = 0; lane < LANE_NUM; lane++) begin
+            for (int pe = 0; pe < SA_PE_NUM; pe++) begin
+                u_sa_top_operand_acc_o_q[lane][pe] <= u_sa_top_operand_acc_o[lane][pe];
+            end
+        end
+    end
+end
 // ---------------------------------------------------------------------------
 // u_rotator_back_lower / u_rotator_back_upper
 // ---------------------------------------------------------------------------
@@ -410,21 +439,21 @@ rotator #(
     .out4      (u_rotator_back_upper_out4)
 );
 
-assign u_rotator_back_upper_in_valid = sa_calc_done;
-assign u_rotator_back_lower_in_valid = sa_calc_done;
+assign u_rotator_back_upper_in_valid = sa_calc_done_q;
+assign u_rotator_back_lower_in_valid = sa_calc_done_q;
 
 logic [BANK_WIDTH-1:0] u_rotator_back_upper_data_i [LANE_NUM-1:0];
 logic [BANK_WIDTH-1:0] u_rotator_back_lower_data_i [LANE_NUM-1:0];
 generate
   for (genvar lane=0; lane<LANE_NUM; lane=lane+1) begin : lane_bit_extract
-    // 提取每个PE的高8bit并拼接成128bit
+    // 提取每个PE的高8bit并拼接成128bit；数据源为流水寄存器 _q（缓解 SA 长路径）
     for (genvar pe=0; pe<SA_PE_NUM; pe=pe+1) begin : upper_bit_extract
-      assign u_rotator_back_upper_data_i[lane][(pe+1)*8-1 -: 8] = u_sa_top_operand_acc_o[lane][pe][15:8];
+      assign u_rotator_back_upper_data_i[lane][(pe+1)*8-1 -: 8] = u_sa_top_operand_acc_o_q[lane][pe][15:8];
     end
     
-    // 提取每个PE的低8bit并拼接成128bit
+    // 提取每个PE的低8bit并拼接成128bit；数据源为流水寄存器 _q（缓解 SA 长路径）
     for (genvar pe=0; pe<SA_PE_NUM; pe=pe+1) begin : lower_bit_extract
-      assign u_rotator_back_lower_data_i[lane][(pe+1)*8-1 -: 8] = u_sa_top_operand_acc_o[lane][pe][7:0];
+      assign u_rotator_back_lower_data_i[lane][(pe+1)*8-1 -: 8] = u_sa_top_operand_acc_o_q[lane][pe][7:0];
     end
   end
 endgenerate
