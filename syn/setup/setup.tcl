@@ -48,10 +48,9 @@ set SRAM_MACROS [list \
 #                             func_ffg_0c func_ffg_125c func_ffg_m40c
 #                             func_tt_25c func_tt_85c }
 # ===========================================================================
-
+    # func_ssg_m40cu6
+    # func_ffg_125c
 set ACTIVE_SCENARIOS {
-    func_ssg_m40c
-    func_ffg_125c
     func_tt_25c
 }
 
