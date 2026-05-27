@@ -71,7 +71,9 @@ package ariane_soc;
   localparam logic[63:0] AxuOpBBufLength   = 64'h8000; // 256*128*8/8=32KB
   localparam logic[63:0] AxuOutBufLength   = 64'h8000; // 256*128*8/8=32KB
 
-  localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB 
+  // localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB 
+  localparam logic[63:0] DRAMLength     = 64'h8000; // 128 kB 改成32kB试试
+
 
   typedef enum logic [63:0] {
     DebugBase    = 64'h0000_0000,
