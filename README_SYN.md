@@ -28,11 +28,9 @@ $HOME/workspace/
 若本地尚无 `tsmc22` 目录，可从 EDA 服务器拷贝：
 
 ```bash
-scp jy_hu30@10.129.162.92:/DISK1/home/jy_hu30/workspace/tsmc22.tar.gz ./
+cp /data/home/x_long32/data_share/tsmc22.tar.gz <目标路径>
 tar xzf tsmc22.tar.gz -C $HOME/workspace/
 ```
-
-> 账号密码：`hujiyong@eda`
 
 ---
 
