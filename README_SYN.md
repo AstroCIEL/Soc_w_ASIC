@@ -43,8 +43,8 @@ tar xzf tsmc22.tar.gz -C $HOME/workspace/
 使用 `scripts/gen_sram.py` 调用 TSMC Memory Compiler，生成 Verilog、Liberty、LEF 等目标文件。
 
 ```bash
-cd $HOME/workspace/Soc_w_ASIC/scripts
-python3 gen_sram.py
+cd tsmc22/sram
+python3 <path>/gen_sram.py
 ```
 
 生成结果默认写入当前目录；日志保存在 `logs/` 下。
@@ -82,8 +82,7 @@ DC topographical mode 需要 Milkyway 物理参考库（FRAM+CEL）：
 
 ```bash
 cd $HOME/workspace/tsmc22/sram/milkway
-Milkyway -galaxy -nullDisplay -tcl -file \
-  <path>/create_sram_milkway.tcl
+Milkyway -galaxy -nullDisplay -tcl -file <path>/create_sram_milkway.tcl
 ```
 
 输出目录：`$PDK_ROOT/sram/milkway/sram_macro_milkway`。

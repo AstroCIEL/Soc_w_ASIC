@@ -377,10 +377,7 @@ module ariane_soc_top import axi_pkg::*; #(
   //   .slv    ( master[ariane_soc::DRAM] ),
   //   .mst    ( dram                     )
   // );
-
   `AXI_ASSIGN(dram, master[ariane_soc::DRAM])
-
-
 
   axi2mem_burst_rw #(
     .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),

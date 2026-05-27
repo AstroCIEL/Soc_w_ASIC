@@ -81,13 +81,12 @@ module PE_kernel #(
     logic signed [EXP_WIDTH_I:0]                 pipe1_act_rg_exp;
     logic        [MANT_WIDTH_I:0]                pipe1_act_mant;
     // 乘法结果与指数信息
-    logic [MUL_WIDTH-1:0]                        pipe1_mants_prod;
-    logic signed [EXP_WIDTH:0]                   pipe1_rg_exp_prod;
+    logic [ALIGN_WIDTH-1:0]                      pipe1_product_aligned;
+    logic signed [SUM_WIDTH:0]                   pipe1_int_prod;
     logic signed [EXP_WIDTH:0]                   pipe1_rg_exp_max;
     logic signed [1:0][EXP_WIDTH:0]              pipe1_rg_exp_diff;
     // 累加器原始输入与符号
     logic                                        pipe1_acc_sign;
-    logic signed [EXP_WIDTH:0]                   pipe1_acc_rg_exp;
     logic        [MANT_WIDTH_O+2:0]              pipe1_acc_mant;
     logic                                        pipe1_signs_ab;
 
@@ -95,9 +94,8 @@ module PE_kernel #(
     logic                                        pipe2_act_sign;
     logic signed [EXP_WIDTH_I:0]                 pipe2_act_rg_exp;
     logic        [MANT_WIDTH_I:0]                pipe2_act_mant;
-    logic                                        pipe2_final_sign;
-    logic signed [EXP_WIDTH:0]                   pipe2_final_rg_exp;
-    logic        [MANT_WIDTH_O+2:0]              pipe2_final_mant;
+    logic [SUM_WIDTH:0]                          pipe2_sum_result;
+    logic signed [EXP_WIDTH:0]                   pipe2_rg_exp_max;
 
     // ****************************************************************
     // Pipeline 0: 输入寄存 (完全保留原逻辑)
@@ -152,9 +150,36 @@ module PE_kernel #(
         .result_o  (rg_exp_max)
     );
 
-    // 5. Booth乘法结果合并
-    logic [MUL_WIDTH-1:0] mants_prod;
-    assign mants_prod = mul_sum + mul_carry;
+    // 5. Booth结果只保留后级真正需要的位，避免22-bit全加法落在Pipe1 D端。
+    logic [ALIGN_WIDTH-1:0] product_aligned_comb;
+    logic [SUM_WIDTH:0]     int_prod_comb;
+
+    if (ALIGN_WIDTH > MUL_WIDTH) begin : gen_product_pad
+        logic [MUL_WIDTH-1:0] mants_prod_full;
+
+        assign mants_prod_full     = mul_sum + mul_carry;
+        assign product_aligned_comb = mants_prod_full << (ALIGN_WIDTH - MUL_WIDTH);
+    end
+    else begin : gen_product_trunc
+        localparam int unsigned PRODUCT_RSHIFT = MUL_WIDTH - ALIGN_WIDTH;
+
+        if (PRODUCT_RSHIFT == 0) begin : gen_no_trunc
+            assign product_aligned_comb = mul_sum + mul_carry;
+        end
+        else begin : gen_with_trunc
+            logic [PRODUCT_RSHIFT:0] product_trunc_sum;
+            logic                    product_trunc_carry;
+
+            assign product_trunc_sum   = {1'b0, mul_sum[PRODUCT_RSHIFT-1:0]} +
+                                         {1'b0, mul_carry[PRODUCT_RSHIFT-1:0]};
+            assign product_trunc_carry = product_trunc_sum[PRODUCT_RSHIFT];
+            assign product_aligned_comb = mul_sum[MUL_WIDTH-1:PRODUCT_RSHIFT] +
+                                          mul_carry[MUL_WIDTH-1:PRODUCT_RSHIFT] +
+                                          product_trunc_carry;
+        end
+    end
+
+    assign int_prod_comb = mul_sum[SUM_WIDTH:0] + mul_carry[SUM_WIDTH:0];
 
     // 6. 预计算指数差（移位量）
     logic [1:0][EXP_WIDTH:0] rg_exp_diff;
@@ -174,15 +199,14 @@ module PE_kernel #(
     `FFLARN(pipe1_act_mant,      pipe0_act_mant,     en_i_2,  0,  clk_i,  rstn_i)
 
     // 乘法结果与指数信息寄存
-    `FFLARN(pipe1_mants_prod,    mants_prod,         en_i_2,  0,  clk_i,  rstn_i)
-    `FFLARN(pipe1_rg_exp_prod,   rg_exp_prod,        en_i_2,  0,  clk_i,  rstn_i)
+    `FFLARN(pipe1_product_aligned, product_aligned_comb, en_i_2,  0,  clk_i,  rstn_i)
+    `FFLARN(pipe1_int_prod,      signed'(int_prod_comb), en_i_2,  0,  clk_i,  rstn_i)
     `FFLARN(pipe1_rg_exp_max,    rg_exp_max,         en_i_2,  0,  clk_i,  rstn_i)
     `FFLARN(pipe1_rg_exp_diff[0],rg_exp_diff[0],     en_i_2,  0,  clk_i,  rstn_i)
     `FFLARN(pipe1_rg_exp_diff[1],rg_exp_diff[1],     en_i_2,  0,  clk_i,  rstn_i)
 
     // 累加器原始输入与符号寄存
     `FFLARN(pipe1_acc_sign,      pipe0_acc_sign,     en_i_2,  0,  clk_i,  rstn_i)
-    `FFLARN(pipe1_acc_rg_exp,    pipe0_acc_rg_exp,   en_i_2,  0,  clk_i,  rstn_i)
     `FFLARN(pipe1_acc_mant,      pipe0_acc_mant,     en_i_2,  0,  clk_i,  rstn_i)
     `FFLARN(pipe1_signs_ab,      signs_ab,           en_i_2,  0,  clk_i,  rstn_i)
 
@@ -196,13 +220,7 @@ module PE_kernel #(
     logic [1:0][ALIGN_WIDTH-1:0] product_shifted;
     logic [1:0][SHIFT_WIDTH-1:0] shift_amount;
 
-    // 乘积位宽适配
-    if (ALIGN_WIDTH > MUL_WIDTH) begin
-        assign product[0] = pipe1_mants_prod << (ALIGN_WIDTH - MUL_WIDTH);
-    end
-    else begin
-        assign product[0] = pipe1_mants_prod >> (MUL_WIDTH - ALIGN_WIDTH);
-    end
+    assign product[0] = pipe1_product_aligned;
 
     // 累加值位宽适配
     if (ALIGN_WIDTH > (MANT_WIDTH_O+2) + 2) begin
@@ -265,10 +283,8 @@ module PE_kernel #(
     logic signed [SUM_WIDTH:0] int_op_a;
     logic signed [SUM_WIDTH:0] int_op_b;
     
-    // 1. 对乘法结果 (pipe1_mants_prod) 进行符号扩展
-    always_comb begin
-        int_op_a = signed'(pipe1_mants_prod[SUM_WIDTH:0]);
-    end
+    // 1. 使用Pipe1已寄存的低位乘积，避免INT旁路重新走乘积CPA
+    assign int_op_a = pipe1_int_prod;
 
     // 2. 对累加器输入 (pipe1_acc_mant) 进行符号扩展
     always_comb begin
@@ -312,16 +328,30 @@ module PE_kernel #(
     logic [SUM_WIDTH:0] sum_result;
     assign sum_result = adder_result; // Posit 模式继续使用这个信号
 
-    // 4. 符号修正与绝对值转换 (仅 Posit 使用)
+    // ****************************************************************
+    // Pipeline 2: 输出寄存器
+    // calc_done_o在en_i_4有效，Pipe2之后仍有一拍窗口完成归一化/舍入。
+    // ****************************************************************
+    `FFLARN(pipe2_act_sign,      pipe1_act_sign,     en_i_3,  0,  clk_i,  rstn_i)
+    `FFLARN(pipe2_act_rg_exp,    pipe1_act_rg_exp,   en_i_3,  0,  clk_i,  rstn_i)
+    `FFLARN(pipe2_act_mant,      pipe1_act_mant,     en_i_3,  0,  clk_i,  rstn_i)
+
+    `FFLARN(pipe2_sum_result,    sum_result,          en_i_3,  0,  clk_i,  rstn_i)
+    `FFLARN(pipe2_rg_exp_max,    pipe1_rg_exp_max,    en_i_3,  0,  clk_i,  rstn_i)
+
+    // ****************************************************************
+    // Pipe2之后：Posit归一化/舍入
+    // ****************************************************************
     logic               final_sign;
     logic [SUM_WIDTH-1:0] sum_c;
-    assign final_sign = sum_result[SUM_WIDTH];
-    assign sum_c      = final_sign ? (~sum_result + 1'b1) : sum_result[SUM_WIDTH-1:0];
-
-    // 5. 尾数归一化 (仅 Posit 使用)
     logic signed [EXP_WIDTH:0] rg_exp_adjust;
     logic signed [EXP_WIDTH:0] final_rg_exp;
     logic [SUM_WIDTH-1:0] sum_norm;
+    logic [MANT_WIDTH_O+2:0] final_mant;
+
+    assign final_sign = pipe2_sum_result[SUM_WIDTH];
+    assign sum_c      = final_sign ? (~pipe2_sum_result + 1'b1) : pipe2_sum_result[SUM_WIDTH-1:0];
+
     mantissa_norm #(
         .WIDTH        (SUM_WIDTH),
         .EXP_WIDTH    (EXP_WIDTH),
@@ -332,11 +362,8 @@ module PE_kernel #(
         .result_o  (sum_norm)
     );
 
-    // 6. 指数更新 (仅 Posit 使用)
-    assign final_rg_exp = pipe1_rg_exp_max + rg_exp_adjust;
+    assign final_rg_exp = pipe2_rg_exp_max + rg_exp_adjust;
 
-    // 7. 舍入与位宽适配 (仅 Posit 使用)
-    logic [MANT_WIDTH_O+2:0] final_mant;
     if (SUM_WIDTH > MANT_WIDTH_O + 3) begin : gen_round_trunc
         logic sticky_bit;
         assign sticky_bit = |sum_norm[SUM_WIDTH-MANT_WIDTH_O-3:0];
@@ -347,25 +374,12 @@ module PE_kernel #(
     end
 
     // ****************************************************************
-    // Pipeline 2: 输出寄存器 (仅 Posit 模式使用)
-    // ****************************************************************
-    `FFLARN(pipe2_act_sign,      pipe1_act_sign,     en_i_3,  0,  clk_i,  rstn_i)
-    `FFLARN(pipe2_act_rg_exp,    pipe1_act_rg_exp,   en_i_3,  0,  clk_i,  rstn_i)
-    `FFLARN(pipe2_act_mant,      pipe1_act_mant,     en_i_3,  0,  clk_i,  rstn_i)
-
-    `FFLARN(pipe2_final_sign,    final_sign,          en_i_3,  0,  clk_i,  rstn_i)
-    `FFLARN(pipe2_final_rg_exp,  final_rg_exp,        en_i_3,  0,  clk_i,  rstn_i)
-    `FFLARN(pipe2_final_mant,    final_mant,          en_i_3,  0,  clk_i,  rstn_i)
-
-    // ****************************************************************
     // 【修复】INT 模式结果预抽取
     // ****************************************************************
-    logic signed [SUM_WIDTH:0] adder_result_signed;
     logic        [MANT_WIDTH_O+2:0] int_final_mant_comb;
-    
-    assign adder_result_signed = signed'(adder_result);
-    // 直接截取低位，确保位宽匹配
-    assign int_final_mant_comb = adder_result_signed[MANT_WIDTH_O+2:0];
+
+    // INT 模式保持2周期旁路：Pipe1寄存乘积后，本周期完成+acc并直接输出。
+    assign int_final_mant_comb = adder_result[MANT_WIDTH_O+2:0];
 
     // ****************************************************************
     // 输出端口连接 (核心修改：最终 Mux 选择)
@@ -391,9 +405,9 @@ module PE_kernel #(
         end
         else begin
             // Posit 模式 (3 周期 Latency)：走 Pipe2
-            acc_sign_o   = pipe2_final_sign;
-            acc_rg_exp_o = pipe2_final_rg_exp;
-            acc_mant_o   = pipe2_final_mant;
+            acc_sign_o   = final_sign;
+            acc_rg_exp_o = final_rg_exp;
+            acc_mant_o   = final_mant;
         end
     end
 

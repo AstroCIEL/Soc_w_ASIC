@@ -118,21 +118,39 @@ module PE_mult_kernel #(
     logic signed [EXP_WIDTH:0] rg_exp_max;
     assign rg_exp_max = rg_exp_prod;
 
-    // 5. Booth 结果合并
-    logic [MUL_WIDTH-1:0] mants_prod;
-    assign mants_prod = mul_sum + mul_carry;
-
-    // 6. 尾数位宽适配 (保留 ALIGN_WIDTH 逻辑)
+    // 5. Booth结果只合并后级真正使用的位，避免完整乘积CPA落在Pipe1 D端。
     logic [ALIGN_WIDTH-1:0] product_aligned;
+    logic [MANT_WIDTH_O+2:0] int_prod_comb;
 
-    if (ALIGN_WIDTH > MUL_WIDTH) begin
-        assign product_aligned = mants_prod << (ALIGN_WIDTH - MUL_WIDTH);
+    if (ALIGN_WIDTH > MUL_WIDTH) begin : gen_product_pad
+        logic [MUL_WIDTH-1:0] mants_prod_full;
+
+        assign mants_prod_full = mul_sum + mul_carry;
+        assign product_aligned = mants_prod_full << (ALIGN_WIDTH - MUL_WIDTH);
     end
-    else begin
-        assign product_aligned = mants_prod >> (MUL_WIDTH - ALIGN_WIDTH);
+    else begin : gen_product_trunc
+        localparam int unsigned PRODUCT_RSHIFT = MUL_WIDTH - ALIGN_WIDTH;
+
+        if (PRODUCT_RSHIFT == 0) begin : gen_no_trunc
+            assign product_aligned = mul_sum + mul_carry;
+        end
+        else begin : gen_with_trunc
+            logic [PRODUCT_RSHIFT:0] product_trunc_sum;
+            logic                    product_trunc_carry;
+
+            assign product_trunc_sum   = {1'b0, mul_sum[PRODUCT_RSHIFT-1:0]} +
+                                         {1'b0, mul_carry[PRODUCT_RSHIFT-1:0]};
+            assign product_trunc_carry = product_trunc_sum[PRODUCT_RSHIFT];
+            assign product_aligned     = mul_sum[MUL_WIDTH-1:PRODUCT_RSHIFT] +
+                                         mul_carry[MUL_WIDTH-1:PRODUCT_RSHIFT] +
+                                         product_trunc_carry;
+        end
     end
 
-    // 7. 结果直接传递 (移除桶形移位器)
+    // INT模式只需要输出低位，低位求和不依赖被丢弃的高位进位。
+    assign int_prod_comb = mul_sum[MANT_WIDTH_O+2:0] + mul_carry[MANT_WIDTH_O+2:0];
+
+    // 6. 结果直接传递 (移除桶形移位器)
     localparam int unsigned SUM_WIDTH = ALIGN_WIDTH;
     logic [SUM_WIDTH:0] sum_result;
     
@@ -143,12 +161,12 @@ module PE_mult_kernel #(
     logic               pipe1_prod_sign;
     logic [SUM_WIDTH:0] pipe1_sum_result;
     logic signed [EXP_WIDTH:0] pipe1_rg_exp_max;
-    logic [MUL_WIDTH-1:0] pipe1_mants_prod; // INT 模式：原始有符号乘积
+    logic [MANT_WIDTH_O+2:0] pipe1_int_prod;
 
     `FFLARN(pipe1_prod_sign,    prod_sign,      en_i_2,  0,  clk_i,  rstn_i)
     `FFLARN(pipe1_sum_result,   sum_result,     en_i_2,  0,  clk_i,  rstn_i)
     `FFLARN(pipe1_rg_exp_max,   rg_exp_max,     en_i_2,  0,  clk_i,  rstn_i)
-    `FFLARN(pipe1_mants_prod,   mants_prod,     en_i_2,  0,  clk_i,  rstn_i)
+    `FFLARN(pipe1_int_prod,     int_prod_comb,  en_i_2,  0,  clk_i,  rstn_i)
 
     // ================= 组合逻辑：归一化与舍入 =================
     logic               final_sign;
@@ -196,11 +214,9 @@ module PE_mult_kernel #(
     `FFLARN(pipe2_final_mant,   final_mant,   en_i_3, 0, clk_i, rstn_i)
 
     // ================= 【INT 模式】结果预抽取（旁路 Pipe2，2 周期延迟） =================
-    logic signed [MUL_WIDTH-1:0]    int_prod_signed;
     logic        [MANT_WIDTH_O+2:0] int_final_mant_comb;
 
-    assign int_prod_signed     = signed'(pipe1_mants_prod);
-    assign int_final_mant_comb = int_prod_signed[MANT_WIDTH_O+2:0];
+    assign int_final_mant_comb = pipe1_int_prod;
 
     // ================= 输出连接 (核心修改：Mux 选择) =================
     assign act_sign_o   = pipe2_act_sign;
