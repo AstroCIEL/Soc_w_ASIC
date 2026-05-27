@@ -75,6 +75,33 @@ module tc_sram #(
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
       .WABLM (3'b001       )        // write-assist mode bits (default)
     );
+  // l2改为32K
+  end else if (NumWords == 4096 && DataWidth == 64) begin : gen_l2_4096x64_mem
+    // L2 main memory — 4096 × 64b  
+    logic [63:0] wen_bits;
+    for (genvar i = 0; i < 8; i++) begin : gen_wen_expand
+      assign wen_bits[i*8 +: 8] = {8{~be_i[0][i]}};
+    end
+
+    sram_l2_4096x64 i_macro (
+      .CLK   (clk_i        ),
+      .CEN   (~req_i[0]    ),       // active-low chip enable
+      .GWEN  (~we_i[0]     ),       // active-low global write enable
+      .A     (addr_i[0]    ),
+      .D     (wdata_i[0]   ),
+      .WEN   (wen_bits     ),       // active-low bit write mask
+      .Q     (rdata_o[0]   ),
+      // margin / retention / debug signals — fixed at default values
+      .STOV  (1'b0         ),       // debug, tie-off 0
+      .RET1N (1'b1         ),       // 1 = normal mode (0 = low-power retention)
+      .EMA   (3'b100       ),       // SS/low-voltage corner timing margin (model reference value)
+      .EMAW  (2'b01        ),       // SS/low-voltage corner write margin (model reference value)
+      .EMAS  (1'b0         ),       // SS/low-voltage corner (model reference value)
+      .RAWL  (1'b0         ),       // read-assist off (default)
+      .RAWLM (2'b00        ),       // read-assist mode bits (default)
+      .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
+      .WABLM (2'b00       )        // write-assist mode bits (default)
+    );
 
   end else if (NumWords == 64 && DataWidth == 256) begin : gen_dcache_data
     // D$ data bank — 64 × 256b

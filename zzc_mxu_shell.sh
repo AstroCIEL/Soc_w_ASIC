@@ -5,7 +5,8 @@ cd ./sim && make clean && cd ..
 # software/app/my_axu_test/app.mk before main.c is compiled.
 # Generator script: zzc_workspace_axu/file_format_transform/gen_input_data_axu.py
 
-cd ./software && make my_mxu_test && cd ..
+cd ./software && make my_mxu_test MXU_TEST_MODE=posit_bp 
+cd ..
 
 cd ./sim && make vcs-run \
                  app=../software/build/bin/my_mxu_test \

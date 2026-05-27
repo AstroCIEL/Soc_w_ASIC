@@ -5,7 +5,7 @@ ENTRY(_start)
 
 MEMORY {
   /* Use 0x80001000 instead of 0x80000000 to avoid relocation overflow with LLD */
-  ram : ORIGIN = 0x80000000, LENGTH = 0x00020000
+  ram : ORIGIN = 0x80000000, LENGTH = 0x00008000
 }
 
 /* Ara's TB requires sections aligned to a AxiWideBeWidth (16B) boundary. */
