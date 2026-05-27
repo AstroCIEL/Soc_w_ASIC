@@ -93,7 +93,7 @@ def build_cpu_ram_cmd(ram: RAM_DEF, target: str) -> List[str]:
         "-ser", "none",
         "-site_def", "off",
         "-check_instname", "off",
-        "-frequency", "500",
+        "-frequency", "1000",
         "-bmux", "off",
         "-diodes", "on",
         "-activity_factor", "50",
@@ -134,7 +134,7 @@ def build_cpu_rf_cmd(rf: CPU_RF_DEF, target: str) -> List[str]:
         "-ser", "none",
         "-site_def", "off",
         "-check_instname", "off",
-        "-frequency", "500",
+        "-frequency", "1000",
         "-bmux", "off",
         "-diodes", "on",
         "-activity_factor", "50",
@@ -272,26 +272,26 @@ def main():
             log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
             run_cmd(cmd, log_path)
 
-    for cpu_rf in cpu_rf_defs:
-        instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
-        for target in targets:
-            cmd = build_cpu_rf_cmd(cpu_rf, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-            run_cmd(cmd, log_path)
+    # for cpu_rf in cpu_rf_defs:
+    #     instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
+    #     for target in targets:
+    #         cmd = build_cpu_rf_cmd(cpu_rf, target)
+    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+    #         run_cmd(cmd, log_path)
         
-    for ram in ram_defs:
-        instname =  make_instname(ram.Name, ram.NumWords, ram.DataWidth)
-        for target in targets:
-            cmd = build_ram_cmd(ram, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-            run_cmd(cmd, log_path)   
+    # for ram in ram_defs:
+    #     instname =  make_instname(ram.Name, ram.NumWords, ram.DataWidth)
+    #     for target in targets:
+    #         cmd = build_ram_cmd(ram, target)
+    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+    #         run_cmd(cmd, log_path)   
 
-    for rf in rf_defs:
-        instname = make_instname(rf.Name, rf.NumWords, rf.DataWidth)
-        for target in targets:
-            cmd = build_rf_cmd(rf, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-            run_cmd(cmd, log_path)
+    # for rf in rf_defs:
+    #     instname = make_instname(rf.Name, rf.NumWords, rf.DataWidth)
+    #     for target in targets:
+    #         cmd = build_rf_cmd(rf, target)
+    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+    #         run_cmd(cmd, log_path)
         
 
 
