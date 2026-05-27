@@ -233,7 +233,7 @@ foreach _s $ACTIVE_SCENARIOS {
     file mkdir ${_sd}
 
     report_clocks                                                     > ${_sd}/clocks.rpt
-    report_power  -nosplit                                            > ${_sd}/power.rpt
+    report_power -nosplit -hierarchy -levels 3 -verbose               > ${_sd}/power.rpt
     report_threshold_voltage_group -nosplit                           > ${_sd}/threshold_voltage_group.rpt
     report_constraint -all_violators -nosplit                         > ${_sd}/violations.rpt
     report_timing -delay max -nosplit -max_paths ${MAX_PATHS}         > ${_sd}/timing_max.rpt
@@ -249,4 +249,4 @@ puts "  Outputs : $OUTPUT_DIR"
 puts "  Reports : $REPORT_DIR"
 puts "=================================================================="
 
-exit
+# exit

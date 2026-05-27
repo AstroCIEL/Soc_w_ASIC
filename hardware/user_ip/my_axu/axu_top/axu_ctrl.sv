@@ -92,8 +92,8 @@ module axu_ctrl #(
     localparam int unsigned MAX_LATENCY         = LAT_REDUCE_SUM;
     localparam int unsigned LAT_SFU_ITP         = 1;
     localparam int unsigned LAT_SFU_RNG         = 1;
-    localparam int unsigned LAT_SFU_CORDIC      = 3 * SFU_NUM_ITER;
-    localparam int unsigned MAX_SFU_LATENCY     = LAT_SFU_CORDIC;
+    // localparam int unsigned LAT_SFU_CORDIC      = 3 * SFU_NUM_ITER;
+    localparam int unsigned MAX_SFU_LATENCY     = LAT_SFU_RNG;
     localparam int unsigned SEED_WORD_WIDTH     = 64;
     localparam int unsigned SEED_WORDS_PER_BANK = BANK_WIDTH / SEED_WORD_WIDTH;
 
@@ -130,7 +130,7 @@ module axu_ctrl #(
     localparam logic [2:0] VPU_REDUCE_MAX = 3'd5;
     localparam logic [2:0] VPU_REDUCE_SUM = 3'd6;
 
-    localparam logic [1:0] SFU_CORDIC = 2'd0;
+    // localparam logic [1:0] SFU_CORDIC = 2'd0;
     localparam logic [1:0] SFU_RNG    = 2'd1;
     localparam logic [1:0] SFU_ITP    = 2'd2;
 
@@ -195,7 +195,7 @@ module axu_ctrl #(
     logic                    is_nli_load_ybnd;
     logic                    is_nli_load_lut;
     logic                    is_nli_compute;
-    logic                    is_sfu_cordic;
+    // logic                    is_sfu_cordic;
     logic                    is_sfu_rng;
     logic                    is_sfu_itp;
     logic                    sfu_need_input_read;
@@ -250,14 +250,20 @@ module axu_ctrl #(
     assign is_nli_load_ybnd    = is_nli_op && (func_sel_reg == NLI_LOAD_YBND);
     assign is_nli_load_lut     = is_nli_load_mult || is_nli_load_ybnd;
     assign is_nli_compute      = is_nli_op && (func_sel_reg == NLI_COMPUTE);
-    assign is_sfu_cordic       = is_sfu_op && (func_sel_reg[1:0] == SFU_CORDIC);
+    // assign is_sfu_cordic       = is_sfu_op && (func_sel_reg[1:0] == SFU_CORDIC);
     assign is_sfu_rng          = is_sfu_op && (func_sel_reg[1:0] == SFU_RNG);
     assign is_sfu_itp          = is_sfu_op && (func_sel_reg[1:0] == SFU_ITP);
-    assign sfu_need_input_read = is_sfu_cordic || is_sfu_itp;
+    // assign sfu_need_input_read = is_sfu_cordic || is_sfu_itp;
+    assign sfu_need_input_read = is_sfu_itp;
     assign vpu_func_sel_valid  = (func_sel_reg <= VPU_REDUCE_SUM);
-    assign sfu_func_sel_valid  = (func_sel_reg[1:0] == SFU_CORDIC) ||
-                                 (func_sel_reg[1:0] == SFU_RNG)    ||
+    // assign sfu_func_sel_valid  = (func_sel_reg[1:0] == SFU_CORDIC) ||
+    //                              (func_sel_reg[1:0] == SFU_RNG)    ||
+    //                              (func_sel_reg[1:0] == SFU_ITP);
+
+    assign sfu_func_sel_valid  = (func_sel_reg[1:0] == SFU_RNG)    ||
                                  (func_sel_reg[1:0] == SFU_ITP);
+
+
     assign nli_func_sel_valid  = (func_sel_reg == NLI_LOAD_MULT) ||
                                  (func_sel_reg == NLI_LOAD_YBND) ||
                                  (func_sel_reg == NLI_COMPUTE);
@@ -366,7 +372,7 @@ module axu_ctrl #(
     always_comb begin
         if (is_sfu_op) begin
             unique case (func_sel_reg[1:0])
-                SFU_CORDIC: result_batch = sfu_tag_batch_q[LAT_SFU_CORDIC-1];
+                // SFU_CORDIC: result_batch = sfu_tag_batch_q[LAT_SFU_CORDIC-1];
                 SFU_RNG:    result_batch = sfu_tag_batch_q[LAT_SFU_RNG-1];
                 SFU_ITP:    result_batch = sfu_tag_batch_q[LAT_SFU_ITP-1];
                 default:    result_batch = '0;
@@ -383,11 +389,12 @@ module axu_ctrl #(
             endcase
         end
     end
+                
 
+// SFU_CORDIC: result_tag_valid = sfu_tag_valid_q[LAT_SFU_CORDIC-1];
     always_comb begin
         if (is_sfu_op) begin
             unique case (func_sel_reg[1:0])
-                SFU_CORDIC: result_tag_valid = sfu_tag_valid_q[LAT_SFU_CORDIC-1];
                 SFU_RNG:    result_tag_valid = sfu_tag_valid_q[LAT_SFU_RNG-1];
                 SFU_ITP:    result_tag_valid = sfu_tag_valid_q[LAT_SFU_ITP-1];
                 default:    result_tag_valid = 1'b0;
