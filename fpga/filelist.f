@@ -5,7 +5,7 @@
 -f ${ROOT}/hardware/tech/filelist_fpga.f
 
 // IPs + SoC (same as simulation/synthesis)
--f ${ROOT}/hardware/soc/filelist_minimum.f
+-f ${ROOT}/hardware/soc/filelist_minimum_my_mxu.f
 
 // user ip
 -f ${ROOT}/hardware/user_ip/default_slave/filelist.f
