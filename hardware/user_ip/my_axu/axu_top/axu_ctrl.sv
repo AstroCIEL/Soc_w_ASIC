@@ -152,6 +152,7 @@ module axu_ctrl #(
         ST_SEED_APPLY,
         ST_NLI_LUT_REQ,
         ST_NLI_LUT_CAP,
+        ST_NLI_LUT_CAP2,
         ST_NLI_LUT_WR,
         ST_NLI_MACRO_REQ,
         ST_NLI_MACRO_CAP,
@@ -230,6 +231,7 @@ module axu_ctrl #(
     logic [NLI_LUT_CNT_W-1:0]   nli_load_cnt_q;
     logic [NLI_SLOT_W-1:0]      nli_slot_q;
     logic [BANK_NUM*BANK_WIDTH-1:0] nli_row_buf_q;
+    logic [BANK_NUM*BANK_WIDTH-1:0] op_a_dout_flat_q;
     logic [ADDR_WIDTH-1:0]      nli_read_cnt_q;
     logic [ADDR_WIDTH-1:0]      nli_write_cnt_q;
     logic                       nli_read_data_valid_q;
@@ -495,6 +497,10 @@ module axu_ctrl #(
             end
 
             ST_NLI_LUT_CAP: begin
+                state_d = ST_NLI_LUT_CAP2;
+            end
+
+            ST_NLI_LUT_CAP2: begin
                 state_d = ST_NLI_LUT_WR;
             end
 
@@ -518,7 +524,7 @@ module axu_ctrl #(
             end
 
             ST_NLI_FLUSH: begin
-                if (nli_flush_cnt_q == 3'd5) begin
+                if (nli_flush_cnt_q == 3'd6) begin
                     state_d = ST_NLI_COMPUTE;
                 end
             end
@@ -673,6 +679,7 @@ module axu_ctrl #(
             nli_load_cnt_q        <= '0;
             nli_slot_q            <= '0;
             nli_row_buf_q         <= '0;
+            op_a_dout_flat_q      <= '0;
             nli_read_cnt_q        <= '0;
             nli_write_cnt_q       <= '0;
             nli_read_data_valid_q <= 1'b0;
@@ -720,6 +727,7 @@ module axu_ctrl #(
                 nli_load_cnt_q        <= '0;
                 nli_slot_q            <= '0;
                 nli_row_buf_q         <= '0;
+                op_a_dout_flat_q      <= '0;
                 nli_read_cnt_q        <= '0;
                 nli_write_cnt_q       <= '0;
                 nli_read_data_valid_q <= 1'b0;
@@ -778,7 +786,11 @@ module axu_ctrl #(
                 end
             end else begin
                 if (state_q == ST_NLI_LUT_CAP) begin
-                    nli_row_buf_q <= op_a_dout_flat;
+                    op_a_dout_flat_q <= op_a_dout_flat;
+                end
+
+                if (state_q == ST_NLI_LUT_CAP2) begin
+                    nli_row_buf_q <= op_a_dout_flat_q;
                     nli_slot_q    <= '0;
                 end
 

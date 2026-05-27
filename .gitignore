@@ -10,3 +10,4 @@ gcc-install
 /tools/src
 *.log
 syn/build
+
