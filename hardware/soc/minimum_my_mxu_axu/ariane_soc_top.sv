@@ -363,20 +363,24 @@ module ariane_soc_top import axi_pkg::*; #(
   logic [AXI_USER_WIDTH-1:0]    wuser;
   logic [AXI_USER_WIDTH-1:0]    ruser;
 
-  axi_riscv_atomics_wrap #(
-    .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH            ),
-    .AXI_DATA_WIDTH ( AXI_DATA_WIDTH               ),
-    .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
-    .AXI_USER_WIDTH ( AXI_USER_WIDTH               ),
-    .AXI_MAX_READ_TXNS  ( 4  ),
-    .AXI_MAX_WRITE_TXNS ( 4  ),
-    .RISCV_WORD_WIDTH   ( 64 )
-  ) i_axi_riscv_atomics (
-    .clk_i,
-    .rst_ni ( ndmreset_n               ),
-    .slv    ( master[ariane_soc::DRAM] ),
-    .mst    ( dram                     )
-  );
+  // axi_riscv_atomics_wrap #(
+  //   .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH            ),
+  //   .AXI_DATA_WIDTH ( AXI_DATA_WIDTH               ),
+  //   .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
+  //   .AXI_USER_WIDTH ( AXI_USER_WIDTH               ),
+  //   .AXI_MAX_READ_TXNS  ( 4  ),
+  //   .AXI_MAX_WRITE_TXNS ( 4  ),
+  //   .RISCV_WORD_WIDTH   ( 64 )
+  // ) i_axi_riscv_atomics (
+  //   .clk_i,
+  //   .rst_ni ( ndmreset_n               ),
+  //   .slv    ( master[ariane_soc::DRAM] ),
+  //   .mst    ( dram                     )
+  // );
+
+  `AXI_ASSIGN(dram, master[ariane_soc::DRAM])
+
+
 
   axi2mem_burst_rw #(
     .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),

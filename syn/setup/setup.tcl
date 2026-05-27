@@ -49,9 +49,11 @@ set SRAM_MACROS [list \
 #                             func_tt_25c func_tt_85c }
 # ===========================================================================
 
+
+
+    # func_ssg_m40c
+    # func_ffg_125c
 set ACTIVE_SCENARIOS {
-    func_ssg_m40c
-    func_ffg_125c
     func_tt_25c
 }
 
@@ -76,7 +78,7 @@ set COMPILE_OPTIONS {
 }
 
 # Parallel threads for compile_ultra
-set COMPILE_MAX_CORES 8
+set COMPILE_MAX_CORES 32
 
 # ===========================================================================
 # 4. Report options
