@@ -12,7 +12,7 @@ set_input_jitter jtag_clk_pin 1.000
 # The MMCM output clock name is assigned by the Block Design (clk_wiz_0).
 set_clock_groups -name jtag_vs_sys -asynchronous \
   -group [get_clocks -quiet jtag_clk_pin] \
-  -group [get_clocks -quiet clk_out1_xilinx_clk_wizard_clk_wiz_0_0]
+  -group [get_clocks -quiet -include_generated_clocks clk_out1_xilinx_clk_wizard_clk_wiz_0_0]
 
 # JTAG Input/Output Delay Constraints
 set_input_delay -clock jtag_clk_pin -clock_fall 5.000 [get_ports jtag_tdi_i]

@@ -4,6 +4,13 @@
 # set_disable_timing to handle these paths; downgrading to WARNING is safe.
 set_msg_config -id {Synth 8-295} -new_severity WARNING
 
+# Area-oriented synthesis hints:
+# -resource_sharing encourages common arithmetic sharing
+# -flatten_hierarchy rebuilt gives Vivado more global optimization freedom
+set_property STEPS.SYNTH_DESIGN.ARGS.DIRECTIVE AreaOptimized_high [get_runs synth_1]
+set_property STEPS.SYNTH_DESIGN.ARGS.RESOURCE_SHARING auto [get_runs synth_1]
+set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt [get_runs synth_1]
+
 # --------------------------------------------------------------------------
 # Incremental Synthesis: use previous synth checkpoint as reference
 # --------------------------------------------------------------------------
