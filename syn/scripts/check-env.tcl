@@ -10,7 +10,7 @@ puts "== \[check-env\] Checking environment =================================="
 # PDK_ROOT must exist
 # ---------------------------------------------------------------------------
 if {![info exists PDK_ROOT] || $PDK_ROOT eq ""} {
-    error "PDK_ROOT is not set. Pass it via: make syn PDK_ROOT=/path/to/pdk"
+    error "PDK_ROOT is not set. Pass it via: make flat PDK_ROOT=/path/to/pdk"
 }
 if {![file isdirectory $PDK_ROOT]} {
     error "PDK_ROOT does not exist or is not a directory: $PDK_ROOT"
@@ -42,21 +42,24 @@ if {![info exists SRAM_MACROS]} {
 }
 
 # ---------------------------------------------------------------------------
-# INCR_CHECKPOINT must be a known phase name when INCR_MODE=1
+# SYN_MODE must be "flat" or "hier"
 # ---------------------------------------------------------------------------
-if {![info exists INCR_MODE]} {
-    error "INCR_MODE is not set."
+if {![info exists SYN_MODE]} {
+    error "SYN_MODE is not set."
 }
-if {[lsearch -exact {0 1} $INCR_MODE] < 0} {
-    error "INCR_MODE must be 0 or 1, got: $INCR_MODE"
+if {[lsearch -exact {flat hier} $SYN_MODE] < 0} {
+    error "SYN_MODE must be 'flat' or 'hier', got: $SYN_MODE"
 }
 
+# ---------------------------------------------------------------------------
+# INCR_CHECKPOINT validation 
+# ---------------------------------------------------------------------------
 if {![info exists INCR_CHECKPOINT] || $INCR_CHECKPOINT eq ""} {
     error "INCR_CHECKPOINT is not set."
 }
 
-set VALID_CHECKPOINTS {post_elab post_constraints post_compile final}
-if {$INCR_MODE && [lsearch -exact $VALID_CHECKPOINTS $INCR_CHECKPOINT] < 0} {
+set VALID_CHECKPOINTS {NONE post_constraints post_assemble post_compile}
+if {[lsearch -exact $VALID_CHECKPOINTS $INCR_CHECKPOINT] < 0} {
     error "Unknown INCR_CHECKPOINT '$INCR_CHECKPOINT'. Valid values: $VALID_CHECKPOINTS"
 }
 
@@ -115,8 +118,8 @@ foreach s $ACTIVE_SCENARIOS {
 puts "   PDK_ROOT          : $PDK_ROOT"
 puts "   SYN_ROOT          : $SYN_ROOT"
 puts "   BUILD_DIR         : $BUILD_DIR"
-puts "   INCR_MODE         : $INCR_MODE"
-if {$INCR_MODE} {
+puts "   SYN_MODE          : $SYN_MODE"
+if {$INCR_CHECKPOINT ne "NONE"} {
 puts "   INCR_CHECKPOINT   : $INCR_CHECKPOINT"
 }
 puts "   TOP_MODULE        : $TOP_MODULE"

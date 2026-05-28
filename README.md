@@ -60,9 +60,13 @@ make all
 # 或编译特定应用
 make hello_world
 make fmatmul
-make dotproduct
+make dotproduct            # 建议在maxmimum即带ara_vpu配置下仿真用
 make asic_dma_accel_test   # 配合 sim/filelist_minimum_asic_dma.f 仿真用
 make vmma_test             # 配合 sim/filelist_minimum_vmma_dma.f 仿真用
+
+# 编译所有 app 用于 FPGA（自动添加 -DTARGET_FPGA，使用 40MHz 时钟，115200 波特率）
+# 如不指定，默认是sim（使用 500MHz 时钟，6250000 波特率）
+make target=fpga
 
 # 清理构建
 make clean

@@ -93,18 +93,17 @@ set MAX_PATHS 20   ;# timing paths per report_timing call
 # 5. Checkpoints
 #    Set ENABLE_CHECKPOINTS 1 to write DDC snapshots after each phase.
 #    INCR_CHECKPOINT (passed by Makefile) names the phase to resume from.
+#    Works with both flat and hier modes.
 #
 #    Checkpoint phases (in order):
-#      post_elab        — after elaborate + link + dont_touch; before constraints
 #      post_constraints — after MCMM setup + TLU+; before compile
 #      post_compile     — after compile_ultra; before reports
-#      final            — after final outputs + reports; resume at final outputs
 #
 #    To resume from a checkpoint:
-#      make syn_incr INCR_CHECKPOINT=post_elab        → re-apply constraints + compile + report
-#      make syn_incr INCR_CHECKPOINT=post_constraints → compile_ultra -incremental + report
-#      make syn_incr INCR_CHECKPOINT=post_compile     → re-run reports only
-#      make syn_incr INCR_CHECKPOINT=final            → re-run final outputs + reports only
+#      make flat INCR_CHECKPOINT=post_constraints → compile_ultra -incremental + report
+#      make flat INCR_CHECKPOINT=post_compile     → re-run reports only
+#      make hier INCR_CHECKPOINT=post_constraints → compile + report
+#      make hier INCR_CHECKPOINT=post_compile     → re-run reports only
 # ===========================================================================
 
 set ENABLE_CHECKPOINTS 1

@@ -79,7 +79,7 @@ module rf2p_256_128 (
     .BYTE_WRITE_WIDTH_A (8),               // Byte-wise write
     .BYTE_WRITE_WIDTH_B (8),               // 16 bytes = 128 bits
     .CASCADE_HEIGHT     (0),
-    .CLOCKING_MODE      ("independent_clock"),  // Separate clocks for A and B
+    .CLOCKING_MODE      ("common_clock"),      // Common clock for A and B (wrapper uses same clk_i)
     .ECC_BIT_RANGE      ("7:0"),
     .ECC_MODE           ("no_ecc"),
     .ECC_TYPE           ("none"),

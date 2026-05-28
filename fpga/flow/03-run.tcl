@@ -1,5 +1,7 @@
 # Create a bin file which can be used to program the flash on the FPGA
 set_property STEPS.WRITE_BITSTREAM.ARGS.BIN_FILE true [get_runs impl_1]
+set_property STEPS.PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
+set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE ExploreWithHoldFix [get_runs impl_1]
 
 # --------------------------------------------------------------------------
 # Incremental Implementation: use previous impl checkpoint as reference
@@ -29,6 +31,7 @@ file mkdir reports
 catch { open_run impl_1 }
 
 report_utilization    -file reports/impl_utilization.rpt
+report_utilization -hierarchical -file reports/hier_util.rpt
 report_timing_summary -file reports/impl_timing.rpt -warn_on_violation
 report_drc            -file reports/impl_drc.rpt
 report_power          -file reports/impl_power.rpt
