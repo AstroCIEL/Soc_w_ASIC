@@ -49,6 +49,7 @@ module tc_sram #(
 
   // Check known shapes
   if (!((NumWords == 16384 && DataWidth == 64)  ||  // L2 memory
+        (NumWords == 4096 && DataWidth == 64)   ||  // L2 memory(缩小为32kB)
         (NumWords == 64    && DataWidth == 256) ||  // D$ data bank
         (NumWords == 64    && DataWidth == 128) ||  // I$ data
         (NumWords == 64    && DataWidth == 64)  ||  // Ara VRF bank

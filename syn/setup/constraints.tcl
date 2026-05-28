@@ -100,9 +100,34 @@ foreach_in_collection inst \
     set_case_analysis 1 [get_pins ${iname}/WABL]
     set_case_analysis 1 [get_pins ${iname}/RET1N]
     set_case_analysis 0 [get_pins ${iname}/STOV]
+
+    # add (match tc_sram.sv tie-offs)
+    set_case_analysis 0 [get_pins ${iname}/EMAS]
+    set_case_analysis 1 [get_pins ${iname}/EMA\[2\]]
+    set_case_analysis 0 [get_pins ${iname}/EMA\[1\]]
+    set_case_analysis 0 [get_pins ${iname}/EMA\[0\]]
+    set_case_analysis 0 [get_pins ${iname}/EMAW\[1\]]
+    set_case_analysis 1 [get_pins ${iname}/EMAW\[0\]]
+}
+# sram_l2_4096x64的常数端口
+foreach_in_collection inst \
+        [get_cells -hierarchical -filter "ref_name == sram_l2_4096x64" -quiet] {
+    set iname [get_object_name $inst]
+    set_case_analysis 0 [get_pins ${iname}/RAWL]
+    set_case_analysis 1 [get_pins ${iname}/WABL]
+    set_case_analysis 1 [get_pins ${iname}/RET1N]
+    set_case_analysis 0 [get_pins ${iname}/STOV]
+    # 添加端口 (appear in .lib "when"):
+    set_case_analysis 0 [get_pins ${iname}/EMAS]
+    set_case_analysis 1 [get_pins ${iname}/EMA\[2\]]
+    set_case_analysis 0 [get_pins ${iname}/EMA\[1\]]
+    set_case_analysis 0 [get_pins ${iname}/EMA\[0\]]
+    # EMAW per wrapper/tc_sram tie-off (tc_sram.sv uses 2'b01 for l2_4096x64)
+    set_case_analysis 0 [get_pins ${iname}/EMAW\[1\]]
+    set_case_analysis 1 [get_pins ${iname}/EMAW\[0\]]
 }
 
-# 把rf2p的一些配置端口锁定成valid的常量 与wrapper中端口接的常量一致
+# 把rf2p_256_128的一些配置端口锁定成valid的常量 与wrapper中端口接的常量一致
 foreach_in_collection inst \
         [get_cells -hier -filter "ref_name == rf2p_256_128" -quiet] {
     set iname [get_object_name $inst]
@@ -116,6 +141,43 @@ foreach_in_collection inst \
     set_case_analysis 0 [get_pins ${iname}/emab\[1\]]
     set_case_analysis 0 [get_pins ${iname}/emab\[0\]]
 }
+
+#0528：添加sramdp_272_16: TODO:所有置为常数的端口都需要包含吗？推荐值只给了ema,emas,emaw
+foreach_in_collection inst [get_cells -hier -filter "ref_name == sramdp_272_16" -quiet] {
+    set iname [get_object_name $inst]
+
+    # retention + DFT bypass
+    set_case_analysis 1 [get_pins ${iname}/ret1n]
+    set_case_analysis 0 [get_pins ${iname}/dftrambyp]
+
+    # disable test paths (match wrapper)
+    set_case_analysis 1 [get_pins ${iname}/tena]
+    set_case_analysis 0 [get_pins ${iname}/tcena]
+    set_case_analysis 0 [get_pins ${iname}/twena]
+
+    set_case_analysis 1 [get_pins ${iname}/tenb]
+    set_case_analysis 0 [get_pins ${iname}/tcenb]
+    set_case_analysis 0 [get_pins ${iname}/twenb] 
+
+    # EMA settings (match wrapper)
+    set_case_analysis 0 [get_pins ${iname}/emasa]
+    set_case_analysis 1 [get_pins ${iname}/emaa\[2\]]
+    set_case_analysis 0 [get_pins ${iname}/emaa\[1\]]
+    set_case_analysis 0 [get_pins ${iname}/emaa\[0\]]
+
+    set_case_analysis 1 [get_pins ${iname}/emawa\[1\]]
+    set_case_analysis 0 [get_pins ${iname}/emawa\[0\]]
+
+    set_case_analysis 0 [get_pins ${iname}/emasb]
+    set_case_analysis 1 [get_pins ${iname}/emab\[2\]]
+    set_case_analysis 0 [get_pins ${iname}/emab\[1\]]
+    set_case_analysis 0 [get_pins ${iname}/emab\[0\]]
+
+    set_case_analysis 1 [get_pins ${iname}/emawb\[1\]]
+    set_case_analysis 0 [get_pins ${iname}/emawb\[0\]]
+}
+
+# TODO:添加global_buffer的sram的端口
 
 # ---------------------------------------------------------------------------
 # 0525: Add Clock gating (before compile_ultra -gate_clock)

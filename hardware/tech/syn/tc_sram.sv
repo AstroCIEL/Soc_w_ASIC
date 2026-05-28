@@ -68,13 +68,13 @@ module tc_sram #(
       .STOV  (1'b0         ),       // debug, tie-off 0
       .RET1N (1'b1         ),       // 1 = normal mode (0 = low-power retention)
       .EMA   (3'b100       ),       // SS/low-voltage corner timing margin (model reference value)
-      .EMAW  (2'b00        ),       // SS/low-voltage corner write margin (model reference value)
+      .EMAW  (2'b01        ),       // SS/low-voltage corner write margin (model reference value)
       .EMAS  (1'b0         ),       // SS/low-voltage corner (model reference value)
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (2'b01       )        // write-assist mode bits (default)
-    );    //TODO：需要检查这个WABLM的值
+      .WABLM (2'b00       )        // write-assist mode bits (default)
+    );    //WABLM对于shvt推荐值为3'b001;svt推荐值为2'b00(位宽不一样)
 
   // l2改为32K
   end else if (NumWords == 4096 && DataWidth == 64) begin : gen_l2_4096x64_mem
@@ -102,7 +102,7 @@ module tc_sram #(
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
       .WABLM (2'b00       )        // write-assist mode bits (default)
-    );
+    ); //WABLM对于shvt推荐值为3'b001;svt推荐值为2'b00(位宽不一样)，这里用的是svt的设置
 
 
   end else if (NumWords == 64 && DataWidth == 256) begin : gen_dcache_data

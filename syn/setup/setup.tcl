@@ -16,6 +16,7 @@ set TOP_MODULE ariane_soc_top
 # 增加mxu的sram宏名称rf2p_256_128
 set SRAM_MACROS [list \
     sram_l2_16384x64         \
+    sram_l2_4096x64          \
     rf_dcache_half_64x128    \
     rf_icache_64x128         \
     rf_vrf_64x64             \

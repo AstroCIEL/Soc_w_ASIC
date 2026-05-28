@@ -97,7 +97,7 @@ module global_buffer #(
     generate
         for (i = 0; i < NUM_BANKS; i++) begin : gen_bank
             wire cen_n = ~bank_en[i];
-
+            //TODO:修改常数端口为推荐值
             sram_4096_64 u_bank (
                 .q     ( bank_rdata[i]  ),
                 .clk   ( clk_i          ),
