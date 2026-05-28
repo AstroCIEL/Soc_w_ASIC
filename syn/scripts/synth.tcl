@@ -249,4 +249,4 @@ puts "  Outputs : $OUTPUT_DIR"
 puts "  Reports : $REPORT_DIR"
 puts "=================================================================="
 
-# exit
+exit
