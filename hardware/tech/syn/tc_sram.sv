@@ -73,8 +73,10 @@ module tc_sram #(
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (3'b001       )        // write-assist mode bits (default)
+      .WABLM (2'b01       )        // write-assist mode bits (default)
     );
+//TODO：需要检查这个WABLM的值
+
 
   end else if (NumWords == 64 && DataWidth == 256) begin : gen_dcache_data
     // D$ data bank — 64 × 256b
