@@ -105,10 +105,10 @@ module axi_stream_cut_intf #(
   ) i_axi_stream_cut (
       .clk_i,
       .rst_ni,
-      .rx_req_i ( rx_req ),
-      .rx_rsp_o ( rx_rsp ),
-      .tx_req_o ( tx_req ),
-      .tx_rsp_i ( tx_rsp )
+      .rx_req_i ( s_rx_req ),
+      .rx_rsp_o ( s_rx_rsp ),
+      .tx_req_o ( s_tx_req ),
+      .tx_rsp_i ( s_tx_rsp )
   );
 
 endmodule : axi_stream_cut_intf
