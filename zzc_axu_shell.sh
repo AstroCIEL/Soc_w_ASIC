@@ -59,7 +59,7 @@ for CASE in "${TEST_CASES[@]}"; do
                      FILELIST=filelist_minimum_my_mxu_axu.f > /dev/null 2>&1
     
     # 检查结果
-    cp uart0.log ./uart_logs/test_$CASE\_uart0.log
+    cp uart0.log ./uart_logs/test_axu_$CASE\_uart0.log
     if grep -q "AXU_PASS" uart0.log 2>/dev/null; then
         echo "RESULT: $CASE PASS ✓"
         PASS=$((PASS + 1))
