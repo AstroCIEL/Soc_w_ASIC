@@ -7,7 +7,7 @@ cd ./sim && make clean && cd ..
 
 cd ./software && make my_mxu_test MXU_TEST_MODE=posit_bp && cd ..
 
-cd ./sim && make vcs-run \
+cd ./sim && make vcs-wave \
                  app=../software/build/bin/my_mxu_test \
                  FILELIST=filelist_minimum_my_mxu_axu.f \
          && cd ..

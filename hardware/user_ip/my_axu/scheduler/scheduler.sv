@@ -497,12 +497,14 @@ module v4_group_engine #(
     localparam int LANE_IDX_W  = (GROUP_SIZE <= 1) ? 1 : $clog2(GROUP_SIZE);
 
     // 分组引擎内部的状态机定义
-    typedef enum logic [2:0] {
+    typedef enum logic [3:0] {
         G_IDLE,            // 空闲
         G_INIT,            // 初始化所有计数器与输出
-        G_SELECT_SEED,     // 选种子（组合查找一拍 -> 寄存）
+        G_SELECT_SEED,     // 选种子（组合查找 -> 打分结果流水寄存）
+        G_LATCH_SEED,      // 消费种子打分流水结果
         G_COMMIT_SEED,     // 提交种子到 lane 0
-        G_SELECT_EXPAND,   // 选下一个组员
+        G_SELECT_EXPAND,   // 选下一个组员（组合查找 -> 打分结果流水寄存）
+        G_LATCH_EXPAND,    // 消费扩展打分流水结果
         G_COMMIT_EXPAND,   // 提交组员到 lane lane_idx_q
         G_COMMIT_GROUP,    // 收尾本组并切到下一组
         G_DONE             // 全部分组完成
@@ -534,6 +536,12 @@ module v4_group_engine #(
     logic [COL_W-1:0] best_col;
     logic [POP_W-1:0] best_add_cost;
     logic [POP_W-1:0] best_popcnt;
+
+    // 打分结果流水寄存器，用于切断 candidate_score_array 到 selected_col_q 的关键路径
+    logic best_valid_q;
+    logic [COL_W-1:0] best_col_q;
+    logic [POP_W-1:0] best_add_cost_q;
+    logic [POP_W-1:0] best_popcnt_q;
 
     // SELECT_EXPAND 状态时打分器用 EXPAND 模式，否则用 SEED 模式
     assign score_mode = (state_q == G_SELECT_EXPAND);
@@ -570,6 +578,10 @@ module v4_group_engine #(
             group_idx_q <= '0;
             lane_idx_q <= '0;
             selected_col_q <= '0;
+            best_valid_q <= 1'b0;
+            best_col_q <= '0;
+            best_add_cost_q <= '0;
+            best_popcnt_q <= '0;
             for (group_idx = 0; group_idx < GROUP_COUNT; group_idx++) begin
                 group_cost_o[group_idx] <= '0;
                 group_or_bits_o[group_idx] <= '0;
@@ -593,6 +605,10 @@ module v4_group_engine #(
                     group_idx_q <= '0;
                     lane_idx_q <= '0;
                     selected_col_q <= '0;
+                    best_valid_q <= 1'b0;
+                    best_col_q <= '0;
+                    best_add_cost_q <= '0;
+                    best_popcnt_q <= '0;
                     for (group_idx = 0; group_idx < GROUP_COUNT; group_idx++) begin
                         group_cost_o[group_idx] <= '0;
                         group_or_bits_o[group_idx] <= '0;
@@ -603,12 +619,17 @@ module v4_group_engine #(
                     state_q <= G_SELECT_SEED;
                 end
                 G_SELECT_SEED: begin
-                    // 打分器组合给出 best_*，本拍寄存 selected_col_q
-                    if (best_valid) begin
-                        selected_col_q <= best_col;
+                    best_valid_q <= best_valid;
+                    best_col_q <= best_col;
+                    best_add_cost_q <= best_add_cost;
+                    best_popcnt_q <= best_popcnt;
+                    state_q <= G_LATCH_SEED;
+                end
+                G_LATCH_SEED: begin
+                    if (best_valid_q) begin
+                        selected_col_q <= best_col_q;
                         state_q <= G_COMMIT_SEED;
                     end else begin
-                        // 没有可选列：直接结束（剩余分组保持 0）
                         state_q <= G_DONE;
                     end
                 end
@@ -626,12 +647,17 @@ module v4_group_engine #(
                     end
                 end
                 G_SELECT_EXPAND: begin
-                    // 选下一个组员
-                    if (best_valid) begin
-                        selected_col_q <= best_col;
+                    best_valid_q <= best_valid;
+                    best_col_q <= best_col;
+                    best_add_cost_q <= best_add_cost;
+                    best_popcnt_q <= best_popcnt;
+                    state_q <= G_LATCH_EXPAND;
+                end
+                G_LATCH_EXPAND: begin
+                    if (best_valid_q) begin
+                        selected_col_q <= best_col_q;
                         state_q <= G_COMMIT_EXPAND;
                     end else begin
-                        // 候选用尽（一般是 ungrouped 为空），提前收尾本组
                         state_q <= G_COMMIT_GROUP;
                     end
                 end
