@@ -20,7 +20,8 @@ package ariane_soc;
   typedef enum int unsigned {
     AraMst   = 0,
     DebugMst = 1,
-    NrSlaves = 2  // actually masters, but slaves on the crossbar
+    DMAMst   = 2,
+    NrSlaves = 3  // actually masters, but slaves on the crossbar
   } axi_masters_t;
 
   typedef enum int unsigned {
@@ -47,7 +48,10 @@ package ariane_soc;
     AxuOpBBuf  =15, //op_b buffer sram接口
     AxuOutBuf  =16, //output buffer sram接口
 
-    NB_PERIPHERALS = 17
+    DMA        =17,
+    GlobalBuffer =18,
+
+    NB_PERIPHERALS = 19
 
   } axi_slaves_t;
 
@@ -60,6 +64,7 @@ package ariane_soc;
   localparam logic[63:0] GPIOLength         = 64'h1000;
   localparam logic[63:0] CtrlLength         = 64'h1000;
   // localparam logic[63:0] DefaultSlaveLength = 64'h1000;
+  localparam logic[63:0] DMALength          = 64'h1000;
 
   localparam logic[63:0] MxuCfgLength      = 64'h1000; // 4KB
   localparam logic[63:0] MxuWgtBufLength   = 64'h8000; // 256*128*8/8=32KB
@@ -70,8 +75,11 @@ package ariane_soc;
   localparam logic[63:0] AxuOpABufLength   = 64'h8000; // 256*128*8/8=32KB
   localparam logic[63:0] AxuOpBBufLength   = 64'h8000; // 256*128*8/8=32KB
   localparam logic[63:0] AxuOutBufLength   = 64'h8000; // 256*128*8/8=32KB
+  localparam logic[63:0] GlobalBufferLength = 64'h8000; // 4096*64/8=32KB
 
-  localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB 
+  // localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB 
+  localparam logic[63:0] DRAMLength     = 64'h8000; // 128 kB 改成32kB试试
+
 
   typedef enum logic [63:0] {
     DebugBase    = 64'h0000_0000,
@@ -82,6 +90,7 @@ package ariane_soc;
     TimerBase    = 64'h1800_0000,
     GPIOBase     = 64'h4000_0000,
     // DefaultSlaveBase = 64'h5000_0000,
+    DMABase      = 64'h6000_0000,
 
     //加速器基地址：
     MxuCfgBase        = 64'h7000_0000,
@@ -94,6 +103,7 @@ package ariane_soc;
     AxuOpABufBase     = 64'h7002_8000,
     AxuOpBBufBase     = 64'h7003_0000,
     AxuOutBufBase     = 64'h7003_8000,
+    GlobalBufferBase  = 64'h7004_0000,
 
     DRAMBase     = 64'h8000_0000,
     CtrlBase     = 64'hD000_0000
