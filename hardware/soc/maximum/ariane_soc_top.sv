@@ -380,6 +380,7 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
   logic [AXI_USER_WIDTH-1:0]    wuser;
   logic [AXI_USER_WIDTH-1:0]    ruser;
 
+
   axi_riscv_atomics_wrap #(
     .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH            ),
     .AXI_DATA_WIDTH ( AXI_DATA_WIDTH               ),
@@ -394,6 +395,8 @@ module ariane_soc_top import axi_pkg::*; import ara_pkg::*; #(
     .slv    ( master[ariane_soc::DRAM] ),
     .mst    ( dram                     )
   );
+
+  
 
   axi2mem_burst_rw #(
     .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),

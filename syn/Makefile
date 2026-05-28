@@ -12,7 +12,7 @@ PDK_ROOT   ?= $(HOME)/workspace/tsmc22
 export PDK_ROOT
 
 # SoC RTL configuration: selects hardware/soc/filelist_<SOC_CONFIG>.f via syn/filelist.f
-SOC_CONFIG ?= maximum
+SOC_CONFIG ?= minimum_my_mxu_axu
 SOC_FILELIST := $(PROJ_ROOT)/hardware/soc/filelist_$(SOC_CONFIG).f
 export SOC_CONFIG
 

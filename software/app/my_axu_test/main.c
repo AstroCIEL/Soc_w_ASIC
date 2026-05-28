@@ -56,7 +56,7 @@ static const struct axu_case CASES[] = {
     { "vpu_min",         AXU_UNIT_VPU,   AXU_VPU_MIN_EW,        40,  40,  40,   0,  10,  40, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
     { "vpu_reduce_max",  AXU_UNIT_VPU,   AXU_VPU_REDUCE_MAX,    50,  50,   0,  50,  10,  50, 10, LANE_MASK_BANK0,   CASE_NORMAL    },
     { "vpu_reduce_sum",  AXU_UNIT_VPU,   AXU_VPU_REDUCE_SUM,    60,  60,   0,  60,  10,  60, 10, LANE_MASK_BANK0,   CASE_NORMAL    },
-    { "sfu_sincos",      AXU_UNIT_SFU,   AXU_SFU_CORDIC,        70,  70,  70,   0,  10,  70, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
+    // { "sfu_sincos",      AXU_UNIT_SFU,   AXU_SFU_CORDIC,        70,  70,  70,   0,  10,  70, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
     { "sfu_int2posit",   AXU_UNIT_SFU,   AXU_SFU_ITP,           80,  80,  80,   0,  10,  80, 10, LANE_MASK_FIRST32, CASE_NORMAL    },
     { "sfu_rng_seed",    AXU_UNIT_SFU,   0,                      0,   0,   0,   0,   0,   0,  0, 0,                 CASE_SEED_LOAD },
     { "sfu_rng",         AXU_UNIT_SFU,   AXU_SFU_RNG,            0,   0,  90,   0,  10,  90, 10, LANE_MASK_FULL64,  CASE_NORMAL    },

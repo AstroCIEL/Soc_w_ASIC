@@ -73,8 +73,9 @@ module tc_sram #(
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (3'b001       )        // write-assist mode bits (default)
-    );
+      .WABLM (2'b01       )        // write-assist mode bits (default)
+    );    //TODO：需要检查这个WABLM的值
+
   // l2改为32K
   end else if (NumWords == 4096 && DataWidth == 64) begin : gen_l2_4096x64_mem
     // L2 main memory — 4096 × 64b  
@@ -102,6 +103,7 @@ module tc_sram #(
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
       .WABLM (2'b00       )        // write-assist mode bits (default)
     );
+
 
   end else if (NumWords == 64 && DataWidth == 256) begin : gen_dcache_data
     // D$ data bank — 64 × 256b
