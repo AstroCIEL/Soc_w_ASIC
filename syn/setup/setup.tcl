@@ -87,7 +87,7 @@ set COMPILE_MAX_CORES 32
 # 4. Report options
 # ===========================================================================
 
-set MAX_PATHS 20   ;# timing paths per report_timing call
+set MAX_PATHS 30   ;# timing paths per report_timing call
 
 # ===========================================================================
 # 5. Checkpoints

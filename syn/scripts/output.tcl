@@ -75,7 +75,7 @@ proc output_reports {report_dir active_scenarios max_paths} {
         file mkdir ${sd}
 
         report_clocks                                                     > ${sd}/clocks.rpt
-        report_power  -nosplit                                            > ${sd}/power.rpt
+        report_power -nosplit -hierarchy -levels 3 -verbose               > ${sd}/power.rpt
         report_threshold_voltage_group -nosplit                           > ${sd}/threshold_voltage_group.rpt
         report_constraint -all_violators -nosplit                         > ${sd}/violations.rpt
         report_timing -delay max -nosplit -max_paths ${max_paths}         > ${sd}/timing_max.rpt

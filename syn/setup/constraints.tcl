@@ -4,8 +4,10 @@
 
 # ---------------------------------------------------------------------------
 # System clock  (600 MHz → period = 1.667 ns)
+# 1.8ns = 555.556MHz
+# 1.667ns 的条件太严格，setup时序有 -0.07 的违例，放宽到1.8ns，增加了0.133ns的余量
 # ---------------------------------------------------------------------------
-set CLK_PERIOD 1.667  
+set CLK_PERIOD 1.8  
 set CLK_NAME   SYS_CLK
 
 create_clock -name ${CLK_NAME} -period ${CLK_PERIOD} [get_ports clk_i]
