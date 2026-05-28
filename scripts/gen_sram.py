@@ -28,7 +28,16 @@
 #  -flexible_banking 2 -redundancy off -wp_size 1 -libname rf_2p_hdc -cust_comment "" -pipeline off -prefix ""
 #  -mux 2 -power_gating off -back_biasing off -ema on -vmin_assist off -corners ffg_cbestt_0p88v_0p88v_0c
 
+# global buffer的sramsp_4096_64的命令：
+# /data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_sp_hde_svt_mvt/r1p0/bin/sram_sp_hde_svt_mvt verilog
+# -name_case lower -mvt BASE -bus_notation on -ser none -site_def off -check_instname on -frequency 1000 -bmux off
+# -diodes on -activity_factor 50 -words 4096 -drive 6 -bits 64 -instname sramsp_4096_64 -retention on
+# -libertyviewstyle nldm -write_mask off -atf off -left_bus_delim "[" -pwr_gnd_rename vddpe:VDDPE,vddce:VDDCE,vsse:VSSE -right_bus_delim "]"
+# -rows_p_bl 256 -flexible_banking 4 -redundancy off -libname sramsp_4096_64 -write_thru off 
+# -cust_comment "" -prefix "" -mux 16 -power_gating off -back_biasing off -ema on -vmin_assist off -corners 
+
 #用法：先cd到想保存生成结果文件的目录，再执行脚本，可生成cpu和其他模块例化的sram/rf的tragets格式文件。
+#使用前检查：尺寸；GENERATOR；命令参数（频率等），corner
 
 import os
 import subprocess
@@ -40,9 +49,10 @@ CPU_RF_DEF = namedtuple('CPU_RF_DEF', ["Name", "NumWords", "DataWidth"])
 CPU_RAM_DEF = namedtuple('CPU_RAM_DEF', ["Name", "NumWords", "DataWidth"])
 RF_DEF = namedtuple('RF_DEF', ["Name", "NumWords", "DataWidth"])
 RAM_DEF = namedtuple('RAM_DEF', ["Name", "NumWords", "DataWidth"])
-
+GB_RAM_DEF=namedtuple('GB_RAM_DEF', ["Name", "NumWords", "DataWidth"])
+#生成32kB的DRAM
 cpu_ram_defs = [
-    CPU_RAM_DEF("l2", 16384, 64)
+    CPU_RAM_DEF("l2", 4096, 64)
 ]
 
 cpu_rf_defs = [
@@ -59,11 +69,18 @@ ram_defs =[
 rf_defs = [
     RF_DEF("rf2p", 256,128)
 ]
+gb_ram_defs=[
+    GB_RAM_DEF("sp",4096,64)
+]
 # EDA01的路径：
-CPU_RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
+# CPU_RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
+CPU_RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_sp_hde_svt_mvt/r1p0/bin/sram_sp_hde_svt_mvt"
 CPU_RF_GENERATOR  = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/rf_sp_hde_shvt_mvt/r3p1/bin/rf_sp_hde_shvt_mvt"
+
 RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_dp_hde_svt_svt/r0p1/bin/sram_dp_hde_svt_svt"
 RF_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/rf_2p_hdc_svt_mvt/r0p0/bin/rf_2p_hdc_svt_mvt"
+
+GB_RAM_GENERATOR = "/data/data_dell/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/sram_sp_hde_svt_mvt/r1p0/bin/sram_sp_hde_svt_mvt"
 
 targets = [
     "verilog",
@@ -80,6 +97,10 @@ LOG_DIR = "logs"
 
 def make_cpu_instname(prefix, name, num_words, data_width):
     return f"{prefix}_{name}_{num_words}x{data_width}"
+
+# 下面这个命名规则用于生成sramsp_4096_64
+def make_gb_instname(prefix, name, num_words, data_width):
+    return f"{prefix}{name}_{num_words}_{data_width}"
 
 def make_instname(name, num_words, data_width):
     return f"{name}_{num_words}_{data_width}"
@@ -118,11 +139,53 @@ def build_cpu_ram_cmd(ram: RAM_DEF, target: str) -> List[str]:
         "-flexible_banking", "4",
         "-ema", "on",
         "-back_biasing", "off",
-        "-bit_blast", "off",
-        "-single_domain_only", "on",
+        # "-bit_blast", "off",
+        # "-single_domain_only", "on",  #shvt有这两个参数，改成svt之后需要去掉这一行和上一行的参数
         "-vmin_assist", "on",
         "-corners", corners,
     ]
+
+# 临时使用的函数，生成sramsp_4096_64
+def build_gb_ram_cmd(ram: GB_RAM_DEF, target: str) -> List[str]:
+    instname = make_gb_instname("sram", ram.Name, ram.NumWords, ram.DataWidth)
+    return [
+        GB_RAM_GENERATOR, target,
+        "-name_case", "lower",
+        "-mvt", "BASE",
+        "-bus_notation","on",
+        "-ser", "none",
+        "-site_def", "off",
+        "-check_instname", "off",
+        "-frequency", "1000",
+        "-bmux", "off",
+        "-diodes", "on",
+        "-activity_factor", "50",
+        "-words", str(ram.NumWords),
+        "-bits", str(ram.DataWidth),
+        "-drive", "6",
+        "-write_mask", "off",
+        "-redundancy", "off",
+        "-instname", instname,
+        "-libname", instname,
+        "-cust_comment", "",
+        "-prefix", "",
+        "-retention", "on",
+        "-atf", "off",
+        "-libertyviewstyle", "nldm",
+        "-left_bus_delim", "[",
+        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
+        "-right_bus_delim", "]",
+        "-rows_p_bl", "256",
+        "-flexible_banking", "4",
+        "-power_gating", "off",
+        "-write_thru", "off",
+        "-mux", "16",
+        "-ema", "on",
+        "-back_biasing", "off",
+        "-vmin_assist", "on", #若为off则没有0p8v的corner，只有改成on才能生成除了tt_0p8v_85c以外的corner
+        "-corners", corners,
+    ]
+
 
 
 def build_cpu_rf_cmd(rf: CPU_RF_DEF, target: str) -> List[str]:
@@ -265,12 +328,12 @@ def run_cmd(cmd: List[str], log_path: str):
 def main():
     os.makedirs(LOG_DIR, exist_ok=True)
 
-    for cpu_ram in cpu_ram_defs:
-        instname = make_cpu_instname("sram", cpu_ram.Name, cpu_ram.NumWords, cpu_ram.DataWidth)
-        for target in targets:
-            cmd = build_cpu_ram_cmd(cpu_ram, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-            run_cmd(cmd, log_path)
+    # for cpu_ram in cpu_ram_defs:
+    #     instname = make_cpu_instname("sram", cpu_ram.Name, cpu_ram.NumWords, cpu_ram.DataWidth)
+    #     for target in targets:
+    #         cmd = build_cpu_ram_cmd(cpu_ram, target)
+    #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+    #         run_cmd(cmd, log_path)
 
     # for cpu_rf in cpu_rf_defs:
     #     instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
@@ -293,7 +356,12 @@ def main():
     #         log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
     #         run_cmd(cmd, log_path)
         
-
+    for gb_ram in gb_ram_defs:
+        instname = make_gb_instname("sram", gb_ram.Name,gb_ram.NumWords, gb_ram.DataWidth)
+        for target in targets:
+            cmd = build_gb_ram_cmd(gb_ram, target)
+            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
+            run_cmd(cmd, log_path)
 
 if __name__ == "__main__":
     main()

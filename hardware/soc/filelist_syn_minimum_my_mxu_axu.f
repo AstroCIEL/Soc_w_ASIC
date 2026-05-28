@@ -3,3 +3,4 @@
 
 -f ${ROOT}/hardware/user_ip/my_mxu/filelist_mxu_top_syn.f
 -f ${ROOT}/hardware/user_ip/my_axu/filelist_axu_top_syn.f
+${ROOT}/hardware/user_ip/sram_buffer/global_buffer.sv

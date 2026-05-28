@@ -16,8 +16,8 @@
 //
 //      Verilog model for Synchronous Single-Port Ram
 //
-//       Instance Name:              sram_l2_16384x64
-//       Words:                      16384
+//       Instance Name:              sram_l2_4096x64
+//       Words:                      4096
 //       Bits:                       64
 //       Mux:                        16
 //       Drive:                      6
@@ -31,8 +31,8 @@
 //       Pipeline:                   Off
 //       Read Disturb Test:	        Off
 //       
-//       Creation Date:  Sat May  9 08:37:39 2026
-//       Version: 	r5p0
+//       Creation Date:  Thu May 28 17:32:59 2026
+//       Version: 	r1p0
 //
 //      Modeling Assumptions: This model supports full gate level simulation
 //          including proper x-handling and timing check behavior.  Unit
@@ -58,12 +58,12 @@
 `define ARM_MEM_COLLISION 3.000
 `define ARM_OFFSET_TIME 0
 
-  `define SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMA_VALUE   4
-  `define SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE  1 //shvt的推荐值为0，svt推荐值为1
-  `define SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAS_VALUE  0
+  `define SRAM_SP_HDE_SVT_MVT_ARM_REF_EMA_VALUE   4
+  `define SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAW_VALUE  1 //shvt的推荐值为0，svt推荐值为1，这里用的是svt
+  `define SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAS_VALUE  0
 
 
-module datapath_latch_sram_l2_16384x64 (CLK,Q_update,D_update,SE,SI,D,DFTRAMBYP,mem_path,XQ,Q);
+module datapath_latch_sram_l2_4096x64 (CLK,Q_update,D_update,SE,SI,D,DFTRAMBYP,mem_path,XQ,Q);
 	input CLK,Q_update,D_update,SE,SI,D,DFTRAMBYP,mem_path,XQ;
 	output Q;
 
@@ -93,7 +93,7 @@ module datapath_latch_sram_l2_16384x64 (CLK,Q_update,D_update,SE,SI,D,DFTRAMBYP,
       else
         Q=1'bx;
    end
-endmodule // datapath_latch_sram_l2_16384x64
+endmodule // datapath_latch_sram_l2_4096x64
 
 // If ARM_UD_MODEL is defined at Simulator Command Line, it Selects the Fast Functional Model
 `ifdef ARM_UD_MODEL
@@ -119,19 +119,19 @@ endmodule // datapath_latch_sram_l2_16384x64
 `celldefine
 // If POWER_PINS is defined at Simulator Command Line, it selects the module definition with Power Ports
 `ifdef POWER_PINS
-module sram_l2_16384x64 (VDDCE, VDDPE, VSSE, Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, 
+module sram_l2_4096x64 (VDDCE, VDDPE, VSSE, Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, 
     EMAW, EMAS, RET1N, RAWL, RAWLM, WABL, WABLM);
 `else
-module sram_l2_16384x64 (Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, EMAW, EMAS, RET1N, 
+module sram_l2_4096x64 (Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, EMAW, EMAS, RET1N, 
     RAWL, RAWLM, WABL, WABLM);
 `endif
 
   parameter ASSERT_PREFIX = "";
   parameter BITS = 64;
-  parameter WORDS = 16384;
+  parameter WORDS = 4096;
   parameter MUX = 16;
   parameter MEM_WIDTH = 1024; // redun block size 16, 512 on left, 512 on right
-  parameter MEM_HEIGHT = 1024;
+  parameter MEM_HEIGHT = 256;
   parameter WP_SIZE = 1 ;
   parameter UPM_WIDTH = 3;
   parameter UPMW_WIDTH = 2;
@@ -146,16 +146,16 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 1;
 parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
 `endif
 
-  parameter ARM_REF_EMA_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMA_VALUE;
-  parameter ARM_REF_EMAW_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE;
-  parameter ARM_REF_EMAS_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAS_VALUE;
-  parameter ROWS = 1024;
+  parameter ARM_REF_EMA_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMA_VALUE;
+  parameter ARM_REF_EMAW_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAW_VALUE;
+  parameter ARM_REF_EMAS_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAS_VALUE;
+  parameter ROWS = 256;
 
   output [63:0] Q;
   input  CLK;
   input  CEN;
   input  GWEN;
-  input [13:0] A;
+  input [11:0] A;
   input [63:0] D;
   input [63:0] WEN;
   input  STOV;
@@ -166,7 +166,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   input  RAWL;
   input [1:0] RAWLM;
   input  WABL;
-  input [2:0] WABLM;
+  input [1:0] WABLM;
 `ifdef POWER_PINS
   inout VDDCE;
   inout VDDPE;
@@ -187,7 +187,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   initial mux_address = 0;
   reg [1023:0] row, row_t;
   reg LAST_CLK;
-  reg [1023:0] mem [0:1023];
+  reg [1023:0] mem [0:255];
   reg [1023:0] row_mask;
   reg [1023:0] new_data;
   reg [1023:0] data_out;
@@ -212,8 +212,8 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   reg  CEN_p2;
   wire  GWEN_;
   reg  GWEN_int;
-  wire [13:0] A_;
-  reg [13:0] A_int;
+  wire [11:0] A_;
+  reg [11:0] A_int;
   wire [63:0] D_;
   reg [63:0] D_int;
   reg [63:0] XD_int;
@@ -235,8 +235,8 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   reg [1:0] RAWLM_int;
   wire  WABL_;
   reg  WABL_int;
-  wire [2:0] WABLM_;
-  reg [2:0] WABLM_int;
+  wire [1:0] WABLM_;
+  reg [1:0] WABLM_int;
 
   assign Q[0] = Q_[0]; 
   assign Q[1] = Q_[1]; 
@@ -317,8 +317,6 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   assign A_[9] = A[9];
   assign A_[10] = A[10];
   assign A_[11] = A[11];
-  assign A_[12] = A[12];
-  assign A_[13] = A[13];
   assign D_[0] = D[0];
   assign D_[1] = D[1];
   assign D_[2] = D[2];
@@ -461,7 +459,6 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   assign WABL_ = WABL;
   assign WABLM_[0] = WABLM[0];
   assign WABLM_[1] = WABLM[1];
-  assign WABLM_[2] = WABLM[2];
 
 `ifdef POWER_PINS
   assign corrupt_power = bad_power;
@@ -470,7 +467,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
 `endif
 
    `ifdef ARM_FAULT_MODELING
-     sram_l2_16384x64_error_injection u1(.CLK(CLK_), .Q_out(Q_out), .A(A_int), .CEN(CEN_int), .GWEN(GWEN_int), .WEN(WEN_int), .Q_in(Q_int));
+     sram_l2_4096x64_error_injection u1(.CLK(CLK_), .Q_out(Q_out), .A(A_int), .CEN(CEN_int), .GWEN(GWEN_int), .WEN(WEN_int), .Q_in(Q_int));
   `else
    assign Q_out = Q_int;
   `endif
@@ -605,7 +602,7 @@ task loadmem;
 	reg [BITS-1:0] memld [0:WORDS-1];
 	integer i;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 	$readmemb(filename, memld);
 `ifdef ARM_BACKDOOR_NOCEN
@@ -687,7 +684,7 @@ task loadmem;
 	input [1000*8-1:0] filename_dump;
 	integer i, dump_file_desc;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 	dump_file_desc = $fopen(filename_dump);
 `ifdef ARM_BACKDOOR_NOCEN
@@ -743,10 +740,10 @@ task loadmem;
   endtask
 
 task loadaddr;
-	input [13:0] load_addr;
+	input [11:0] load_addr;
 	input [63:0] load_data;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 `ifdef ARM_BACKDOOR_NOCEN
 `else
@@ -823,9 +820,9 @@ task loadaddr;
 
   task dumpaddr;
 	output [63:0] dump_data;
-	input [13:0] dump_addr;
+	input [11:0] dump_addr;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 `ifdef ARM_BACKDOOR_NOCEN
 `else
@@ -929,7 +926,7 @@ task loadaddr;
     end else if (CEN_int === 1'b0) begin
       mux_address = (A_int & 4'b1111);
       row_address = (A_int >> 4);
-      if (row_address > 1023)
+      if (row_address > 255)
         row = {1024{1'bx}};
       else
         row = mem[row_address];
@@ -1138,7 +1135,7 @@ if ($realtime != 0)  Q_latch_corrupt;
       Q_int_delayed = {64{1'bx}};
       CEN_int = 1'bx;
       GWEN_int = 1'bx;
-      A_int = {14{1'bx}};
+      A_int = {12{1'bx}};
       D_int = {64{1'bx}};
       WEN_int = {64{1'bx}};
       STOV_int = 1'bx;
@@ -1149,7 +1146,7 @@ if ($realtime != 0)  Q_latch_corrupt;
       RAWL_int = 1'bx;
       RAWLM_int = {2{1'bx}};
       WABL_int = 1'bx;
-      WABLM_int = {3{1'bx}};
+      WABLM_int = {2{1'bx}};
     end
     RET1N_int = RET1N_;
   end
@@ -1334,70 +1331,70 @@ if ($realtime != 0)  Q_latch_corrupt;
 
   assign D_int_bmux = D_;
 
-  datapath_latch_sram_l2_16384x64 uDQ0 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[0]), .DFTRAMBYP(1'b0), .mem_path(mem_path[0]), .XQ(XQ|XD_int[0]|1'b0), .Q(Q_int[0]));
-  datapath_latch_sram_l2_16384x64 uDQ1 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[0]), .D(D_int_bmux[1]), .DFTRAMBYP(1'b0), .mem_path(mem_path[1]), .XQ(XQ|XD_int[1]), .Q(Q_int[1]));
-  datapath_latch_sram_l2_16384x64 uDQ2 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[1]), .D(D_int_bmux[2]), .DFTRAMBYP(1'b0), .mem_path(mem_path[2]), .XQ(XQ|XD_int[2]), .Q(Q_int[2]));
-  datapath_latch_sram_l2_16384x64 uDQ3 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[2]), .D(D_int_bmux[3]), .DFTRAMBYP(1'b0), .mem_path(mem_path[3]), .XQ(XQ|XD_int[3]), .Q(Q_int[3]));
-  datapath_latch_sram_l2_16384x64 uDQ4 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[3]), .D(D_int_bmux[4]), .DFTRAMBYP(1'b0), .mem_path(mem_path[4]), .XQ(XQ|XD_int[4]), .Q(Q_int[4]));
-  datapath_latch_sram_l2_16384x64 uDQ5 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[4]), .D(D_int_bmux[5]), .DFTRAMBYP(1'b0), .mem_path(mem_path[5]), .XQ(XQ|XD_int[5]), .Q(Q_int[5]));
-  datapath_latch_sram_l2_16384x64 uDQ6 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[5]), .D(D_int_bmux[6]), .DFTRAMBYP(1'b0), .mem_path(mem_path[6]), .XQ(XQ|XD_int[6]), .Q(Q_int[6]));
-  datapath_latch_sram_l2_16384x64 uDQ7 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[6]), .D(D_int_bmux[7]), .DFTRAMBYP(1'b0), .mem_path(mem_path[7]), .XQ(XQ|XD_int[7]), .Q(Q_int[7]));
-  datapath_latch_sram_l2_16384x64 uDQ8 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[7]), .D(D_int_bmux[8]), .DFTRAMBYP(1'b0), .mem_path(mem_path[8]), .XQ(XQ|XD_int[8]), .Q(Q_int[8]));
-  datapath_latch_sram_l2_16384x64 uDQ9 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[8]), .D(D_int_bmux[9]), .DFTRAMBYP(1'b0), .mem_path(mem_path[9]), .XQ(XQ|XD_int[9]), .Q(Q_int[9]));
-  datapath_latch_sram_l2_16384x64 uDQ10 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[9]), .D(D_int_bmux[10]), .DFTRAMBYP(1'b0), .mem_path(mem_path[10]), .XQ(XQ|XD_int[10]), .Q(Q_int[10]));
-  datapath_latch_sram_l2_16384x64 uDQ11 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[10]), .D(D_int_bmux[11]), .DFTRAMBYP(1'b0), .mem_path(mem_path[11]), .XQ(XQ|XD_int[11]), .Q(Q_int[11]));
-  datapath_latch_sram_l2_16384x64 uDQ12 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[11]), .D(D_int_bmux[12]), .DFTRAMBYP(1'b0), .mem_path(mem_path[12]), .XQ(XQ|XD_int[12]), .Q(Q_int[12]));
-  datapath_latch_sram_l2_16384x64 uDQ13 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[12]), .D(D_int_bmux[13]), .DFTRAMBYP(1'b0), .mem_path(mem_path[13]), .XQ(XQ|XD_int[13]), .Q(Q_int[13]));
-  datapath_latch_sram_l2_16384x64 uDQ14 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[13]), .D(D_int_bmux[14]), .DFTRAMBYP(1'b0), .mem_path(mem_path[14]), .XQ(XQ|XD_int[14]), .Q(Q_int[14]));
-  datapath_latch_sram_l2_16384x64 uDQ15 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[14]), .D(D_int_bmux[15]), .DFTRAMBYP(1'b0), .mem_path(mem_path[15]), .XQ(XQ|XD_int[15]), .Q(Q_int[15]));
-  datapath_latch_sram_l2_16384x64 uDQ16 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[15]), .D(D_int_bmux[16]), .DFTRAMBYP(1'b0), .mem_path(mem_path[16]), .XQ(XQ|XD_int[16]), .Q(Q_int[16]));
-  datapath_latch_sram_l2_16384x64 uDQ17 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[16]), .D(D_int_bmux[17]), .DFTRAMBYP(1'b0), .mem_path(mem_path[17]), .XQ(XQ|XD_int[17]), .Q(Q_int[17]));
-  datapath_latch_sram_l2_16384x64 uDQ18 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[17]), .D(D_int_bmux[18]), .DFTRAMBYP(1'b0), .mem_path(mem_path[18]), .XQ(XQ|XD_int[18]), .Q(Q_int[18]));
-  datapath_latch_sram_l2_16384x64 uDQ19 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[18]), .D(D_int_bmux[19]), .DFTRAMBYP(1'b0), .mem_path(mem_path[19]), .XQ(XQ|XD_int[19]), .Q(Q_int[19]));
-  datapath_latch_sram_l2_16384x64 uDQ20 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[19]), .D(D_int_bmux[20]), .DFTRAMBYP(1'b0), .mem_path(mem_path[20]), .XQ(XQ|XD_int[20]), .Q(Q_int[20]));
-  datapath_latch_sram_l2_16384x64 uDQ21 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[20]), .D(D_int_bmux[21]), .DFTRAMBYP(1'b0), .mem_path(mem_path[21]), .XQ(XQ|XD_int[21]), .Q(Q_int[21]));
-  datapath_latch_sram_l2_16384x64 uDQ22 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[21]), .D(D_int_bmux[22]), .DFTRAMBYP(1'b0), .mem_path(mem_path[22]), .XQ(XQ|XD_int[22]), .Q(Q_int[22]));
-  datapath_latch_sram_l2_16384x64 uDQ23 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[22]), .D(D_int_bmux[23]), .DFTRAMBYP(1'b0), .mem_path(mem_path[23]), .XQ(XQ|XD_int[23]), .Q(Q_int[23]));
-  datapath_latch_sram_l2_16384x64 uDQ24 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[23]), .D(D_int_bmux[24]), .DFTRAMBYP(1'b0), .mem_path(mem_path[24]), .XQ(XQ|XD_int[24]), .Q(Q_int[24]));
-  datapath_latch_sram_l2_16384x64 uDQ25 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[24]), .D(D_int_bmux[25]), .DFTRAMBYP(1'b0), .mem_path(mem_path[25]), .XQ(XQ|XD_int[25]), .Q(Q_int[25]));
-  datapath_latch_sram_l2_16384x64 uDQ26 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[25]), .D(D_int_bmux[26]), .DFTRAMBYP(1'b0), .mem_path(mem_path[26]), .XQ(XQ|XD_int[26]), .Q(Q_int[26]));
-  datapath_latch_sram_l2_16384x64 uDQ27 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[26]), .D(D_int_bmux[27]), .DFTRAMBYP(1'b0), .mem_path(mem_path[27]), .XQ(XQ|XD_int[27]), .Q(Q_int[27]));
-  datapath_latch_sram_l2_16384x64 uDQ28 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[27]), .D(D_int_bmux[28]), .DFTRAMBYP(1'b0), .mem_path(mem_path[28]), .XQ(XQ|XD_int[28]), .Q(Q_int[28]));
-  datapath_latch_sram_l2_16384x64 uDQ29 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[28]), .D(D_int_bmux[29]), .DFTRAMBYP(1'b0), .mem_path(mem_path[29]), .XQ(XQ|XD_int[29]), .Q(Q_int[29]));
-  datapath_latch_sram_l2_16384x64 uDQ30 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[29]), .D(D_int_bmux[30]), .DFTRAMBYP(1'b0), .mem_path(mem_path[30]), .XQ(XQ|XD_int[30]), .Q(Q_int[30]));
-  datapath_latch_sram_l2_16384x64 uDQ31 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[30]), .D(D_int_bmux[31]), .DFTRAMBYP(1'b0), .mem_path(mem_path[31]), .XQ(XQ|XD_int[31]), .Q(Q_int[31]));
-  datapath_latch_sram_l2_16384x64 uDQ32 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[33]), .D(D_int_bmux[32]), .DFTRAMBYP(1'b0), .mem_path(mem_path[32]), .XQ(XQ|XD_int[32]), .Q(Q_int[32]));
-  datapath_latch_sram_l2_16384x64 uDQ33 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[34]), .D(D_int_bmux[33]), .DFTRAMBYP(1'b0), .mem_path(mem_path[33]), .XQ(XQ|XD_int[33]), .Q(Q_int[33]));
-  datapath_latch_sram_l2_16384x64 uDQ34 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[35]), .D(D_int_bmux[34]), .DFTRAMBYP(1'b0), .mem_path(mem_path[34]), .XQ(XQ|XD_int[34]), .Q(Q_int[34]));
-  datapath_latch_sram_l2_16384x64 uDQ35 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[36]), .D(D_int_bmux[35]), .DFTRAMBYP(1'b0), .mem_path(mem_path[35]), .XQ(XQ|XD_int[35]), .Q(Q_int[35]));
-  datapath_latch_sram_l2_16384x64 uDQ36 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[37]), .D(D_int_bmux[36]), .DFTRAMBYP(1'b0), .mem_path(mem_path[36]), .XQ(XQ|XD_int[36]), .Q(Q_int[36]));
-  datapath_latch_sram_l2_16384x64 uDQ37 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[38]), .D(D_int_bmux[37]), .DFTRAMBYP(1'b0), .mem_path(mem_path[37]), .XQ(XQ|XD_int[37]), .Q(Q_int[37]));
-  datapath_latch_sram_l2_16384x64 uDQ38 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[39]), .D(D_int_bmux[38]), .DFTRAMBYP(1'b0), .mem_path(mem_path[38]), .XQ(XQ|XD_int[38]), .Q(Q_int[38]));
-  datapath_latch_sram_l2_16384x64 uDQ39 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[40]), .D(D_int_bmux[39]), .DFTRAMBYP(1'b0), .mem_path(mem_path[39]), .XQ(XQ|XD_int[39]), .Q(Q_int[39]));
-  datapath_latch_sram_l2_16384x64 uDQ40 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[41]), .D(D_int_bmux[40]), .DFTRAMBYP(1'b0), .mem_path(mem_path[40]), .XQ(XQ|XD_int[40]), .Q(Q_int[40]));
-  datapath_latch_sram_l2_16384x64 uDQ41 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[42]), .D(D_int_bmux[41]), .DFTRAMBYP(1'b0), .mem_path(mem_path[41]), .XQ(XQ|XD_int[41]), .Q(Q_int[41]));
-  datapath_latch_sram_l2_16384x64 uDQ42 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[43]), .D(D_int_bmux[42]), .DFTRAMBYP(1'b0), .mem_path(mem_path[42]), .XQ(XQ|XD_int[42]), .Q(Q_int[42]));
-  datapath_latch_sram_l2_16384x64 uDQ43 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[44]), .D(D_int_bmux[43]), .DFTRAMBYP(1'b0), .mem_path(mem_path[43]), .XQ(XQ|XD_int[43]), .Q(Q_int[43]));
-  datapath_latch_sram_l2_16384x64 uDQ44 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[45]), .D(D_int_bmux[44]), .DFTRAMBYP(1'b0), .mem_path(mem_path[44]), .XQ(XQ|XD_int[44]), .Q(Q_int[44]));
-  datapath_latch_sram_l2_16384x64 uDQ45 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[46]), .D(D_int_bmux[45]), .DFTRAMBYP(1'b0), .mem_path(mem_path[45]), .XQ(XQ|XD_int[45]), .Q(Q_int[45]));
-  datapath_latch_sram_l2_16384x64 uDQ46 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[47]), .D(D_int_bmux[46]), .DFTRAMBYP(1'b0), .mem_path(mem_path[46]), .XQ(XQ|XD_int[46]), .Q(Q_int[46]));
-  datapath_latch_sram_l2_16384x64 uDQ47 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[48]), .D(D_int_bmux[47]), .DFTRAMBYP(1'b0), .mem_path(mem_path[47]), .XQ(XQ|XD_int[47]), .Q(Q_int[47]));
-  datapath_latch_sram_l2_16384x64 uDQ48 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[49]), .D(D_int_bmux[48]), .DFTRAMBYP(1'b0), .mem_path(mem_path[48]), .XQ(XQ|XD_int[48]), .Q(Q_int[48]));
-  datapath_latch_sram_l2_16384x64 uDQ49 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[50]), .D(D_int_bmux[49]), .DFTRAMBYP(1'b0), .mem_path(mem_path[49]), .XQ(XQ|XD_int[49]), .Q(Q_int[49]));
-  datapath_latch_sram_l2_16384x64 uDQ50 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[51]), .D(D_int_bmux[50]), .DFTRAMBYP(1'b0), .mem_path(mem_path[50]), .XQ(XQ|XD_int[50]), .Q(Q_int[50]));
-  datapath_latch_sram_l2_16384x64 uDQ51 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[52]), .D(D_int_bmux[51]), .DFTRAMBYP(1'b0), .mem_path(mem_path[51]), .XQ(XQ|XD_int[51]), .Q(Q_int[51]));
-  datapath_latch_sram_l2_16384x64 uDQ52 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[53]), .D(D_int_bmux[52]), .DFTRAMBYP(1'b0), .mem_path(mem_path[52]), .XQ(XQ|XD_int[52]), .Q(Q_int[52]));
-  datapath_latch_sram_l2_16384x64 uDQ53 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[54]), .D(D_int_bmux[53]), .DFTRAMBYP(1'b0), .mem_path(mem_path[53]), .XQ(XQ|XD_int[53]), .Q(Q_int[53]));
-  datapath_latch_sram_l2_16384x64 uDQ54 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[55]), .D(D_int_bmux[54]), .DFTRAMBYP(1'b0), .mem_path(mem_path[54]), .XQ(XQ|XD_int[54]), .Q(Q_int[54]));
-  datapath_latch_sram_l2_16384x64 uDQ55 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[56]), .D(D_int_bmux[55]), .DFTRAMBYP(1'b0), .mem_path(mem_path[55]), .XQ(XQ|XD_int[55]), .Q(Q_int[55]));
-  datapath_latch_sram_l2_16384x64 uDQ56 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[57]), .D(D_int_bmux[56]), .DFTRAMBYP(1'b0), .mem_path(mem_path[56]), .XQ(XQ|XD_int[56]), .Q(Q_int[56]));
-  datapath_latch_sram_l2_16384x64 uDQ57 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[58]), .D(D_int_bmux[57]), .DFTRAMBYP(1'b0), .mem_path(mem_path[57]), .XQ(XQ|XD_int[57]), .Q(Q_int[57]));
-  datapath_latch_sram_l2_16384x64 uDQ58 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[59]), .D(D_int_bmux[58]), .DFTRAMBYP(1'b0), .mem_path(mem_path[58]), .XQ(XQ|XD_int[58]), .Q(Q_int[58]));
-  datapath_latch_sram_l2_16384x64 uDQ59 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[60]), .D(D_int_bmux[59]), .DFTRAMBYP(1'b0), .mem_path(mem_path[59]), .XQ(XQ|XD_int[59]), .Q(Q_int[59]));
-  datapath_latch_sram_l2_16384x64 uDQ60 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[61]), .D(D_int_bmux[60]), .DFTRAMBYP(1'b0), .mem_path(mem_path[60]), .XQ(XQ|XD_int[60]), .Q(Q_int[60]));
-  datapath_latch_sram_l2_16384x64 uDQ61 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[62]), .D(D_int_bmux[61]), .DFTRAMBYP(1'b0), .mem_path(mem_path[61]), .XQ(XQ|XD_int[61]), .Q(Q_int[61]));
-  datapath_latch_sram_l2_16384x64 uDQ62 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[63]), .D(D_int_bmux[62]), .DFTRAMBYP(1'b0), .mem_path(mem_path[62]), .XQ(XQ|XD_int[62]), .Q(Q_int[62]));
-  datapath_latch_sram_l2_16384x64 uDQ63 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[63]), .DFTRAMBYP(1'b0), .mem_path(mem_path[63]), .XQ(XQ|XD_int[63]|1'b0), .Q(Q_int[63]));
+  datapath_latch_sram_l2_4096x64 uDQ0 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[0]), .DFTRAMBYP(1'b0), .mem_path(mem_path[0]), .XQ(XQ|XD_int[0]|1'b0), .Q(Q_int[0]));
+  datapath_latch_sram_l2_4096x64 uDQ1 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[0]), .D(D_int_bmux[1]), .DFTRAMBYP(1'b0), .mem_path(mem_path[1]), .XQ(XQ|XD_int[1]), .Q(Q_int[1]));
+  datapath_latch_sram_l2_4096x64 uDQ2 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[1]), .D(D_int_bmux[2]), .DFTRAMBYP(1'b0), .mem_path(mem_path[2]), .XQ(XQ|XD_int[2]), .Q(Q_int[2]));
+  datapath_latch_sram_l2_4096x64 uDQ3 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[2]), .D(D_int_bmux[3]), .DFTRAMBYP(1'b0), .mem_path(mem_path[3]), .XQ(XQ|XD_int[3]), .Q(Q_int[3]));
+  datapath_latch_sram_l2_4096x64 uDQ4 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[3]), .D(D_int_bmux[4]), .DFTRAMBYP(1'b0), .mem_path(mem_path[4]), .XQ(XQ|XD_int[4]), .Q(Q_int[4]));
+  datapath_latch_sram_l2_4096x64 uDQ5 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[4]), .D(D_int_bmux[5]), .DFTRAMBYP(1'b0), .mem_path(mem_path[5]), .XQ(XQ|XD_int[5]), .Q(Q_int[5]));
+  datapath_latch_sram_l2_4096x64 uDQ6 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[5]), .D(D_int_bmux[6]), .DFTRAMBYP(1'b0), .mem_path(mem_path[6]), .XQ(XQ|XD_int[6]), .Q(Q_int[6]));
+  datapath_latch_sram_l2_4096x64 uDQ7 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[6]), .D(D_int_bmux[7]), .DFTRAMBYP(1'b0), .mem_path(mem_path[7]), .XQ(XQ|XD_int[7]), .Q(Q_int[7]));
+  datapath_latch_sram_l2_4096x64 uDQ8 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[7]), .D(D_int_bmux[8]), .DFTRAMBYP(1'b0), .mem_path(mem_path[8]), .XQ(XQ|XD_int[8]), .Q(Q_int[8]));
+  datapath_latch_sram_l2_4096x64 uDQ9 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[8]), .D(D_int_bmux[9]), .DFTRAMBYP(1'b0), .mem_path(mem_path[9]), .XQ(XQ|XD_int[9]), .Q(Q_int[9]));
+  datapath_latch_sram_l2_4096x64 uDQ10 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[9]), .D(D_int_bmux[10]), .DFTRAMBYP(1'b0), .mem_path(mem_path[10]), .XQ(XQ|XD_int[10]), .Q(Q_int[10]));
+  datapath_latch_sram_l2_4096x64 uDQ11 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[10]), .D(D_int_bmux[11]), .DFTRAMBYP(1'b0), .mem_path(mem_path[11]), .XQ(XQ|XD_int[11]), .Q(Q_int[11]));
+  datapath_latch_sram_l2_4096x64 uDQ12 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[11]), .D(D_int_bmux[12]), .DFTRAMBYP(1'b0), .mem_path(mem_path[12]), .XQ(XQ|XD_int[12]), .Q(Q_int[12]));
+  datapath_latch_sram_l2_4096x64 uDQ13 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[12]), .D(D_int_bmux[13]), .DFTRAMBYP(1'b0), .mem_path(mem_path[13]), .XQ(XQ|XD_int[13]), .Q(Q_int[13]));
+  datapath_latch_sram_l2_4096x64 uDQ14 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[13]), .D(D_int_bmux[14]), .DFTRAMBYP(1'b0), .mem_path(mem_path[14]), .XQ(XQ|XD_int[14]), .Q(Q_int[14]));
+  datapath_latch_sram_l2_4096x64 uDQ15 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[14]), .D(D_int_bmux[15]), .DFTRAMBYP(1'b0), .mem_path(mem_path[15]), .XQ(XQ|XD_int[15]), .Q(Q_int[15]));
+  datapath_latch_sram_l2_4096x64 uDQ16 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[15]), .D(D_int_bmux[16]), .DFTRAMBYP(1'b0), .mem_path(mem_path[16]), .XQ(XQ|XD_int[16]), .Q(Q_int[16]));
+  datapath_latch_sram_l2_4096x64 uDQ17 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[16]), .D(D_int_bmux[17]), .DFTRAMBYP(1'b0), .mem_path(mem_path[17]), .XQ(XQ|XD_int[17]), .Q(Q_int[17]));
+  datapath_latch_sram_l2_4096x64 uDQ18 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[17]), .D(D_int_bmux[18]), .DFTRAMBYP(1'b0), .mem_path(mem_path[18]), .XQ(XQ|XD_int[18]), .Q(Q_int[18]));
+  datapath_latch_sram_l2_4096x64 uDQ19 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[18]), .D(D_int_bmux[19]), .DFTRAMBYP(1'b0), .mem_path(mem_path[19]), .XQ(XQ|XD_int[19]), .Q(Q_int[19]));
+  datapath_latch_sram_l2_4096x64 uDQ20 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[19]), .D(D_int_bmux[20]), .DFTRAMBYP(1'b0), .mem_path(mem_path[20]), .XQ(XQ|XD_int[20]), .Q(Q_int[20]));
+  datapath_latch_sram_l2_4096x64 uDQ21 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[20]), .D(D_int_bmux[21]), .DFTRAMBYP(1'b0), .mem_path(mem_path[21]), .XQ(XQ|XD_int[21]), .Q(Q_int[21]));
+  datapath_latch_sram_l2_4096x64 uDQ22 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[21]), .D(D_int_bmux[22]), .DFTRAMBYP(1'b0), .mem_path(mem_path[22]), .XQ(XQ|XD_int[22]), .Q(Q_int[22]));
+  datapath_latch_sram_l2_4096x64 uDQ23 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[22]), .D(D_int_bmux[23]), .DFTRAMBYP(1'b0), .mem_path(mem_path[23]), .XQ(XQ|XD_int[23]), .Q(Q_int[23]));
+  datapath_latch_sram_l2_4096x64 uDQ24 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[23]), .D(D_int_bmux[24]), .DFTRAMBYP(1'b0), .mem_path(mem_path[24]), .XQ(XQ|XD_int[24]), .Q(Q_int[24]));
+  datapath_latch_sram_l2_4096x64 uDQ25 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[24]), .D(D_int_bmux[25]), .DFTRAMBYP(1'b0), .mem_path(mem_path[25]), .XQ(XQ|XD_int[25]), .Q(Q_int[25]));
+  datapath_latch_sram_l2_4096x64 uDQ26 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[25]), .D(D_int_bmux[26]), .DFTRAMBYP(1'b0), .mem_path(mem_path[26]), .XQ(XQ|XD_int[26]), .Q(Q_int[26]));
+  datapath_latch_sram_l2_4096x64 uDQ27 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[26]), .D(D_int_bmux[27]), .DFTRAMBYP(1'b0), .mem_path(mem_path[27]), .XQ(XQ|XD_int[27]), .Q(Q_int[27]));
+  datapath_latch_sram_l2_4096x64 uDQ28 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[27]), .D(D_int_bmux[28]), .DFTRAMBYP(1'b0), .mem_path(mem_path[28]), .XQ(XQ|XD_int[28]), .Q(Q_int[28]));
+  datapath_latch_sram_l2_4096x64 uDQ29 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[28]), .D(D_int_bmux[29]), .DFTRAMBYP(1'b0), .mem_path(mem_path[29]), .XQ(XQ|XD_int[29]), .Q(Q_int[29]));
+  datapath_latch_sram_l2_4096x64 uDQ30 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[29]), .D(D_int_bmux[30]), .DFTRAMBYP(1'b0), .mem_path(mem_path[30]), .XQ(XQ|XD_int[30]), .Q(Q_int[30]));
+  datapath_latch_sram_l2_4096x64 uDQ31 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[30]), .D(D_int_bmux[31]), .DFTRAMBYP(1'b0), .mem_path(mem_path[31]), .XQ(XQ|XD_int[31]), .Q(Q_int[31]));
+  datapath_latch_sram_l2_4096x64 uDQ32 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[33]), .D(D_int_bmux[32]), .DFTRAMBYP(1'b0), .mem_path(mem_path[32]), .XQ(XQ|XD_int[32]), .Q(Q_int[32]));
+  datapath_latch_sram_l2_4096x64 uDQ33 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[34]), .D(D_int_bmux[33]), .DFTRAMBYP(1'b0), .mem_path(mem_path[33]), .XQ(XQ|XD_int[33]), .Q(Q_int[33]));
+  datapath_latch_sram_l2_4096x64 uDQ34 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[35]), .D(D_int_bmux[34]), .DFTRAMBYP(1'b0), .mem_path(mem_path[34]), .XQ(XQ|XD_int[34]), .Q(Q_int[34]));
+  datapath_latch_sram_l2_4096x64 uDQ35 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[36]), .D(D_int_bmux[35]), .DFTRAMBYP(1'b0), .mem_path(mem_path[35]), .XQ(XQ|XD_int[35]), .Q(Q_int[35]));
+  datapath_latch_sram_l2_4096x64 uDQ36 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[37]), .D(D_int_bmux[36]), .DFTRAMBYP(1'b0), .mem_path(mem_path[36]), .XQ(XQ|XD_int[36]), .Q(Q_int[36]));
+  datapath_latch_sram_l2_4096x64 uDQ37 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[38]), .D(D_int_bmux[37]), .DFTRAMBYP(1'b0), .mem_path(mem_path[37]), .XQ(XQ|XD_int[37]), .Q(Q_int[37]));
+  datapath_latch_sram_l2_4096x64 uDQ38 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[39]), .D(D_int_bmux[38]), .DFTRAMBYP(1'b0), .mem_path(mem_path[38]), .XQ(XQ|XD_int[38]), .Q(Q_int[38]));
+  datapath_latch_sram_l2_4096x64 uDQ39 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[40]), .D(D_int_bmux[39]), .DFTRAMBYP(1'b0), .mem_path(mem_path[39]), .XQ(XQ|XD_int[39]), .Q(Q_int[39]));
+  datapath_latch_sram_l2_4096x64 uDQ40 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[41]), .D(D_int_bmux[40]), .DFTRAMBYP(1'b0), .mem_path(mem_path[40]), .XQ(XQ|XD_int[40]), .Q(Q_int[40]));
+  datapath_latch_sram_l2_4096x64 uDQ41 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[42]), .D(D_int_bmux[41]), .DFTRAMBYP(1'b0), .mem_path(mem_path[41]), .XQ(XQ|XD_int[41]), .Q(Q_int[41]));
+  datapath_latch_sram_l2_4096x64 uDQ42 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[43]), .D(D_int_bmux[42]), .DFTRAMBYP(1'b0), .mem_path(mem_path[42]), .XQ(XQ|XD_int[42]), .Q(Q_int[42]));
+  datapath_latch_sram_l2_4096x64 uDQ43 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[44]), .D(D_int_bmux[43]), .DFTRAMBYP(1'b0), .mem_path(mem_path[43]), .XQ(XQ|XD_int[43]), .Q(Q_int[43]));
+  datapath_latch_sram_l2_4096x64 uDQ44 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[45]), .D(D_int_bmux[44]), .DFTRAMBYP(1'b0), .mem_path(mem_path[44]), .XQ(XQ|XD_int[44]), .Q(Q_int[44]));
+  datapath_latch_sram_l2_4096x64 uDQ45 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[46]), .D(D_int_bmux[45]), .DFTRAMBYP(1'b0), .mem_path(mem_path[45]), .XQ(XQ|XD_int[45]), .Q(Q_int[45]));
+  datapath_latch_sram_l2_4096x64 uDQ46 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[47]), .D(D_int_bmux[46]), .DFTRAMBYP(1'b0), .mem_path(mem_path[46]), .XQ(XQ|XD_int[46]), .Q(Q_int[46]));
+  datapath_latch_sram_l2_4096x64 uDQ47 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[48]), .D(D_int_bmux[47]), .DFTRAMBYP(1'b0), .mem_path(mem_path[47]), .XQ(XQ|XD_int[47]), .Q(Q_int[47]));
+  datapath_latch_sram_l2_4096x64 uDQ48 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[49]), .D(D_int_bmux[48]), .DFTRAMBYP(1'b0), .mem_path(mem_path[48]), .XQ(XQ|XD_int[48]), .Q(Q_int[48]));
+  datapath_latch_sram_l2_4096x64 uDQ49 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[50]), .D(D_int_bmux[49]), .DFTRAMBYP(1'b0), .mem_path(mem_path[49]), .XQ(XQ|XD_int[49]), .Q(Q_int[49]));
+  datapath_latch_sram_l2_4096x64 uDQ50 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[51]), .D(D_int_bmux[50]), .DFTRAMBYP(1'b0), .mem_path(mem_path[50]), .XQ(XQ|XD_int[50]), .Q(Q_int[50]));
+  datapath_latch_sram_l2_4096x64 uDQ51 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[52]), .D(D_int_bmux[51]), .DFTRAMBYP(1'b0), .mem_path(mem_path[51]), .XQ(XQ|XD_int[51]), .Q(Q_int[51]));
+  datapath_latch_sram_l2_4096x64 uDQ52 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[53]), .D(D_int_bmux[52]), .DFTRAMBYP(1'b0), .mem_path(mem_path[52]), .XQ(XQ|XD_int[52]), .Q(Q_int[52]));
+  datapath_latch_sram_l2_4096x64 uDQ53 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[54]), .D(D_int_bmux[53]), .DFTRAMBYP(1'b0), .mem_path(mem_path[53]), .XQ(XQ|XD_int[53]), .Q(Q_int[53]));
+  datapath_latch_sram_l2_4096x64 uDQ54 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[55]), .D(D_int_bmux[54]), .DFTRAMBYP(1'b0), .mem_path(mem_path[54]), .XQ(XQ|XD_int[54]), .Q(Q_int[54]));
+  datapath_latch_sram_l2_4096x64 uDQ55 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[56]), .D(D_int_bmux[55]), .DFTRAMBYP(1'b0), .mem_path(mem_path[55]), .XQ(XQ|XD_int[55]), .Q(Q_int[55]));
+  datapath_latch_sram_l2_4096x64 uDQ56 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[57]), .D(D_int_bmux[56]), .DFTRAMBYP(1'b0), .mem_path(mem_path[56]), .XQ(XQ|XD_int[56]), .Q(Q_int[56]));
+  datapath_latch_sram_l2_4096x64 uDQ57 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[58]), .D(D_int_bmux[57]), .DFTRAMBYP(1'b0), .mem_path(mem_path[57]), .XQ(XQ|XD_int[57]), .Q(Q_int[57]));
+  datapath_latch_sram_l2_4096x64 uDQ58 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[59]), .D(D_int_bmux[58]), .DFTRAMBYP(1'b0), .mem_path(mem_path[58]), .XQ(XQ|XD_int[58]), .Q(Q_int[58]));
+  datapath_latch_sram_l2_4096x64 uDQ59 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[60]), .D(D_int_bmux[59]), .DFTRAMBYP(1'b0), .mem_path(mem_path[59]), .XQ(XQ|XD_int[59]), .Q(Q_int[59]));
+  datapath_latch_sram_l2_4096x64 uDQ60 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[61]), .D(D_int_bmux[60]), .DFTRAMBYP(1'b0), .mem_path(mem_path[60]), .XQ(XQ|XD_int[60]), .Q(Q_int[60]));
+  datapath_latch_sram_l2_4096x64 uDQ61 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[62]), .D(D_int_bmux[61]), .DFTRAMBYP(1'b0), .mem_path(mem_path[61]), .XQ(XQ|XD_int[61]), .Q(Q_int[61]));
+  datapath_latch_sram_l2_4096x64 uDQ62 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[63]), .D(D_int_bmux[62]), .DFTRAMBYP(1'b0), .mem_path(mem_path[62]), .XQ(XQ|XD_int[62]), .Q(Q_int[62]));
+  datapath_latch_sram_l2_4096x64 uDQ63 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[63]), .DFTRAMBYP(1'b0), .mem_path(mem_path[63]), .XQ(XQ|XD_int[63]|1'b0), .Q(Q_int[63]));
 
 
 reg CLK_s;
@@ -1446,19 +1443,19 @@ endmodule
 `celldefine
 // If POWER_PINS is defined at Simulator Command Line, it selects the module definition with Power Ports
 `ifdef POWER_PINS
-module sram_l2_16384x64 (VDDCE, VDDPE, VSSE, Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, 
+module sram_l2_4096x64 (VDDCE, VDDPE, VSSE, Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, 
     EMAW, EMAS, RET1N, RAWL, RAWLM, WABL, WABLM);
 `else
-module sram_l2_16384x64 (Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, EMAW, EMAS, RET1N, 
+module sram_l2_4096x64 (Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, EMAW, EMAS, RET1N, 
     RAWL, RAWLM, WABL, WABLM);
 `endif
 
   parameter ASSERT_PREFIX = "";
   parameter BITS = 64;
-  parameter WORDS = 16384;
+  parameter WORDS = 4096;
   parameter MUX = 16;
   parameter MEM_WIDTH = 1024; // redun block size 16, 512 on left, 512 on right
-  parameter MEM_HEIGHT = 1024;
+  parameter MEM_HEIGHT = 256;
   parameter WP_SIZE = 1 ;
   parameter UPM_WIDTH = 3;
   parameter UPMW_WIDTH = 2;
@@ -1473,16 +1470,16 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 1;
 parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
 `endif
 
-  parameter ARM_REF_EMA_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMA_VALUE;
-  parameter ARM_REF_EMAW_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE;
-  parameter ARM_REF_EMAS_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAS_VALUE;
-  parameter ROWS = 1024;
+  parameter ARM_REF_EMA_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMA_VALUE;
+  parameter ARM_REF_EMAW_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAW_VALUE;
+  parameter ARM_REF_EMAS_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAS_VALUE;
+  parameter ROWS = 256;
 
   output [63:0] Q;
   input  CLK;
   input  CEN;
   input  GWEN;
-  input [13:0] A;
+  input [11:0] A;
   input [63:0] D;
   input [63:0] WEN;
   input  STOV;
@@ -1493,7 +1490,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   input  RAWL;
   input [1:0] RAWLM;
   input  WABL;
-  input [2:0] WABLM;
+  input [1:0] WABLM;
 `ifdef POWER_PINS
   inout VDDCE;
   inout VDDPE;
@@ -1514,7 +1511,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   initial mux_address = 0;
   reg [1023:0] row, row_t;
   reg LAST_CLK;
-  reg [1023:0] mem [0:1023];
+  reg [1023:0] mem [0:255];
   reg [1023:0] row_mask;
   reg [1023:0] new_data;
   reg [1023:0] data_out;
@@ -1529,26 +1526,26 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   reg [63:0] mem_path_d;
   reg [63:0] writeEnable;
 
-  reg NOT_CEN, NOT_GWEN, NOT_A13, NOT_A12, NOT_A11, NOT_A10, NOT_A9, NOT_A8, NOT_A7;
-  reg NOT_A6, NOT_A5, NOT_A4, NOT_A3, NOT_A2, NOT_A1, NOT_A0, NOT_D63, NOT_D62, NOT_D61;
-  reg NOT_D60, NOT_D59, NOT_D58, NOT_D57, NOT_D56, NOT_D55, NOT_D54, NOT_D53, NOT_D52;
-  reg NOT_D51, NOT_D50, NOT_D49, NOT_D48, NOT_D47, NOT_D46, NOT_D45, NOT_D44, NOT_D43;
-  reg NOT_D42, NOT_D41, NOT_D40, NOT_D39, NOT_D38, NOT_D37, NOT_D36, NOT_D35, NOT_D34;
-  reg NOT_D33, NOT_D32, NOT_D31, NOT_D30, NOT_D29, NOT_D28, NOT_D27, NOT_D26, NOT_D25;
-  reg NOT_D24, NOT_D23, NOT_D22, NOT_D21, NOT_D20, NOT_D19, NOT_D18, NOT_D17, NOT_D16;
-  reg NOT_D15, NOT_D14, NOT_D13, NOT_D12, NOT_D11, NOT_D10, NOT_D9, NOT_D8, NOT_D7;
-  reg NOT_D6, NOT_D5, NOT_D4, NOT_D3, NOT_D2, NOT_D1, NOT_D0, NOT_WEN63, NOT_WEN62;
-  reg NOT_WEN61, NOT_WEN60, NOT_WEN59, NOT_WEN58, NOT_WEN57, NOT_WEN56, NOT_WEN55;
-  reg NOT_WEN54, NOT_WEN53, NOT_WEN52, NOT_WEN51, NOT_WEN50, NOT_WEN49, NOT_WEN48;
-  reg NOT_WEN47, NOT_WEN46, NOT_WEN45, NOT_WEN44, NOT_WEN43, NOT_WEN42, NOT_WEN41;
-  reg NOT_WEN40, NOT_WEN39, NOT_WEN38, NOT_WEN37, NOT_WEN36, NOT_WEN35, NOT_WEN34;
-  reg NOT_WEN33, NOT_WEN32, NOT_WEN31, NOT_WEN30, NOT_WEN29, NOT_WEN28, NOT_WEN27;
-  reg NOT_WEN26, NOT_WEN25, NOT_WEN24, NOT_WEN23, NOT_WEN22, NOT_WEN21, NOT_WEN20;
-  reg NOT_WEN19, NOT_WEN18, NOT_WEN17, NOT_WEN16, NOT_WEN15, NOT_WEN14, NOT_WEN13;
-  reg NOT_WEN12, NOT_WEN11, NOT_WEN10, NOT_WEN9, NOT_WEN8, NOT_WEN7, NOT_WEN6, NOT_WEN5;
-  reg NOT_WEN4, NOT_WEN3, NOT_WEN2, NOT_WEN1, NOT_WEN0, NOT_STOV, NOT_EMA2, NOT_EMA1;
-  reg NOT_EMA0, NOT_EMAW1, NOT_EMAW0, NOT_EMAS, NOT_RET1N, NOT_RAWL, NOT_RAWLM1, NOT_RAWLM0;
-  reg NOT_WABL, NOT_WABLM2, NOT_WABLM1, NOT_WABLM0;
+  reg NOT_CEN, NOT_GWEN, NOT_A11, NOT_A10, NOT_A9, NOT_A8, NOT_A7, NOT_A6, NOT_A5;
+  reg NOT_A4, NOT_A3, NOT_A2, NOT_A1, NOT_A0, NOT_D63, NOT_D62, NOT_D61, NOT_D60, NOT_D59;
+  reg NOT_D58, NOT_D57, NOT_D56, NOT_D55, NOT_D54, NOT_D53, NOT_D52, NOT_D51, NOT_D50;
+  reg NOT_D49, NOT_D48, NOT_D47, NOT_D46, NOT_D45, NOT_D44, NOT_D43, NOT_D42, NOT_D41;
+  reg NOT_D40, NOT_D39, NOT_D38, NOT_D37, NOT_D36, NOT_D35, NOT_D34, NOT_D33, NOT_D32;
+  reg NOT_D31, NOT_D30, NOT_D29, NOT_D28, NOT_D27, NOT_D26, NOT_D25, NOT_D24, NOT_D23;
+  reg NOT_D22, NOT_D21, NOT_D20, NOT_D19, NOT_D18, NOT_D17, NOT_D16, NOT_D15, NOT_D14;
+  reg NOT_D13, NOT_D12, NOT_D11, NOT_D10, NOT_D9, NOT_D8, NOT_D7, NOT_D6, NOT_D5, NOT_D4;
+  reg NOT_D3, NOT_D2, NOT_D1, NOT_D0, NOT_WEN63, NOT_WEN62, NOT_WEN61, NOT_WEN60, NOT_WEN59;
+  reg NOT_WEN58, NOT_WEN57, NOT_WEN56, NOT_WEN55, NOT_WEN54, NOT_WEN53, NOT_WEN52;
+  reg NOT_WEN51, NOT_WEN50, NOT_WEN49, NOT_WEN48, NOT_WEN47, NOT_WEN46, NOT_WEN45;
+  reg NOT_WEN44, NOT_WEN43, NOT_WEN42, NOT_WEN41, NOT_WEN40, NOT_WEN39, NOT_WEN38;
+  reg NOT_WEN37, NOT_WEN36, NOT_WEN35, NOT_WEN34, NOT_WEN33, NOT_WEN32, NOT_WEN31;
+  reg NOT_WEN30, NOT_WEN29, NOT_WEN28, NOT_WEN27, NOT_WEN26, NOT_WEN25, NOT_WEN24;
+  reg NOT_WEN23, NOT_WEN22, NOT_WEN21, NOT_WEN20, NOT_WEN19, NOT_WEN18, NOT_WEN17;
+  reg NOT_WEN16, NOT_WEN15, NOT_WEN14, NOT_WEN13, NOT_WEN12, NOT_WEN11, NOT_WEN10;
+  reg NOT_WEN9, NOT_WEN8, NOT_WEN7, NOT_WEN6, NOT_WEN5, NOT_WEN4, NOT_WEN3, NOT_WEN2;
+  reg NOT_WEN1, NOT_WEN0, NOT_STOV, NOT_EMA2, NOT_EMA1, NOT_EMA0, NOT_EMAW1, NOT_EMAW0;
+  reg NOT_EMAS, NOT_RET1N, NOT_RAWL, NOT_RAWLM1, NOT_RAWLM0, NOT_WABL, NOT_WABLM1;
+  reg NOT_WABLM0;
   reg NOT_CLK_PER, NOT_CLK_MINH, NOT_CLK_MINL;
   reg clk0_int;
 
@@ -1563,9 +1560,9 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   wire  GWEN_;
  wire  dGWEN;
   reg  GWEN_int;
-  wire [13:0] A_;
- wire [13:0] dA;
-  reg [13:0] A_int;
+  wire [11:0] A_;
+ wire [11:0] dA;
+  reg [11:0] A_int;
   wire [63:0] D_;
  wire [63:0] dD;
   reg [63:0] D_int;
@@ -1597,9 +1594,9 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   wire  WABL_;
  wire  dWABL;
   reg  WABL_int;
-  wire [2:0] WABLM_;
- wire [2:0] dWABLM;
-  reg [2:0] WABLM_int;
+  wire [1:0] WABLM_;
+ wire [1:0] dWABLM;
+  reg [1:0] WABLM_int;
 
   buf B0(Q[0], Q_[0]);
   buf B1(Q[1], Q_[1]);
@@ -1680,151 +1677,148 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   buf B76(A_[9],dA[9]);
   buf B77(A_[10],dA[10]);
   buf B78(A_[11],dA[11]);
-  buf B79(A_[12],dA[12]);
-  buf B80(A_[13],dA[13]);
-  buf B81(D_[0],dD[0]);
-  buf B82(D_[1],dD[1]);
-  buf B83(D_[2],dD[2]);
-  buf B84(D_[3],dD[3]);
-  buf B85(D_[4],dD[4]);
-  buf B86(D_[5],dD[5]);
-  buf B87(D_[6],dD[6]);
-  buf B88(D_[7],dD[7]);
-  buf B89(D_[8],dD[8]);
-  buf B90(D_[9],dD[9]);
-  buf B91(D_[10],dD[10]);
-  buf B92(D_[11],dD[11]);
-  buf B93(D_[12],dD[12]);
-  buf B94(D_[13],dD[13]);
-  buf B95(D_[14],dD[14]);
-  buf B96(D_[15],dD[15]);
-  buf B97(D_[16],dD[16]);
-  buf B98(D_[17],dD[17]);
-  buf B99(D_[18],dD[18]);
-  buf B100(D_[19],dD[19]);
-  buf B101(D_[20],dD[20]);
-  buf B102(D_[21],dD[21]);
-  buf B103(D_[22],dD[22]);
-  buf B104(D_[23],dD[23]);
-  buf B105(D_[24],dD[24]);
-  buf B106(D_[25],dD[25]);
-  buf B107(D_[26],dD[26]);
-  buf B108(D_[27],dD[27]);
-  buf B109(D_[28],dD[28]);
-  buf B110(D_[29],dD[29]);
-  buf B111(D_[30],dD[30]);
-  buf B112(D_[31],dD[31]);
-  buf B113(D_[32],dD[32]);
-  buf B114(D_[33],dD[33]);
-  buf B115(D_[34],dD[34]);
-  buf B116(D_[35],dD[35]);
-  buf B117(D_[36],dD[36]);
-  buf B118(D_[37],dD[37]);
-  buf B119(D_[38],dD[38]);
-  buf B120(D_[39],dD[39]);
-  buf B121(D_[40],dD[40]);
-  buf B122(D_[41],dD[41]);
-  buf B123(D_[42],dD[42]);
-  buf B124(D_[43],dD[43]);
-  buf B125(D_[44],dD[44]);
-  buf B126(D_[45],dD[45]);
-  buf B127(D_[46],dD[46]);
-  buf B128(D_[47],dD[47]);
-  buf B129(D_[48],dD[48]);
-  buf B130(D_[49],dD[49]);
-  buf B131(D_[50],dD[50]);
-  buf B132(D_[51],dD[51]);
-  buf B133(D_[52],dD[52]);
-  buf B134(D_[53],dD[53]);
-  buf B135(D_[54],dD[54]);
-  buf B136(D_[55],dD[55]);
-  buf B137(D_[56],dD[56]);
-  buf B138(D_[57],dD[57]);
-  buf B139(D_[58],dD[58]);
-  buf B140(D_[59],dD[59]);
-  buf B141(D_[60],dD[60]);
-  buf B142(D_[61],dD[61]);
-  buf B143(D_[62],dD[62]);
-  buf B144(D_[63],dD[63]);
-  buf B145(WEN_[0],dWEN[0]);
-  buf B146(WEN_[1],dWEN[1]);
-  buf B147(WEN_[2],dWEN[2]);
-  buf B148(WEN_[3],dWEN[3]);
-  buf B149(WEN_[4],dWEN[4]);
-  buf B150(WEN_[5],dWEN[5]);
-  buf B151(WEN_[6],dWEN[6]);
-  buf B152(WEN_[7],dWEN[7]);
-  buf B153(WEN_[8],dWEN[8]);
-  buf B154(WEN_[9],dWEN[9]);
-  buf B155(WEN_[10],dWEN[10]);
-  buf B156(WEN_[11],dWEN[11]);
-  buf B157(WEN_[12],dWEN[12]);
-  buf B158(WEN_[13],dWEN[13]);
-  buf B159(WEN_[14],dWEN[14]);
-  buf B160(WEN_[15],dWEN[15]);
-  buf B161(WEN_[16],dWEN[16]);
-  buf B162(WEN_[17],dWEN[17]);
-  buf B163(WEN_[18],dWEN[18]);
-  buf B164(WEN_[19],dWEN[19]);
-  buf B165(WEN_[20],dWEN[20]);
-  buf B166(WEN_[21],dWEN[21]);
-  buf B167(WEN_[22],dWEN[22]);
-  buf B168(WEN_[23],dWEN[23]);
-  buf B169(WEN_[24],dWEN[24]);
-  buf B170(WEN_[25],dWEN[25]);
-  buf B171(WEN_[26],dWEN[26]);
-  buf B172(WEN_[27],dWEN[27]);
-  buf B173(WEN_[28],dWEN[28]);
-  buf B174(WEN_[29],dWEN[29]);
-  buf B175(WEN_[30],dWEN[30]);
-  buf B176(WEN_[31],dWEN[31]);
-  buf B177(WEN_[32],dWEN[32]);
-  buf B178(WEN_[33],dWEN[33]);
-  buf B179(WEN_[34],dWEN[34]);
-  buf B180(WEN_[35],dWEN[35]);
-  buf B181(WEN_[36],dWEN[36]);
-  buf B182(WEN_[37],dWEN[37]);
-  buf B183(WEN_[38],dWEN[38]);
-  buf B184(WEN_[39],dWEN[39]);
-  buf B185(WEN_[40],dWEN[40]);
-  buf B186(WEN_[41],dWEN[41]);
-  buf B187(WEN_[42],dWEN[42]);
-  buf B188(WEN_[43],dWEN[43]);
-  buf B189(WEN_[44],dWEN[44]);
-  buf B190(WEN_[45],dWEN[45]);
-  buf B191(WEN_[46],dWEN[46]);
-  buf B192(WEN_[47],dWEN[47]);
-  buf B193(WEN_[48],dWEN[48]);
-  buf B194(WEN_[49],dWEN[49]);
-  buf B195(WEN_[50],dWEN[50]);
-  buf B196(WEN_[51],dWEN[51]);
-  buf B197(WEN_[52],dWEN[52]);
-  buf B198(WEN_[53],dWEN[53]);
-  buf B199(WEN_[54],dWEN[54]);
-  buf B200(WEN_[55],dWEN[55]);
-  buf B201(WEN_[56],dWEN[56]);
-  buf B202(WEN_[57],dWEN[57]);
-  buf B203(WEN_[58],dWEN[58]);
-  buf B204(WEN_[59],dWEN[59]);
-  buf B205(WEN_[60],dWEN[60]);
-  buf B206(WEN_[61],dWEN[61]);
-  buf B207(WEN_[62],dWEN[62]);
-  buf B208(WEN_[63],dWEN[63]);
-  buf B209(STOV_, dSTOV);
-  buf B210(EMA_[0],dEMA[0]);
-  buf B211(EMA_[1],dEMA[1]);
-  buf B212(EMA_[2],dEMA[2]);
-  buf B213(EMAW_[0],dEMAW[0]);
-  buf B214(EMAW_[1],dEMAW[1]);
-  buf B215(EMAS_, dEMAS);
-  buf B216(RET1N_, dRET1N);
-  buf B217(RAWL_, dRAWL);
-  buf B218(RAWLM_[0],dRAWLM[0]);
-  buf B219(RAWLM_[1],dRAWLM[1]);
-  buf B220(WABL_, dWABL);
-  buf B221(WABLM_[0],dWABLM[0]);
-  buf B222(WABLM_[1],dWABLM[1]);
-  buf B223(WABLM_[2],dWABLM[2]);
+  buf B79(D_[0],dD[0]);
+  buf B80(D_[1],dD[1]);
+  buf B81(D_[2],dD[2]);
+  buf B82(D_[3],dD[3]);
+  buf B83(D_[4],dD[4]);
+  buf B84(D_[5],dD[5]);
+  buf B85(D_[6],dD[6]);
+  buf B86(D_[7],dD[7]);
+  buf B87(D_[8],dD[8]);
+  buf B88(D_[9],dD[9]);
+  buf B89(D_[10],dD[10]);
+  buf B90(D_[11],dD[11]);
+  buf B91(D_[12],dD[12]);
+  buf B92(D_[13],dD[13]);
+  buf B93(D_[14],dD[14]);
+  buf B94(D_[15],dD[15]);
+  buf B95(D_[16],dD[16]);
+  buf B96(D_[17],dD[17]);
+  buf B97(D_[18],dD[18]);
+  buf B98(D_[19],dD[19]);
+  buf B99(D_[20],dD[20]);
+  buf B100(D_[21],dD[21]);
+  buf B101(D_[22],dD[22]);
+  buf B102(D_[23],dD[23]);
+  buf B103(D_[24],dD[24]);
+  buf B104(D_[25],dD[25]);
+  buf B105(D_[26],dD[26]);
+  buf B106(D_[27],dD[27]);
+  buf B107(D_[28],dD[28]);
+  buf B108(D_[29],dD[29]);
+  buf B109(D_[30],dD[30]);
+  buf B110(D_[31],dD[31]);
+  buf B111(D_[32],dD[32]);
+  buf B112(D_[33],dD[33]);
+  buf B113(D_[34],dD[34]);
+  buf B114(D_[35],dD[35]);
+  buf B115(D_[36],dD[36]);
+  buf B116(D_[37],dD[37]);
+  buf B117(D_[38],dD[38]);
+  buf B118(D_[39],dD[39]);
+  buf B119(D_[40],dD[40]);
+  buf B120(D_[41],dD[41]);
+  buf B121(D_[42],dD[42]);
+  buf B122(D_[43],dD[43]);
+  buf B123(D_[44],dD[44]);
+  buf B124(D_[45],dD[45]);
+  buf B125(D_[46],dD[46]);
+  buf B126(D_[47],dD[47]);
+  buf B127(D_[48],dD[48]);
+  buf B128(D_[49],dD[49]);
+  buf B129(D_[50],dD[50]);
+  buf B130(D_[51],dD[51]);
+  buf B131(D_[52],dD[52]);
+  buf B132(D_[53],dD[53]);
+  buf B133(D_[54],dD[54]);
+  buf B134(D_[55],dD[55]);
+  buf B135(D_[56],dD[56]);
+  buf B136(D_[57],dD[57]);
+  buf B137(D_[58],dD[58]);
+  buf B138(D_[59],dD[59]);
+  buf B139(D_[60],dD[60]);
+  buf B140(D_[61],dD[61]);
+  buf B141(D_[62],dD[62]);
+  buf B142(D_[63],dD[63]);
+  buf B143(WEN_[0],dWEN[0]);
+  buf B144(WEN_[1],dWEN[1]);
+  buf B145(WEN_[2],dWEN[2]);
+  buf B146(WEN_[3],dWEN[3]);
+  buf B147(WEN_[4],dWEN[4]);
+  buf B148(WEN_[5],dWEN[5]);
+  buf B149(WEN_[6],dWEN[6]);
+  buf B150(WEN_[7],dWEN[7]);
+  buf B151(WEN_[8],dWEN[8]);
+  buf B152(WEN_[9],dWEN[9]);
+  buf B153(WEN_[10],dWEN[10]);
+  buf B154(WEN_[11],dWEN[11]);
+  buf B155(WEN_[12],dWEN[12]);
+  buf B156(WEN_[13],dWEN[13]);
+  buf B157(WEN_[14],dWEN[14]);
+  buf B158(WEN_[15],dWEN[15]);
+  buf B159(WEN_[16],dWEN[16]);
+  buf B160(WEN_[17],dWEN[17]);
+  buf B161(WEN_[18],dWEN[18]);
+  buf B162(WEN_[19],dWEN[19]);
+  buf B163(WEN_[20],dWEN[20]);
+  buf B164(WEN_[21],dWEN[21]);
+  buf B165(WEN_[22],dWEN[22]);
+  buf B166(WEN_[23],dWEN[23]);
+  buf B167(WEN_[24],dWEN[24]);
+  buf B168(WEN_[25],dWEN[25]);
+  buf B169(WEN_[26],dWEN[26]);
+  buf B170(WEN_[27],dWEN[27]);
+  buf B171(WEN_[28],dWEN[28]);
+  buf B172(WEN_[29],dWEN[29]);
+  buf B173(WEN_[30],dWEN[30]);
+  buf B174(WEN_[31],dWEN[31]);
+  buf B175(WEN_[32],dWEN[32]);
+  buf B176(WEN_[33],dWEN[33]);
+  buf B177(WEN_[34],dWEN[34]);
+  buf B178(WEN_[35],dWEN[35]);
+  buf B179(WEN_[36],dWEN[36]);
+  buf B180(WEN_[37],dWEN[37]);
+  buf B181(WEN_[38],dWEN[38]);
+  buf B182(WEN_[39],dWEN[39]);
+  buf B183(WEN_[40],dWEN[40]);
+  buf B184(WEN_[41],dWEN[41]);
+  buf B185(WEN_[42],dWEN[42]);
+  buf B186(WEN_[43],dWEN[43]);
+  buf B187(WEN_[44],dWEN[44]);
+  buf B188(WEN_[45],dWEN[45]);
+  buf B189(WEN_[46],dWEN[46]);
+  buf B190(WEN_[47],dWEN[47]);
+  buf B191(WEN_[48],dWEN[48]);
+  buf B192(WEN_[49],dWEN[49]);
+  buf B193(WEN_[50],dWEN[50]);
+  buf B194(WEN_[51],dWEN[51]);
+  buf B195(WEN_[52],dWEN[52]);
+  buf B196(WEN_[53],dWEN[53]);
+  buf B197(WEN_[54],dWEN[54]);
+  buf B198(WEN_[55],dWEN[55]);
+  buf B199(WEN_[56],dWEN[56]);
+  buf B200(WEN_[57],dWEN[57]);
+  buf B201(WEN_[58],dWEN[58]);
+  buf B202(WEN_[59],dWEN[59]);
+  buf B203(WEN_[60],dWEN[60]);
+  buf B204(WEN_[61],dWEN[61]);
+  buf B205(WEN_[62],dWEN[62]);
+  buf B206(WEN_[63],dWEN[63]);
+  buf B207(STOV_, dSTOV);
+  buf B208(EMA_[0],dEMA[0]);
+  buf B209(EMA_[1],dEMA[1]);
+  buf B210(EMA_[2],dEMA[2]);
+  buf B211(EMAW_[0],dEMAW[0]);
+  buf B212(EMAW_[1],dEMAW[1]);
+  buf B213(EMAS_, dEMAS);
+  buf B214(RET1N_, dRET1N);
+  buf B215(RAWL_, dRAWL);
+  buf B216(RAWLM_[0],dRAWLM[0]);
+  buf B217(RAWLM_[1],dRAWLM[1]);
+  buf B218(WABL_, dWABL);
+  buf B219(WABLM_[0],dWABLM[0]);
+  buf B220(WABLM_[1],dWABLM[1]);
 
 `ifdef POWER_PINS
   assign corrupt_power = bad_power;
@@ -1964,7 +1958,7 @@ task loadmem;
 	reg [BITS-1:0] memld [0:WORDS-1];
 	integer i;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 	$readmemb(filename, memld);
 `ifdef ARM_BACKDOOR_NOCEN
@@ -2046,7 +2040,7 @@ task loadmem;
 	input [1000*8-1:0] filename_dump;
 	integer i, dump_file_desc;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 	dump_file_desc = $fopen(filename_dump);
 `ifdef ARM_BACKDOOR_NOCEN
@@ -2102,10 +2096,10 @@ task loadmem;
   endtask
 
 task loadaddr;
-	input [13:0] load_addr;
+	input [11:0] load_addr;
 	input [63:0] load_data;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 `ifdef ARM_BACKDOOR_NOCEN
 `else
@@ -2182,9 +2176,9 @@ task loadaddr;
 
   task dumpaddr;
 	output [63:0] dump_data;
-	input [13:0] dump_addr;
+	input [11:0] dump_addr;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 `ifdef ARM_BACKDOOR_NOCEN
 `else
@@ -2288,7 +2282,7 @@ task loadaddr;
     end else if (CEN_int === 1'b0) begin
       mux_address = (A_int & 4'b1111);
       row_address = (A_int >> 4);
-      if (row_address > 1023)
+      if (row_address > 255)
         row = {1024{1'bx}};
       else
         row = mem[row_address];
@@ -2497,7 +2491,7 @@ if ($realtime != 0)  Q_latch_corrupt;
       Q_int_delayed = {64{1'bx}};
       CEN_int = 1'bx;
       GWEN_int = 1'bx;
-      A_int = {14{1'bx}};
+      A_int = {12{1'bx}};
       D_int = {64{1'bx}};
       WEN_int = {64{1'bx}};
       STOV_int = 1'bx;
@@ -2508,7 +2502,7 @@ if ($realtime != 0)  Q_latch_corrupt;
       RAWL_int = 1'bx;
       RAWLM_int = {2{1'bx}};
       WABL_int = 1'bx;
-      WABLM_int = {3{1'bx}};
+      WABLM_int = {2{1'bx}};
     end
     RET1N_int = RET1N_;
   end
@@ -2693,70 +2687,70 @@ if ($realtime != 0)  Q_latch_corrupt;
 
   assign D_int_bmux = D_;
 
-  datapath_latch_sram_l2_16384x64 uDQ0 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[0]), .DFTRAMBYP(1'b0), .mem_path(mem_path[0]), .XQ(XQ|XD_int[0]|1'b0), .Q(Q_int[0]));
-  datapath_latch_sram_l2_16384x64 uDQ1 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[0]), .D(D_int_bmux[1]), .DFTRAMBYP(1'b0), .mem_path(mem_path[1]), .XQ(XQ|XD_int[1]), .Q(Q_int[1]));
-  datapath_latch_sram_l2_16384x64 uDQ2 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[1]), .D(D_int_bmux[2]), .DFTRAMBYP(1'b0), .mem_path(mem_path[2]), .XQ(XQ|XD_int[2]), .Q(Q_int[2]));
-  datapath_latch_sram_l2_16384x64 uDQ3 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[2]), .D(D_int_bmux[3]), .DFTRAMBYP(1'b0), .mem_path(mem_path[3]), .XQ(XQ|XD_int[3]), .Q(Q_int[3]));
-  datapath_latch_sram_l2_16384x64 uDQ4 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[3]), .D(D_int_bmux[4]), .DFTRAMBYP(1'b0), .mem_path(mem_path[4]), .XQ(XQ|XD_int[4]), .Q(Q_int[4]));
-  datapath_latch_sram_l2_16384x64 uDQ5 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[4]), .D(D_int_bmux[5]), .DFTRAMBYP(1'b0), .mem_path(mem_path[5]), .XQ(XQ|XD_int[5]), .Q(Q_int[5]));
-  datapath_latch_sram_l2_16384x64 uDQ6 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[5]), .D(D_int_bmux[6]), .DFTRAMBYP(1'b0), .mem_path(mem_path[6]), .XQ(XQ|XD_int[6]), .Q(Q_int[6]));
-  datapath_latch_sram_l2_16384x64 uDQ7 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[6]), .D(D_int_bmux[7]), .DFTRAMBYP(1'b0), .mem_path(mem_path[7]), .XQ(XQ|XD_int[7]), .Q(Q_int[7]));
-  datapath_latch_sram_l2_16384x64 uDQ8 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[7]), .D(D_int_bmux[8]), .DFTRAMBYP(1'b0), .mem_path(mem_path[8]), .XQ(XQ|XD_int[8]), .Q(Q_int[8]));
-  datapath_latch_sram_l2_16384x64 uDQ9 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[8]), .D(D_int_bmux[9]), .DFTRAMBYP(1'b0), .mem_path(mem_path[9]), .XQ(XQ|XD_int[9]), .Q(Q_int[9]));
-  datapath_latch_sram_l2_16384x64 uDQ10 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[9]), .D(D_int_bmux[10]), .DFTRAMBYP(1'b0), .mem_path(mem_path[10]), .XQ(XQ|XD_int[10]), .Q(Q_int[10]));
-  datapath_latch_sram_l2_16384x64 uDQ11 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[10]), .D(D_int_bmux[11]), .DFTRAMBYP(1'b0), .mem_path(mem_path[11]), .XQ(XQ|XD_int[11]), .Q(Q_int[11]));
-  datapath_latch_sram_l2_16384x64 uDQ12 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[11]), .D(D_int_bmux[12]), .DFTRAMBYP(1'b0), .mem_path(mem_path[12]), .XQ(XQ|XD_int[12]), .Q(Q_int[12]));
-  datapath_latch_sram_l2_16384x64 uDQ13 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[12]), .D(D_int_bmux[13]), .DFTRAMBYP(1'b0), .mem_path(mem_path[13]), .XQ(XQ|XD_int[13]), .Q(Q_int[13]));
-  datapath_latch_sram_l2_16384x64 uDQ14 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[13]), .D(D_int_bmux[14]), .DFTRAMBYP(1'b0), .mem_path(mem_path[14]), .XQ(XQ|XD_int[14]), .Q(Q_int[14]));
-  datapath_latch_sram_l2_16384x64 uDQ15 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[14]), .D(D_int_bmux[15]), .DFTRAMBYP(1'b0), .mem_path(mem_path[15]), .XQ(XQ|XD_int[15]), .Q(Q_int[15]));
-  datapath_latch_sram_l2_16384x64 uDQ16 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[15]), .D(D_int_bmux[16]), .DFTRAMBYP(1'b0), .mem_path(mem_path[16]), .XQ(XQ|XD_int[16]), .Q(Q_int[16]));
-  datapath_latch_sram_l2_16384x64 uDQ17 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[16]), .D(D_int_bmux[17]), .DFTRAMBYP(1'b0), .mem_path(mem_path[17]), .XQ(XQ|XD_int[17]), .Q(Q_int[17]));
-  datapath_latch_sram_l2_16384x64 uDQ18 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[17]), .D(D_int_bmux[18]), .DFTRAMBYP(1'b0), .mem_path(mem_path[18]), .XQ(XQ|XD_int[18]), .Q(Q_int[18]));
-  datapath_latch_sram_l2_16384x64 uDQ19 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[18]), .D(D_int_bmux[19]), .DFTRAMBYP(1'b0), .mem_path(mem_path[19]), .XQ(XQ|XD_int[19]), .Q(Q_int[19]));
-  datapath_latch_sram_l2_16384x64 uDQ20 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[19]), .D(D_int_bmux[20]), .DFTRAMBYP(1'b0), .mem_path(mem_path[20]), .XQ(XQ|XD_int[20]), .Q(Q_int[20]));
-  datapath_latch_sram_l2_16384x64 uDQ21 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[20]), .D(D_int_bmux[21]), .DFTRAMBYP(1'b0), .mem_path(mem_path[21]), .XQ(XQ|XD_int[21]), .Q(Q_int[21]));
-  datapath_latch_sram_l2_16384x64 uDQ22 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[21]), .D(D_int_bmux[22]), .DFTRAMBYP(1'b0), .mem_path(mem_path[22]), .XQ(XQ|XD_int[22]), .Q(Q_int[22]));
-  datapath_latch_sram_l2_16384x64 uDQ23 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[22]), .D(D_int_bmux[23]), .DFTRAMBYP(1'b0), .mem_path(mem_path[23]), .XQ(XQ|XD_int[23]), .Q(Q_int[23]));
-  datapath_latch_sram_l2_16384x64 uDQ24 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[23]), .D(D_int_bmux[24]), .DFTRAMBYP(1'b0), .mem_path(mem_path[24]), .XQ(XQ|XD_int[24]), .Q(Q_int[24]));
-  datapath_latch_sram_l2_16384x64 uDQ25 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[24]), .D(D_int_bmux[25]), .DFTRAMBYP(1'b0), .mem_path(mem_path[25]), .XQ(XQ|XD_int[25]), .Q(Q_int[25]));
-  datapath_latch_sram_l2_16384x64 uDQ26 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[25]), .D(D_int_bmux[26]), .DFTRAMBYP(1'b0), .mem_path(mem_path[26]), .XQ(XQ|XD_int[26]), .Q(Q_int[26]));
-  datapath_latch_sram_l2_16384x64 uDQ27 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[26]), .D(D_int_bmux[27]), .DFTRAMBYP(1'b0), .mem_path(mem_path[27]), .XQ(XQ|XD_int[27]), .Q(Q_int[27]));
-  datapath_latch_sram_l2_16384x64 uDQ28 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[27]), .D(D_int_bmux[28]), .DFTRAMBYP(1'b0), .mem_path(mem_path[28]), .XQ(XQ|XD_int[28]), .Q(Q_int[28]));
-  datapath_latch_sram_l2_16384x64 uDQ29 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[28]), .D(D_int_bmux[29]), .DFTRAMBYP(1'b0), .mem_path(mem_path[29]), .XQ(XQ|XD_int[29]), .Q(Q_int[29]));
-  datapath_latch_sram_l2_16384x64 uDQ30 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[29]), .D(D_int_bmux[30]), .DFTRAMBYP(1'b0), .mem_path(mem_path[30]), .XQ(XQ|XD_int[30]), .Q(Q_int[30]));
-  datapath_latch_sram_l2_16384x64 uDQ31 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[30]), .D(D_int_bmux[31]), .DFTRAMBYP(1'b0), .mem_path(mem_path[31]), .XQ(XQ|XD_int[31]), .Q(Q_int[31]));
-  datapath_latch_sram_l2_16384x64 uDQ32 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[33]), .D(D_int_bmux[32]), .DFTRAMBYP(1'b0), .mem_path(mem_path[32]), .XQ(XQ|XD_int[32]), .Q(Q_int[32]));
-  datapath_latch_sram_l2_16384x64 uDQ33 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[34]), .D(D_int_bmux[33]), .DFTRAMBYP(1'b0), .mem_path(mem_path[33]), .XQ(XQ|XD_int[33]), .Q(Q_int[33]));
-  datapath_latch_sram_l2_16384x64 uDQ34 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[35]), .D(D_int_bmux[34]), .DFTRAMBYP(1'b0), .mem_path(mem_path[34]), .XQ(XQ|XD_int[34]), .Q(Q_int[34]));
-  datapath_latch_sram_l2_16384x64 uDQ35 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[36]), .D(D_int_bmux[35]), .DFTRAMBYP(1'b0), .mem_path(mem_path[35]), .XQ(XQ|XD_int[35]), .Q(Q_int[35]));
-  datapath_latch_sram_l2_16384x64 uDQ36 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[37]), .D(D_int_bmux[36]), .DFTRAMBYP(1'b0), .mem_path(mem_path[36]), .XQ(XQ|XD_int[36]), .Q(Q_int[36]));
-  datapath_latch_sram_l2_16384x64 uDQ37 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[38]), .D(D_int_bmux[37]), .DFTRAMBYP(1'b0), .mem_path(mem_path[37]), .XQ(XQ|XD_int[37]), .Q(Q_int[37]));
-  datapath_latch_sram_l2_16384x64 uDQ38 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[39]), .D(D_int_bmux[38]), .DFTRAMBYP(1'b0), .mem_path(mem_path[38]), .XQ(XQ|XD_int[38]), .Q(Q_int[38]));
-  datapath_latch_sram_l2_16384x64 uDQ39 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[40]), .D(D_int_bmux[39]), .DFTRAMBYP(1'b0), .mem_path(mem_path[39]), .XQ(XQ|XD_int[39]), .Q(Q_int[39]));
-  datapath_latch_sram_l2_16384x64 uDQ40 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[41]), .D(D_int_bmux[40]), .DFTRAMBYP(1'b0), .mem_path(mem_path[40]), .XQ(XQ|XD_int[40]), .Q(Q_int[40]));
-  datapath_latch_sram_l2_16384x64 uDQ41 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[42]), .D(D_int_bmux[41]), .DFTRAMBYP(1'b0), .mem_path(mem_path[41]), .XQ(XQ|XD_int[41]), .Q(Q_int[41]));
-  datapath_latch_sram_l2_16384x64 uDQ42 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[43]), .D(D_int_bmux[42]), .DFTRAMBYP(1'b0), .mem_path(mem_path[42]), .XQ(XQ|XD_int[42]), .Q(Q_int[42]));
-  datapath_latch_sram_l2_16384x64 uDQ43 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[44]), .D(D_int_bmux[43]), .DFTRAMBYP(1'b0), .mem_path(mem_path[43]), .XQ(XQ|XD_int[43]), .Q(Q_int[43]));
-  datapath_latch_sram_l2_16384x64 uDQ44 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[45]), .D(D_int_bmux[44]), .DFTRAMBYP(1'b0), .mem_path(mem_path[44]), .XQ(XQ|XD_int[44]), .Q(Q_int[44]));
-  datapath_latch_sram_l2_16384x64 uDQ45 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[46]), .D(D_int_bmux[45]), .DFTRAMBYP(1'b0), .mem_path(mem_path[45]), .XQ(XQ|XD_int[45]), .Q(Q_int[45]));
-  datapath_latch_sram_l2_16384x64 uDQ46 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[47]), .D(D_int_bmux[46]), .DFTRAMBYP(1'b0), .mem_path(mem_path[46]), .XQ(XQ|XD_int[46]), .Q(Q_int[46]));
-  datapath_latch_sram_l2_16384x64 uDQ47 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[48]), .D(D_int_bmux[47]), .DFTRAMBYP(1'b0), .mem_path(mem_path[47]), .XQ(XQ|XD_int[47]), .Q(Q_int[47]));
-  datapath_latch_sram_l2_16384x64 uDQ48 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[49]), .D(D_int_bmux[48]), .DFTRAMBYP(1'b0), .mem_path(mem_path[48]), .XQ(XQ|XD_int[48]), .Q(Q_int[48]));
-  datapath_latch_sram_l2_16384x64 uDQ49 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[50]), .D(D_int_bmux[49]), .DFTRAMBYP(1'b0), .mem_path(mem_path[49]), .XQ(XQ|XD_int[49]), .Q(Q_int[49]));
-  datapath_latch_sram_l2_16384x64 uDQ50 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[51]), .D(D_int_bmux[50]), .DFTRAMBYP(1'b0), .mem_path(mem_path[50]), .XQ(XQ|XD_int[50]), .Q(Q_int[50]));
-  datapath_latch_sram_l2_16384x64 uDQ51 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[52]), .D(D_int_bmux[51]), .DFTRAMBYP(1'b0), .mem_path(mem_path[51]), .XQ(XQ|XD_int[51]), .Q(Q_int[51]));
-  datapath_latch_sram_l2_16384x64 uDQ52 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[53]), .D(D_int_bmux[52]), .DFTRAMBYP(1'b0), .mem_path(mem_path[52]), .XQ(XQ|XD_int[52]), .Q(Q_int[52]));
-  datapath_latch_sram_l2_16384x64 uDQ53 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[54]), .D(D_int_bmux[53]), .DFTRAMBYP(1'b0), .mem_path(mem_path[53]), .XQ(XQ|XD_int[53]), .Q(Q_int[53]));
-  datapath_latch_sram_l2_16384x64 uDQ54 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[55]), .D(D_int_bmux[54]), .DFTRAMBYP(1'b0), .mem_path(mem_path[54]), .XQ(XQ|XD_int[54]), .Q(Q_int[54]));
-  datapath_latch_sram_l2_16384x64 uDQ55 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[56]), .D(D_int_bmux[55]), .DFTRAMBYP(1'b0), .mem_path(mem_path[55]), .XQ(XQ|XD_int[55]), .Q(Q_int[55]));
-  datapath_latch_sram_l2_16384x64 uDQ56 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[57]), .D(D_int_bmux[56]), .DFTRAMBYP(1'b0), .mem_path(mem_path[56]), .XQ(XQ|XD_int[56]), .Q(Q_int[56]));
-  datapath_latch_sram_l2_16384x64 uDQ57 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[58]), .D(D_int_bmux[57]), .DFTRAMBYP(1'b0), .mem_path(mem_path[57]), .XQ(XQ|XD_int[57]), .Q(Q_int[57]));
-  datapath_latch_sram_l2_16384x64 uDQ58 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[59]), .D(D_int_bmux[58]), .DFTRAMBYP(1'b0), .mem_path(mem_path[58]), .XQ(XQ|XD_int[58]), .Q(Q_int[58]));
-  datapath_latch_sram_l2_16384x64 uDQ59 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[60]), .D(D_int_bmux[59]), .DFTRAMBYP(1'b0), .mem_path(mem_path[59]), .XQ(XQ|XD_int[59]), .Q(Q_int[59]));
-  datapath_latch_sram_l2_16384x64 uDQ60 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[61]), .D(D_int_bmux[60]), .DFTRAMBYP(1'b0), .mem_path(mem_path[60]), .XQ(XQ|XD_int[60]), .Q(Q_int[60]));
-  datapath_latch_sram_l2_16384x64 uDQ61 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[62]), .D(D_int_bmux[61]), .DFTRAMBYP(1'b0), .mem_path(mem_path[61]), .XQ(XQ|XD_int[61]), .Q(Q_int[61]));
-  datapath_latch_sram_l2_16384x64 uDQ62 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[63]), .D(D_int_bmux[62]), .DFTRAMBYP(1'b0), .mem_path(mem_path[62]), .XQ(XQ|XD_int[62]), .Q(Q_int[62]));
-  datapath_latch_sram_l2_16384x64 uDQ63 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[63]), .DFTRAMBYP(1'b0), .mem_path(mem_path[63]), .XQ(XQ|XD_int[63]|1'b0), .Q(Q_int[63]));
+  datapath_latch_sram_l2_4096x64 uDQ0 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[0]), .DFTRAMBYP(1'b0), .mem_path(mem_path[0]), .XQ(XQ|XD_int[0]|1'b0), .Q(Q_int[0]));
+  datapath_latch_sram_l2_4096x64 uDQ1 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[0]), .D(D_int_bmux[1]), .DFTRAMBYP(1'b0), .mem_path(mem_path[1]), .XQ(XQ|XD_int[1]), .Q(Q_int[1]));
+  datapath_latch_sram_l2_4096x64 uDQ2 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[1]), .D(D_int_bmux[2]), .DFTRAMBYP(1'b0), .mem_path(mem_path[2]), .XQ(XQ|XD_int[2]), .Q(Q_int[2]));
+  datapath_latch_sram_l2_4096x64 uDQ3 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[2]), .D(D_int_bmux[3]), .DFTRAMBYP(1'b0), .mem_path(mem_path[3]), .XQ(XQ|XD_int[3]), .Q(Q_int[3]));
+  datapath_latch_sram_l2_4096x64 uDQ4 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[3]), .D(D_int_bmux[4]), .DFTRAMBYP(1'b0), .mem_path(mem_path[4]), .XQ(XQ|XD_int[4]), .Q(Q_int[4]));
+  datapath_latch_sram_l2_4096x64 uDQ5 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[4]), .D(D_int_bmux[5]), .DFTRAMBYP(1'b0), .mem_path(mem_path[5]), .XQ(XQ|XD_int[5]), .Q(Q_int[5]));
+  datapath_latch_sram_l2_4096x64 uDQ6 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[5]), .D(D_int_bmux[6]), .DFTRAMBYP(1'b0), .mem_path(mem_path[6]), .XQ(XQ|XD_int[6]), .Q(Q_int[6]));
+  datapath_latch_sram_l2_4096x64 uDQ7 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[6]), .D(D_int_bmux[7]), .DFTRAMBYP(1'b0), .mem_path(mem_path[7]), .XQ(XQ|XD_int[7]), .Q(Q_int[7]));
+  datapath_latch_sram_l2_4096x64 uDQ8 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[7]), .D(D_int_bmux[8]), .DFTRAMBYP(1'b0), .mem_path(mem_path[8]), .XQ(XQ|XD_int[8]), .Q(Q_int[8]));
+  datapath_latch_sram_l2_4096x64 uDQ9 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[8]), .D(D_int_bmux[9]), .DFTRAMBYP(1'b0), .mem_path(mem_path[9]), .XQ(XQ|XD_int[9]), .Q(Q_int[9]));
+  datapath_latch_sram_l2_4096x64 uDQ10 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[9]), .D(D_int_bmux[10]), .DFTRAMBYP(1'b0), .mem_path(mem_path[10]), .XQ(XQ|XD_int[10]), .Q(Q_int[10]));
+  datapath_latch_sram_l2_4096x64 uDQ11 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[10]), .D(D_int_bmux[11]), .DFTRAMBYP(1'b0), .mem_path(mem_path[11]), .XQ(XQ|XD_int[11]), .Q(Q_int[11]));
+  datapath_latch_sram_l2_4096x64 uDQ12 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[11]), .D(D_int_bmux[12]), .DFTRAMBYP(1'b0), .mem_path(mem_path[12]), .XQ(XQ|XD_int[12]), .Q(Q_int[12]));
+  datapath_latch_sram_l2_4096x64 uDQ13 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[12]), .D(D_int_bmux[13]), .DFTRAMBYP(1'b0), .mem_path(mem_path[13]), .XQ(XQ|XD_int[13]), .Q(Q_int[13]));
+  datapath_latch_sram_l2_4096x64 uDQ14 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[13]), .D(D_int_bmux[14]), .DFTRAMBYP(1'b0), .mem_path(mem_path[14]), .XQ(XQ|XD_int[14]), .Q(Q_int[14]));
+  datapath_latch_sram_l2_4096x64 uDQ15 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[14]), .D(D_int_bmux[15]), .DFTRAMBYP(1'b0), .mem_path(mem_path[15]), .XQ(XQ|XD_int[15]), .Q(Q_int[15]));
+  datapath_latch_sram_l2_4096x64 uDQ16 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[15]), .D(D_int_bmux[16]), .DFTRAMBYP(1'b0), .mem_path(mem_path[16]), .XQ(XQ|XD_int[16]), .Q(Q_int[16]));
+  datapath_latch_sram_l2_4096x64 uDQ17 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[16]), .D(D_int_bmux[17]), .DFTRAMBYP(1'b0), .mem_path(mem_path[17]), .XQ(XQ|XD_int[17]), .Q(Q_int[17]));
+  datapath_latch_sram_l2_4096x64 uDQ18 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[17]), .D(D_int_bmux[18]), .DFTRAMBYP(1'b0), .mem_path(mem_path[18]), .XQ(XQ|XD_int[18]), .Q(Q_int[18]));
+  datapath_latch_sram_l2_4096x64 uDQ19 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[18]), .D(D_int_bmux[19]), .DFTRAMBYP(1'b0), .mem_path(mem_path[19]), .XQ(XQ|XD_int[19]), .Q(Q_int[19]));
+  datapath_latch_sram_l2_4096x64 uDQ20 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[19]), .D(D_int_bmux[20]), .DFTRAMBYP(1'b0), .mem_path(mem_path[20]), .XQ(XQ|XD_int[20]), .Q(Q_int[20]));
+  datapath_latch_sram_l2_4096x64 uDQ21 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[20]), .D(D_int_bmux[21]), .DFTRAMBYP(1'b0), .mem_path(mem_path[21]), .XQ(XQ|XD_int[21]), .Q(Q_int[21]));
+  datapath_latch_sram_l2_4096x64 uDQ22 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[21]), .D(D_int_bmux[22]), .DFTRAMBYP(1'b0), .mem_path(mem_path[22]), .XQ(XQ|XD_int[22]), .Q(Q_int[22]));
+  datapath_latch_sram_l2_4096x64 uDQ23 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[22]), .D(D_int_bmux[23]), .DFTRAMBYP(1'b0), .mem_path(mem_path[23]), .XQ(XQ|XD_int[23]), .Q(Q_int[23]));
+  datapath_latch_sram_l2_4096x64 uDQ24 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[23]), .D(D_int_bmux[24]), .DFTRAMBYP(1'b0), .mem_path(mem_path[24]), .XQ(XQ|XD_int[24]), .Q(Q_int[24]));
+  datapath_latch_sram_l2_4096x64 uDQ25 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[24]), .D(D_int_bmux[25]), .DFTRAMBYP(1'b0), .mem_path(mem_path[25]), .XQ(XQ|XD_int[25]), .Q(Q_int[25]));
+  datapath_latch_sram_l2_4096x64 uDQ26 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[25]), .D(D_int_bmux[26]), .DFTRAMBYP(1'b0), .mem_path(mem_path[26]), .XQ(XQ|XD_int[26]), .Q(Q_int[26]));
+  datapath_latch_sram_l2_4096x64 uDQ27 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[26]), .D(D_int_bmux[27]), .DFTRAMBYP(1'b0), .mem_path(mem_path[27]), .XQ(XQ|XD_int[27]), .Q(Q_int[27]));
+  datapath_latch_sram_l2_4096x64 uDQ28 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[27]), .D(D_int_bmux[28]), .DFTRAMBYP(1'b0), .mem_path(mem_path[28]), .XQ(XQ|XD_int[28]), .Q(Q_int[28]));
+  datapath_latch_sram_l2_4096x64 uDQ29 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[28]), .D(D_int_bmux[29]), .DFTRAMBYP(1'b0), .mem_path(mem_path[29]), .XQ(XQ|XD_int[29]), .Q(Q_int[29]));
+  datapath_latch_sram_l2_4096x64 uDQ30 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[29]), .D(D_int_bmux[30]), .DFTRAMBYP(1'b0), .mem_path(mem_path[30]), .XQ(XQ|XD_int[30]), .Q(Q_int[30]));
+  datapath_latch_sram_l2_4096x64 uDQ31 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[30]), .D(D_int_bmux[31]), .DFTRAMBYP(1'b0), .mem_path(mem_path[31]), .XQ(XQ|XD_int[31]), .Q(Q_int[31]));
+  datapath_latch_sram_l2_4096x64 uDQ32 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[33]), .D(D_int_bmux[32]), .DFTRAMBYP(1'b0), .mem_path(mem_path[32]), .XQ(XQ|XD_int[32]), .Q(Q_int[32]));
+  datapath_latch_sram_l2_4096x64 uDQ33 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[34]), .D(D_int_bmux[33]), .DFTRAMBYP(1'b0), .mem_path(mem_path[33]), .XQ(XQ|XD_int[33]), .Q(Q_int[33]));
+  datapath_latch_sram_l2_4096x64 uDQ34 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[35]), .D(D_int_bmux[34]), .DFTRAMBYP(1'b0), .mem_path(mem_path[34]), .XQ(XQ|XD_int[34]), .Q(Q_int[34]));
+  datapath_latch_sram_l2_4096x64 uDQ35 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[36]), .D(D_int_bmux[35]), .DFTRAMBYP(1'b0), .mem_path(mem_path[35]), .XQ(XQ|XD_int[35]), .Q(Q_int[35]));
+  datapath_latch_sram_l2_4096x64 uDQ36 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[37]), .D(D_int_bmux[36]), .DFTRAMBYP(1'b0), .mem_path(mem_path[36]), .XQ(XQ|XD_int[36]), .Q(Q_int[36]));
+  datapath_latch_sram_l2_4096x64 uDQ37 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[38]), .D(D_int_bmux[37]), .DFTRAMBYP(1'b0), .mem_path(mem_path[37]), .XQ(XQ|XD_int[37]), .Q(Q_int[37]));
+  datapath_latch_sram_l2_4096x64 uDQ38 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[39]), .D(D_int_bmux[38]), .DFTRAMBYP(1'b0), .mem_path(mem_path[38]), .XQ(XQ|XD_int[38]), .Q(Q_int[38]));
+  datapath_latch_sram_l2_4096x64 uDQ39 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[40]), .D(D_int_bmux[39]), .DFTRAMBYP(1'b0), .mem_path(mem_path[39]), .XQ(XQ|XD_int[39]), .Q(Q_int[39]));
+  datapath_latch_sram_l2_4096x64 uDQ40 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[41]), .D(D_int_bmux[40]), .DFTRAMBYP(1'b0), .mem_path(mem_path[40]), .XQ(XQ|XD_int[40]), .Q(Q_int[40]));
+  datapath_latch_sram_l2_4096x64 uDQ41 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[42]), .D(D_int_bmux[41]), .DFTRAMBYP(1'b0), .mem_path(mem_path[41]), .XQ(XQ|XD_int[41]), .Q(Q_int[41]));
+  datapath_latch_sram_l2_4096x64 uDQ42 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[43]), .D(D_int_bmux[42]), .DFTRAMBYP(1'b0), .mem_path(mem_path[42]), .XQ(XQ|XD_int[42]), .Q(Q_int[42]));
+  datapath_latch_sram_l2_4096x64 uDQ43 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[44]), .D(D_int_bmux[43]), .DFTRAMBYP(1'b0), .mem_path(mem_path[43]), .XQ(XQ|XD_int[43]), .Q(Q_int[43]));
+  datapath_latch_sram_l2_4096x64 uDQ44 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[45]), .D(D_int_bmux[44]), .DFTRAMBYP(1'b0), .mem_path(mem_path[44]), .XQ(XQ|XD_int[44]), .Q(Q_int[44]));
+  datapath_latch_sram_l2_4096x64 uDQ45 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[46]), .D(D_int_bmux[45]), .DFTRAMBYP(1'b0), .mem_path(mem_path[45]), .XQ(XQ|XD_int[45]), .Q(Q_int[45]));
+  datapath_latch_sram_l2_4096x64 uDQ46 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[47]), .D(D_int_bmux[46]), .DFTRAMBYP(1'b0), .mem_path(mem_path[46]), .XQ(XQ|XD_int[46]), .Q(Q_int[46]));
+  datapath_latch_sram_l2_4096x64 uDQ47 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[48]), .D(D_int_bmux[47]), .DFTRAMBYP(1'b0), .mem_path(mem_path[47]), .XQ(XQ|XD_int[47]), .Q(Q_int[47]));
+  datapath_latch_sram_l2_4096x64 uDQ48 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[49]), .D(D_int_bmux[48]), .DFTRAMBYP(1'b0), .mem_path(mem_path[48]), .XQ(XQ|XD_int[48]), .Q(Q_int[48]));
+  datapath_latch_sram_l2_4096x64 uDQ49 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[50]), .D(D_int_bmux[49]), .DFTRAMBYP(1'b0), .mem_path(mem_path[49]), .XQ(XQ|XD_int[49]), .Q(Q_int[49]));
+  datapath_latch_sram_l2_4096x64 uDQ50 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[51]), .D(D_int_bmux[50]), .DFTRAMBYP(1'b0), .mem_path(mem_path[50]), .XQ(XQ|XD_int[50]), .Q(Q_int[50]));
+  datapath_latch_sram_l2_4096x64 uDQ51 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[52]), .D(D_int_bmux[51]), .DFTRAMBYP(1'b0), .mem_path(mem_path[51]), .XQ(XQ|XD_int[51]), .Q(Q_int[51]));
+  datapath_latch_sram_l2_4096x64 uDQ52 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[53]), .D(D_int_bmux[52]), .DFTRAMBYP(1'b0), .mem_path(mem_path[52]), .XQ(XQ|XD_int[52]), .Q(Q_int[52]));
+  datapath_latch_sram_l2_4096x64 uDQ53 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[54]), .D(D_int_bmux[53]), .DFTRAMBYP(1'b0), .mem_path(mem_path[53]), .XQ(XQ|XD_int[53]), .Q(Q_int[53]));
+  datapath_latch_sram_l2_4096x64 uDQ54 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[55]), .D(D_int_bmux[54]), .DFTRAMBYP(1'b0), .mem_path(mem_path[54]), .XQ(XQ|XD_int[54]), .Q(Q_int[54]));
+  datapath_latch_sram_l2_4096x64 uDQ55 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[56]), .D(D_int_bmux[55]), .DFTRAMBYP(1'b0), .mem_path(mem_path[55]), .XQ(XQ|XD_int[55]), .Q(Q_int[55]));
+  datapath_latch_sram_l2_4096x64 uDQ56 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[57]), .D(D_int_bmux[56]), .DFTRAMBYP(1'b0), .mem_path(mem_path[56]), .XQ(XQ|XD_int[56]), .Q(Q_int[56]));
+  datapath_latch_sram_l2_4096x64 uDQ57 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[58]), .D(D_int_bmux[57]), .DFTRAMBYP(1'b0), .mem_path(mem_path[57]), .XQ(XQ|XD_int[57]), .Q(Q_int[57]));
+  datapath_latch_sram_l2_4096x64 uDQ58 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[59]), .D(D_int_bmux[58]), .DFTRAMBYP(1'b0), .mem_path(mem_path[58]), .XQ(XQ|XD_int[58]), .Q(Q_int[58]));
+  datapath_latch_sram_l2_4096x64 uDQ59 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[60]), .D(D_int_bmux[59]), .DFTRAMBYP(1'b0), .mem_path(mem_path[59]), .XQ(XQ|XD_int[59]), .Q(Q_int[59]));
+  datapath_latch_sram_l2_4096x64 uDQ60 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[61]), .D(D_int_bmux[60]), .DFTRAMBYP(1'b0), .mem_path(mem_path[60]), .XQ(XQ|XD_int[60]), .Q(Q_int[60]));
+  datapath_latch_sram_l2_4096x64 uDQ61 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[62]), .D(D_int_bmux[61]), .DFTRAMBYP(1'b0), .mem_path(mem_path[61]), .XQ(XQ|XD_int[61]), .Q(Q_int[61]));
+  datapath_latch_sram_l2_4096x64 uDQ62 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[63]), .D(D_int_bmux[62]), .DFTRAMBYP(1'b0), .mem_path(mem_path[62]), .XQ(XQ|XD_int[62]), .Q(Q_int[62]));
+  datapath_latch_sram_l2_4096x64 uDQ63 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[63]), .DFTRAMBYP(1'b0), .mem_path(mem_path[63]), .XQ(XQ|XD_int[63]|1'b0), .Q(Q_int[63]));
 
 
 
@@ -2767,8 +2761,7 @@ if ($realtime != 0)  Q_latch_corrupt;
     if ($realtime == 0) begin
     end else if (CEN_int === 1'bx || RAWLM_int[0] === 1'bx || RAWLM_int[1] === 1'bx || 
       RAWL_int === 1'bx || RET1N_int === 1'bx || (STOV_int && !CEN_int) === 1'bx || 
-      WABLM_int[0] === 1'bx || WABLM_int[1] === 1'bx || WABLM_int[2] === 1'bx || 
-      WABL_int === 1'bx || clk0_int === 1'bx) begin
+      WABLM_int[0] === 1'bx || WABLM_int[1] === 1'bx || WABL_int === 1'bx || clk0_int === 1'bx) begin
         XQ = 1'b1; Q_update = 1'b1;
     	 mem_path = {64{1'bx}};
       Q_int_delayed = {64{1'bx}};
@@ -2827,14 +2820,6 @@ always @ (CLK_)
   end
   always @ NOT_GWEN begin
     GWEN_int = 1'bx;
-    if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
-  end
-  always @ NOT_A13 begin
-    A_int[13] = 1'bx;
-    if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
-  end
-  always @ NOT_A12 begin
-    A_int[12] = 1'bx;
     if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
   end
   always @ NOT_A11 begin
@@ -3445,10 +3430,6 @@ always @ (CLK_)
     WABL_int = 1'bx;
     if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
   end
-  always @ NOT_WABLM2 begin
-    WABLM_int[2] = 1'bx;
-    if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
-  end
   always @ NOT_WABLM1 begin
     WABLM_int[1] = 1'bx;
     if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
@@ -3560,7 +3541,7 @@ always @ (CLK_)
   wire RET1Neq1aCENeq0aWEN9eq0aGWENeq0, RET1Neq1aCENeq0aWEN8eq0aGWENeq0, RET1Neq1aCENeq0aWEN7eq0aGWENeq0;
   wire RET1Neq1aCENeq0aWEN6eq0aGWENeq0, RET1Neq1aCENeq0aWEN5eq0aGWENeq0, RET1Neq1aCENeq0aWEN4eq0aGWENeq0;
   wire RET1Neq1aCENeq0aWEN3eq0aGWENeq0, RET1Neq1aCENeq0aWEN2eq0aGWENeq0, RET1Neq1aCENeq0aWEN1eq0aGWENeq0;
-  wire RET1Neq1aCENeq0aWEN0eq0aGWENeq0, RET1Neq1aCENeq0aGWENeq0, RET1Neq1aCENeq0, RET1Neq1aGWENeq0aCENeq0;
+  wire RET1Neq1aCENeq0aWEN0eq0aGWENeq0, RET1Neq1aCENeq0, RET1Neq1aGWENeq0aCENeq0;
 
   assign STOVeq0aRET1Neq1aCENeq0aEMA2eq0aEMA1eq0aEMA0eq0aEMAW1eq0aEMAW0eq0aEMASeq0 = 
   !STOV&&RET1N&&!CEN&&!EMA[2]&&!EMA[1]&&!EMA[0]&&!EMAW[1]&&!EMAW[0]&&!EMAS;
@@ -3762,7 +3743,6 @@ always @ (CLK_)
   assign RET1Neq1aCENeq0aWEN2eq0aGWENeq0 = RET1N&&!CEN&&!WEN[2]&&!GWEN;
   assign RET1Neq1aCENeq0aWEN1eq0aGWENeq0 = RET1N&&!CEN&&!WEN[1]&&!GWEN;
   assign RET1Neq1aCENeq0aWEN0eq0aGWENeq0 = RET1N&&!CEN&&!WEN[0]&&!GWEN;
-  assign RET1Neq1aCENeq0aGWENeq0 = RET1N&&!CEN&&!GWEN;
   assign RET1Neq1aGWENeq0aCENeq0 = RET1N&&!GWEN&&!CEN;
 
   assign RET1Neq1 = RET1N;
@@ -4948,8 +4928,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RET1Neq1, negedge CEN, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_CEN,,,dCLK,dCEN);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge GWEN, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_GWEN,,,dCLK,dGWEN);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge GWEN, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_GWEN,,,dCLK,dGWEN);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -4962,8 +4940,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2,,,dCLK,dA[2]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1,,,dCLK,dA[1]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0,,,dCLK,dA[0]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -4976,8 +4952,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2,,,dCLK,dA[2]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1,,,dCLK,dA[1]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0,,,dCLK,dA[0]);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -4990,8 +4964,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2,,,dCLK,dA[2]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1,,,dCLK,dA[1]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0,,,dCLK,dA[0]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -5004,8 +4976,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2,,,dCLK,dA[2]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1,,,dCLK,dA[1]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0,,,dCLK,dA[0]);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -5018,8 +4988,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2,,,dCLK,dA[2]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1,,,dCLK,dA[1]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0,,,dCLK,dA[0]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -5032,8 +5000,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2,,,dCLK,dA[2]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1,,,dCLK,dA[1]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0,,,dCLK,dA[0]);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -5046,8 +5012,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2,,,dCLK,dA[2]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1,,,dCLK,dA[1]);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0,,,dCLK,dA[0]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13,,,dCLK,dA[13]);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12,,,dCLK,dA[12]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11,,,dCLK,dA[11]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10,,,dCLK,dA[10]);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9,,,dCLK,dA[9]);
@@ -5188,134 +5152,134 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0aWEN2eq0aGWENeq0, negedge D[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_D2,,,dCLK,dD[2]);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0aWEN1eq0aGWENeq0, negedge D[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_D1,,,dCLK,dD[1]);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0aWEN0eq0aGWENeq0, negedge D[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_D0,,,dCLK,dD[0]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63,,,dCLK,dWEN[63]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62,,,dCLK,dWEN[62]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61,,,dCLK,dWEN[61]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60,,,dCLK,dWEN[60]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59,,,dCLK,dWEN[59]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58,,,dCLK,dWEN[58]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57,,,dCLK,dWEN[57]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56,,,dCLK,dWEN[56]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55,,,dCLK,dWEN[55]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54,,,dCLK,dWEN[54]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53,,,dCLK,dWEN[53]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52,,,dCLK,dWEN[52]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51,,,dCLK,dWEN[51]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50,,,dCLK,dWEN[50]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49,,,dCLK,dWEN[49]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48,,,dCLK,dWEN[48]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47,,,dCLK,dWEN[47]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46,,,dCLK,dWEN[46]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45,,,dCLK,dWEN[45]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44,,,dCLK,dWEN[44]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43,,,dCLK,dWEN[43]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42,,,dCLK,dWEN[42]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41,,,dCLK,dWEN[41]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40,,,dCLK,dWEN[40]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39,,,dCLK,dWEN[39]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38,,,dCLK,dWEN[38]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37,,,dCLK,dWEN[37]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36,,,dCLK,dWEN[36]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35,,,dCLK,dWEN[35]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34,,,dCLK,dWEN[34]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33,,,dCLK,dWEN[33]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32,,,dCLK,dWEN[32]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31,,,dCLK,dWEN[31]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30,,,dCLK,dWEN[30]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29,,,dCLK,dWEN[29]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28,,,dCLK,dWEN[28]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27,,,dCLK,dWEN[27]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26,,,dCLK,dWEN[26]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25,,,dCLK,dWEN[25]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24,,,dCLK,dWEN[24]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23,,,dCLK,dWEN[23]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22,,,dCLK,dWEN[22]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21,,,dCLK,dWEN[21]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20,,,dCLK,dWEN[20]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19,,,dCLK,dWEN[19]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18,,,dCLK,dWEN[18]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17,,,dCLK,dWEN[17]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16,,,dCLK,dWEN[16]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15,,,dCLK,dWEN[15]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14,,,dCLK,dWEN[14]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13,,,dCLK,dWEN[13]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12,,,dCLK,dWEN[12]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11,,,dCLK,dWEN[11]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10,,,dCLK,dWEN[10]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9,,,dCLK,dWEN[9]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8,,,dCLK,dWEN[8]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7,,,dCLK,dWEN[7]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6,,,dCLK,dWEN[6]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5,,,dCLK,dWEN[5]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4,,,dCLK,dWEN[4]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3,,,dCLK,dWEN[3]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2,,,dCLK,dWEN[2]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1,,,dCLK,dWEN[1]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0,,,dCLK,dWEN[0]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63,,,dCLK,dWEN[63]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62,,,dCLK,dWEN[62]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61,,,dCLK,dWEN[61]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60,,,dCLK,dWEN[60]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59,,,dCLK,dWEN[59]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58,,,dCLK,dWEN[58]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57,,,dCLK,dWEN[57]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56,,,dCLK,dWEN[56]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55,,,dCLK,dWEN[55]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54,,,dCLK,dWEN[54]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53,,,dCLK,dWEN[53]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52,,,dCLK,dWEN[52]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51,,,dCLK,dWEN[51]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50,,,dCLK,dWEN[50]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49,,,dCLK,dWEN[49]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48,,,dCLK,dWEN[48]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47,,,dCLK,dWEN[47]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46,,,dCLK,dWEN[46]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45,,,dCLK,dWEN[45]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44,,,dCLK,dWEN[44]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43,,,dCLK,dWEN[43]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42,,,dCLK,dWEN[42]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41,,,dCLK,dWEN[41]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40,,,dCLK,dWEN[40]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39,,,dCLK,dWEN[39]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38,,,dCLK,dWEN[38]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37,,,dCLK,dWEN[37]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36,,,dCLK,dWEN[36]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35,,,dCLK,dWEN[35]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34,,,dCLK,dWEN[34]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33,,,dCLK,dWEN[33]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32,,,dCLK,dWEN[32]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31,,,dCLK,dWEN[31]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30,,,dCLK,dWEN[30]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29,,,dCLK,dWEN[29]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28,,,dCLK,dWEN[28]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27,,,dCLK,dWEN[27]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26,,,dCLK,dWEN[26]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25,,,dCLK,dWEN[25]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24,,,dCLK,dWEN[24]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23,,,dCLK,dWEN[23]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22,,,dCLK,dWEN[22]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21,,,dCLK,dWEN[21]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20,,,dCLK,dWEN[20]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19,,,dCLK,dWEN[19]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18,,,dCLK,dWEN[18]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17,,,dCLK,dWEN[17]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16,,,dCLK,dWEN[16]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15,,,dCLK,dWEN[15]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14,,,dCLK,dWEN[14]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13,,,dCLK,dWEN[13]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12,,,dCLK,dWEN[12]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11,,,dCLK,dWEN[11]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10,,,dCLK,dWEN[10]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9,,,dCLK,dWEN[9]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8,,,dCLK,dWEN[8]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7,,,dCLK,dWEN[7]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6,,,dCLK,dWEN[6]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5,,,dCLK,dWEN[5]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4,,,dCLK,dWEN[4]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3,,,dCLK,dWEN[3]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2,,,dCLK,dWEN[2]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1,,,dCLK,dWEN[1]);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0,,,dCLK,dWEN[0]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63,,,dCLK,dWEN[63]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62,,,dCLK,dWEN[62]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61,,,dCLK,dWEN[61]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60,,,dCLK,dWEN[60]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59,,,dCLK,dWEN[59]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58,,,dCLK,dWEN[58]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57,,,dCLK,dWEN[57]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56,,,dCLK,dWEN[56]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55,,,dCLK,dWEN[55]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54,,,dCLK,dWEN[54]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53,,,dCLK,dWEN[53]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52,,,dCLK,dWEN[52]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51,,,dCLK,dWEN[51]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50,,,dCLK,dWEN[50]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49,,,dCLK,dWEN[49]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48,,,dCLK,dWEN[48]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47,,,dCLK,dWEN[47]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46,,,dCLK,dWEN[46]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45,,,dCLK,dWEN[45]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44,,,dCLK,dWEN[44]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43,,,dCLK,dWEN[43]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42,,,dCLK,dWEN[42]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41,,,dCLK,dWEN[41]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40,,,dCLK,dWEN[40]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39,,,dCLK,dWEN[39]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38,,,dCLK,dWEN[38]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37,,,dCLK,dWEN[37]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36,,,dCLK,dWEN[36]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35,,,dCLK,dWEN[35]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34,,,dCLK,dWEN[34]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33,,,dCLK,dWEN[33]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32,,,dCLK,dWEN[32]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31,,,dCLK,dWEN[31]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30,,,dCLK,dWEN[30]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29,,,dCLK,dWEN[29]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28,,,dCLK,dWEN[28]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27,,,dCLK,dWEN[27]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26,,,dCLK,dWEN[26]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25,,,dCLK,dWEN[25]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24,,,dCLK,dWEN[24]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23,,,dCLK,dWEN[23]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22,,,dCLK,dWEN[22]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21,,,dCLK,dWEN[21]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20,,,dCLK,dWEN[20]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19,,,dCLK,dWEN[19]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18,,,dCLK,dWEN[18]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17,,,dCLK,dWEN[17]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16,,,dCLK,dWEN[16]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15,,,dCLK,dWEN[15]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14,,,dCLK,dWEN[14]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13,,,dCLK,dWEN[13]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12,,,dCLK,dWEN[12]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11,,,dCLK,dWEN[11]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10,,,dCLK,dWEN[10]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9,,,dCLK,dWEN[9]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8,,,dCLK,dWEN[8]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7,,,dCLK,dWEN[7]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6,,,dCLK,dWEN[6]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5,,,dCLK,dWEN[5]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4,,,dCLK,dWEN[4]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3,,,dCLK,dWEN[3]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2,,,dCLK,dWEN[2]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1,,,dCLK,dWEN[1]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0,,,dCLK,dWEN[0]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63,,,dCLK,dWEN[63]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62,,,dCLK,dWEN[62]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61,,,dCLK,dWEN[61]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60,,,dCLK,dWEN[60]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59,,,dCLK,dWEN[59]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58,,,dCLK,dWEN[58]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57,,,dCLK,dWEN[57]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56,,,dCLK,dWEN[56]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55,,,dCLK,dWEN[55]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54,,,dCLK,dWEN[54]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53,,,dCLK,dWEN[53]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52,,,dCLK,dWEN[52]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51,,,dCLK,dWEN[51]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50,,,dCLK,dWEN[50]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49,,,dCLK,dWEN[49]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48,,,dCLK,dWEN[48]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47,,,dCLK,dWEN[47]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46,,,dCLK,dWEN[46]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45,,,dCLK,dWEN[45]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44,,,dCLK,dWEN[44]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43,,,dCLK,dWEN[43]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42,,,dCLK,dWEN[42]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41,,,dCLK,dWEN[41]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40,,,dCLK,dWEN[40]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39,,,dCLK,dWEN[39]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38,,,dCLK,dWEN[38]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37,,,dCLK,dWEN[37]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36,,,dCLK,dWEN[36]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35,,,dCLK,dWEN[35]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34,,,dCLK,dWEN[34]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33,,,dCLK,dWEN[33]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32,,,dCLK,dWEN[32]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31,,,dCLK,dWEN[31]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30,,,dCLK,dWEN[30]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29,,,dCLK,dWEN[29]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28,,,dCLK,dWEN[28]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27,,,dCLK,dWEN[27]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26,,,dCLK,dWEN[26]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25,,,dCLK,dWEN[25]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24,,,dCLK,dWEN[24]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23,,,dCLK,dWEN[23]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22,,,dCLK,dWEN[22]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21,,,dCLK,dWEN[21]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20,,,dCLK,dWEN[20]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19,,,dCLK,dWEN[19]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18,,,dCLK,dWEN[18]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17,,,dCLK,dWEN[17]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16,,,dCLK,dWEN[16]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15,,,dCLK,dWEN[15]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14,,,dCLK,dWEN[14]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13,,,dCLK,dWEN[13]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12,,,dCLK,dWEN[12]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11,,,dCLK,dWEN[11]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10,,,dCLK,dWEN[10]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9,,,dCLK,dWEN[9]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8,,,dCLK,dWEN[8]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7,,,dCLK,dWEN[7]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6,,,dCLK,dWEN[6]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5,,,dCLK,dWEN[5]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4,,,dCLK,dWEN[4]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3,,,dCLK,dWEN[3]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2,,,dCLK,dWEN[2]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1,,,dCLK,dWEN[1]);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0,,,dCLK,dWEN[0]);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge STOV, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_STOV,,,dCLK,dSTOV);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge STOV, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_STOV,,,dCLK,dSTOV);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge EMA[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_EMA2,,,dCLK,dEMA[2]);
@@ -5338,10 +5302,8 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge RAWLM[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_RAWLM0,,,dCLK,dRAWLM[0]);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABL, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABL,,,dCLK,dWABL);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABL, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABL,,,dCLK,dWABL);
-    $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABLM[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM2,,,dCLK,dWABLM[2]);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABLM[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM1,,,dCLK,dWABLM[1]);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABLM[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM0,,,dCLK,dWABLM[0]);
-    $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABLM[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM2,,,dCLK,dWABLM[2]);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABLM[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM1,,,dCLK,dWABLM[1]);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABLM[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM0,,,dCLK,dWABLM[0]);
     $setuphold(negedge RET1N, negedge CEN, 0.000, `ARM_MEM_HOLD, NOT_RET1N,,,dRET1N,dCEN);
@@ -5357,19 +5319,19 @@ endmodule
 `celldefine
 // If POWER_PINS is defined at Simulator Command Line, it selects the module definition with Power Ports
 `ifdef POWER_PINS
-module sram_l2_16384x64 (VDDCE, VDDPE, VSSE, Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, 
+module sram_l2_4096x64 (VDDCE, VDDPE, VSSE, Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, 
     EMAW, EMAS, RET1N, RAWL, RAWLM, WABL, WABLM);
 `else
-module sram_l2_16384x64 (Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, EMAW, EMAS, RET1N, 
+module sram_l2_4096x64 (Q, CLK, CEN, GWEN, A, D, WEN, STOV, EMA, EMAW, EMAS, RET1N, 
     RAWL, RAWLM, WABL, WABLM);
 `endif
 
   parameter ASSERT_PREFIX = "";
   parameter BITS = 64;
-  parameter WORDS = 16384;
+  parameter WORDS = 4096;
   parameter MUX = 16;
   parameter MEM_WIDTH = 1024; // redun block size 16, 512 on left, 512 on right
-  parameter MEM_HEIGHT = 1024;
+  parameter MEM_HEIGHT = 256;
   parameter WP_SIZE = 1 ;
   parameter UPM_WIDTH = 3;
   parameter UPMW_WIDTH = 2;
@@ -5384,16 +5346,16 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 1;
 parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
 `endif
 
-  parameter ARM_REF_EMA_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMA_VALUE;
-  parameter ARM_REF_EMAW_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE;
-  parameter ARM_REF_EMAS_VALUE = `SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAS_VALUE;
-  parameter ROWS = 1024;
+  parameter ARM_REF_EMA_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMA_VALUE;
+  parameter ARM_REF_EMAW_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAW_VALUE;
+  parameter ARM_REF_EMAS_VALUE = `SRAM_SP_HDE_SVT_MVT_ARM_REF_EMAS_VALUE;
+  parameter ROWS = 256;
 
   output [63:0] Q;
   input  CLK;
   input  CEN;
   input  GWEN;
-  input [13:0] A;
+  input [11:0] A;
   input [63:0] D;
   input [63:0] WEN;
   input  STOV;
@@ -5404,7 +5366,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   input  RAWL;
   input [1:0] RAWLM;
   input  WABL;
-  input [2:0] WABLM;
+  input [1:0] WABLM;
 `ifdef POWER_PINS
   inout VDDCE;
   inout VDDPE;
@@ -5425,7 +5387,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   initial mux_address = 0;
   reg [1023:0] row, row_t;
   reg LAST_CLK;
-  reg [1023:0] mem [0:1023];
+  reg [1023:0] mem [0:255];
   reg [1023:0] row_mask;
   reg [1023:0] new_data;
   reg [1023:0] data_out;
@@ -5440,26 +5402,26 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   reg [63:0] mem_path_d;
   reg [63:0] writeEnable;
 
-  reg NOT_CEN, NOT_GWEN, NOT_A13, NOT_A12, NOT_A11, NOT_A10, NOT_A9, NOT_A8, NOT_A7;
-  reg NOT_A6, NOT_A5, NOT_A4, NOT_A3, NOT_A2, NOT_A1, NOT_A0, NOT_D63, NOT_D62, NOT_D61;
-  reg NOT_D60, NOT_D59, NOT_D58, NOT_D57, NOT_D56, NOT_D55, NOT_D54, NOT_D53, NOT_D52;
-  reg NOT_D51, NOT_D50, NOT_D49, NOT_D48, NOT_D47, NOT_D46, NOT_D45, NOT_D44, NOT_D43;
-  reg NOT_D42, NOT_D41, NOT_D40, NOT_D39, NOT_D38, NOT_D37, NOT_D36, NOT_D35, NOT_D34;
-  reg NOT_D33, NOT_D32, NOT_D31, NOT_D30, NOT_D29, NOT_D28, NOT_D27, NOT_D26, NOT_D25;
-  reg NOT_D24, NOT_D23, NOT_D22, NOT_D21, NOT_D20, NOT_D19, NOT_D18, NOT_D17, NOT_D16;
-  reg NOT_D15, NOT_D14, NOT_D13, NOT_D12, NOT_D11, NOT_D10, NOT_D9, NOT_D8, NOT_D7;
-  reg NOT_D6, NOT_D5, NOT_D4, NOT_D3, NOT_D2, NOT_D1, NOT_D0, NOT_WEN63, NOT_WEN62;
-  reg NOT_WEN61, NOT_WEN60, NOT_WEN59, NOT_WEN58, NOT_WEN57, NOT_WEN56, NOT_WEN55;
-  reg NOT_WEN54, NOT_WEN53, NOT_WEN52, NOT_WEN51, NOT_WEN50, NOT_WEN49, NOT_WEN48;
-  reg NOT_WEN47, NOT_WEN46, NOT_WEN45, NOT_WEN44, NOT_WEN43, NOT_WEN42, NOT_WEN41;
-  reg NOT_WEN40, NOT_WEN39, NOT_WEN38, NOT_WEN37, NOT_WEN36, NOT_WEN35, NOT_WEN34;
-  reg NOT_WEN33, NOT_WEN32, NOT_WEN31, NOT_WEN30, NOT_WEN29, NOT_WEN28, NOT_WEN27;
-  reg NOT_WEN26, NOT_WEN25, NOT_WEN24, NOT_WEN23, NOT_WEN22, NOT_WEN21, NOT_WEN20;
-  reg NOT_WEN19, NOT_WEN18, NOT_WEN17, NOT_WEN16, NOT_WEN15, NOT_WEN14, NOT_WEN13;
-  reg NOT_WEN12, NOT_WEN11, NOT_WEN10, NOT_WEN9, NOT_WEN8, NOT_WEN7, NOT_WEN6, NOT_WEN5;
-  reg NOT_WEN4, NOT_WEN3, NOT_WEN2, NOT_WEN1, NOT_WEN0, NOT_STOV, NOT_EMA2, NOT_EMA1;
-  reg NOT_EMA0, NOT_EMAW1, NOT_EMAW0, NOT_EMAS, NOT_RET1N, NOT_RAWL, NOT_RAWLM1, NOT_RAWLM0;
-  reg NOT_WABL, NOT_WABLM2, NOT_WABLM1, NOT_WABLM0;
+  reg NOT_CEN, NOT_GWEN, NOT_A11, NOT_A10, NOT_A9, NOT_A8, NOT_A7, NOT_A6, NOT_A5;
+  reg NOT_A4, NOT_A3, NOT_A2, NOT_A1, NOT_A0, NOT_D63, NOT_D62, NOT_D61, NOT_D60, NOT_D59;
+  reg NOT_D58, NOT_D57, NOT_D56, NOT_D55, NOT_D54, NOT_D53, NOT_D52, NOT_D51, NOT_D50;
+  reg NOT_D49, NOT_D48, NOT_D47, NOT_D46, NOT_D45, NOT_D44, NOT_D43, NOT_D42, NOT_D41;
+  reg NOT_D40, NOT_D39, NOT_D38, NOT_D37, NOT_D36, NOT_D35, NOT_D34, NOT_D33, NOT_D32;
+  reg NOT_D31, NOT_D30, NOT_D29, NOT_D28, NOT_D27, NOT_D26, NOT_D25, NOT_D24, NOT_D23;
+  reg NOT_D22, NOT_D21, NOT_D20, NOT_D19, NOT_D18, NOT_D17, NOT_D16, NOT_D15, NOT_D14;
+  reg NOT_D13, NOT_D12, NOT_D11, NOT_D10, NOT_D9, NOT_D8, NOT_D7, NOT_D6, NOT_D5, NOT_D4;
+  reg NOT_D3, NOT_D2, NOT_D1, NOT_D0, NOT_WEN63, NOT_WEN62, NOT_WEN61, NOT_WEN60, NOT_WEN59;
+  reg NOT_WEN58, NOT_WEN57, NOT_WEN56, NOT_WEN55, NOT_WEN54, NOT_WEN53, NOT_WEN52;
+  reg NOT_WEN51, NOT_WEN50, NOT_WEN49, NOT_WEN48, NOT_WEN47, NOT_WEN46, NOT_WEN45;
+  reg NOT_WEN44, NOT_WEN43, NOT_WEN42, NOT_WEN41, NOT_WEN40, NOT_WEN39, NOT_WEN38;
+  reg NOT_WEN37, NOT_WEN36, NOT_WEN35, NOT_WEN34, NOT_WEN33, NOT_WEN32, NOT_WEN31;
+  reg NOT_WEN30, NOT_WEN29, NOT_WEN28, NOT_WEN27, NOT_WEN26, NOT_WEN25, NOT_WEN24;
+  reg NOT_WEN23, NOT_WEN22, NOT_WEN21, NOT_WEN20, NOT_WEN19, NOT_WEN18, NOT_WEN17;
+  reg NOT_WEN16, NOT_WEN15, NOT_WEN14, NOT_WEN13, NOT_WEN12, NOT_WEN11, NOT_WEN10;
+  reg NOT_WEN9, NOT_WEN8, NOT_WEN7, NOT_WEN6, NOT_WEN5, NOT_WEN4, NOT_WEN3, NOT_WEN2;
+  reg NOT_WEN1, NOT_WEN0, NOT_STOV, NOT_EMA2, NOT_EMA1, NOT_EMA0, NOT_EMAW1, NOT_EMAW0;
+  reg NOT_EMAS, NOT_RET1N, NOT_RAWL, NOT_RAWLM1, NOT_RAWLM0, NOT_WABL, NOT_WABLM1;
+  reg NOT_WABLM0;
   reg NOT_CLK_PER, NOT_CLK_MINH, NOT_CLK_MINL;
   reg clk0_int;
 
@@ -5472,8 +5434,8 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   reg  CEN_p2;
   wire  GWEN_;
   reg  GWEN_int;
-  wire [13:0] A_;
-  reg [13:0] A_int;
+  wire [11:0] A_;
+  reg [11:0] A_int;
   wire [63:0] D_;
   reg [63:0] D_int;
   reg [63:0] XD_int;
@@ -5495,233 +5457,230 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
   reg [1:0] RAWLM_int;
   wire  WABL_;
   reg  WABL_int;
-  wire [2:0] WABLM_;
-  reg [2:0] WABLM_int;
+  wire [1:0] WABLM_;
+  reg [1:0] WABLM_int;
 
-  buf B224(Q[0], Q_[0]);
-  buf B225(Q[1], Q_[1]);
-  buf B226(Q[2], Q_[2]);
-  buf B227(Q[3], Q_[3]);
-  buf B228(Q[4], Q_[4]);
-  buf B229(Q[5], Q_[5]);
-  buf B230(Q[6], Q_[6]);
-  buf B231(Q[7], Q_[7]);
-  buf B232(Q[8], Q_[8]);
-  buf B233(Q[9], Q_[9]);
-  buf B234(Q[10], Q_[10]);
-  buf B235(Q[11], Q_[11]);
-  buf B236(Q[12], Q_[12]);
-  buf B237(Q[13], Q_[13]);
-  buf B238(Q[14], Q_[14]);
-  buf B239(Q[15], Q_[15]);
-  buf B240(Q[16], Q_[16]);
-  buf B241(Q[17], Q_[17]);
-  buf B242(Q[18], Q_[18]);
-  buf B243(Q[19], Q_[19]);
-  buf B244(Q[20], Q_[20]);
-  buf B245(Q[21], Q_[21]);
-  buf B246(Q[22], Q_[22]);
-  buf B247(Q[23], Q_[23]);
-  buf B248(Q[24], Q_[24]);
-  buf B249(Q[25], Q_[25]);
-  buf B250(Q[26], Q_[26]);
-  buf B251(Q[27], Q_[27]);
-  buf B252(Q[28], Q_[28]);
-  buf B253(Q[29], Q_[29]);
-  buf B254(Q[30], Q_[30]);
-  buf B255(Q[31], Q_[31]);
-  buf B256(Q[32], Q_[32]);
-  buf B257(Q[33], Q_[33]);
-  buf B258(Q[34], Q_[34]);
-  buf B259(Q[35], Q_[35]);
-  buf B260(Q[36], Q_[36]);
-  buf B261(Q[37], Q_[37]);
-  buf B262(Q[38], Q_[38]);
-  buf B263(Q[39], Q_[39]);
-  buf B264(Q[40], Q_[40]);
-  buf B265(Q[41], Q_[41]);
-  buf B266(Q[42], Q_[42]);
-  buf B267(Q[43], Q_[43]);
-  buf B268(Q[44], Q_[44]);
-  buf B269(Q[45], Q_[45]);
-  buf B270(Q[46], Q_[46]);
-  buf B271(Q[47], Q_[47]);
-  buf B272(Q[48], Q_[48]);
-  buf B273(Q[49], Q_[49]);
-  buf B274(Q[50], Q_[50]);
-  buf B275(Q[51], Q_[51]);
-  buf B276(Q[52], Q_[52]);
-  buf B277(Q[53], Q_[53]);
-  buf B278(Q[54], Q_[54]);
-  buf B279(Q[55], Q_[55]);
-  buf B280(Q[56], Q_[56]);
-  buf B281(Q[57], Q_[57]);
-  buf B282(Q[58], Q_[58]);
-  buf B283(Q[59], Q_[59]);
-  buf B284(Q[60], Q_[60]);
-  buf B285(Q[61], Q_[61]);
-  buf B286(Q[62], Q_[62]);
-  buf B287(Q[63], Q_[63]);
-  buf B288(CLK_, CLK);
-  buf B289(CEN_, CEN);
-  buf B290(GWEN_, GWEN);
-  buf B291(A_[0], A[0]);
-  buf B292(A_[1], A[1]);
-  buf B293(A_[2], A[2]);
-  buf B294(A_[3], A[3]);
-  buf B295(A_[4], A[4]);
-  buf B296(A_[5], A[5]);
-  buf B297(A_[6], A[6]);
-  buf B298(A_[7], A[7]);
-  buf B299(A_[8], A[8]);
-  buf B300(A_[9], A[9]);
-  buf B301(A_[10], A[10]);
-  buf B302(A_[11], A[11]);
-  buf B303(A_[12], A[12]);
-  buf B304(A_[13], A[13]);
-  buf B305(D_[0], D[0]);
-  buf B306(D_[1], D[1]);
-  buf B307(D_[2], D[2]);
-  buf B308(D_[3], D[3]);
-  buf B309(D_[4], D[4]);
-  buf B310(D_[5], D[5]);
-  buf B311(D_[6], D[6]);
-  buf B312(D_[7], D[7]);
-  buf B313(D_[8], D[8]);
-  buf B314(D_[9], D[9]);
-  buf B315(D_[10], D[10]);
-  buf B316(D_[11], D[11]);
-  buf B317(D_[12], D[12]);
-  buf B318(D_[13], D[13]);
-  buf B319(D_[14], D[14]);
-  buf B320(D_[15], D[15]);
-  buf B321(D_[16], D[16]);
-  buf B322(D_[17], D[17]);
-  buf B323(D_[18], D[18]);
-  buf B324(D_[19], D[19]);
-  buf B325(D_[20], D[20]);
-  buf B326(D_[21], D[21]);
-  buf B327(D_[22], D[22]);
-  buf B328(D_[23], D[23]);
-  buf B329(D_[24], D[24]);
-  buf B330(D_[25], D[25]);
-  buf B331(D_[26], D[26]);
-  buf B332(D_[27], D[27]);
-  buf B333(D_[28], D[28]);
-  buf B334(D_[29], D[29]);
-  buf B335(D_[30], D[30]);
-  buf B336(D_[31], D[31]);
-  buf B337(D_[32], D[32]);
-  buf B338(D_[33], D[33]);
-  buf B339(D_[34], D[34]);
-  buf B340(D_[35], D[35]);
-  buf B341(D_[36], D[36]);
-  buf B342(D_[37], D[37]);
-  buf B343(D_[38], D[38]);
-  buf B344(D_[39], D[39]);
-  buf B345(D_[40], D[40]);
-  buf B346(D_[41], D[41]);
-  buf B347(D_[42], D[42]);
-  buf B348(D_[43], D[43]);
-  buf B349(D_[44], D[44]);
-  buf B350(D_[45], D[45]);
-  buf B351(D_[46], D[46]);
-  buf B352(D_[47], D[47]);
-  buf B353(D_[48], D[48]);
-  buf B354(D_[49], D[49]);
-  buf B355(D_[50], D[50]);
-  buf B356(D_[51], D[51]);
-  buf B357(D_[52], D[52]);
-  buf B358(D_[53], D[53]);
-  buf B359(D_[54], D[54]);
-  buf B360(D_[55], D[55]);
-  buf B361(D_[56], D[56]);
-  buf B362(D_[57], D[57]);
-  buf B363(D_[58], D[58]);
-  buf B364(D_[59], D[59]);
-  buf B365(D_[60], D[60]);
-  buf B366(D_[61], D[61]);
-  buf B367(D_[62], D[62]);
-  buf B368(D_[63], D[63]);
-  buf B369(WEN_[0], WEN[0]);
-  buf B370(WEN_[1], WEN[1]);
-  buf B371(WEN_[2], WEN[2]);
-  buf B372(WEN_[3], WEN[3]);
-  buf B373(WEN_[4], WEN[4]);
-  buf B374(WEN_[5], WEN[5]);
-  buf B375(WEN_[6], WEN[6]);
-  buf B376(WEN_[7], WEN[7]);
-  buf B377(WEN_[8], WEN[8]);
-  buf B378(WEN_[9], WEN[9]);
-  buf B379(WEN_[10], WEN[10]);
-  buf B380(WEN_[11], WEN[11]);
-  buf B381(WEN_[12], WEN[12]);
-  buf B382(WEN_[13], WEN[13]);
-  buf B383(WEN_[14], WEN[14]);
-  buf B384(WEN_[15], WEN[15]);
-  buf B385(WEN_[16], WEN[16]);
-  buf B386(WEN_[17], WEN[17]);
-  buf B387(WEN_[18], WEN[18]);
-  buf B388(WEN_[19], WEN[19]);
-  buf B389(WEN_[20], WEN[20]);
-  buf B390(WEN_[21], WEN[21]);
-  buf B391(WEN_[22], WEN[22]);
-  buf B392(WEN_[23], WEN[23]);
-  buf B393(WEN_[24], WEN[24]);
-  buf B394(WEN_[25], WEN[25]);
-  buf B395(WEN_[26], WEN[26]);
-  buf B396(WEN_[27], WEN[27]);
-  buf B397(WEN_[28], WEN[28]);
-  buf B398(WEN_[29], WEN[29]);
-  buf B399(WEN_[30], WEN[30]);
-  buf B400(WEN_[31], WEN[31]);
-  buf B401(WEN_[32], WEN[32]);
-  buf B402(WEN_[33], WEN[33]);
-  buf B403(WEN_[34], WEN[34]);
-  buf B404(WEN_[35], WEN[35]);
-  buf B405(WEN_[36], WEN[36]);
-  buf B406(WEN_[37], WEN[37]);
-  buf B407(WEN_[38], WEN[38]);
-  buf B408(WEN_[39], WEN[39]);
-  buf B409(WEN_[40], WEN[40]);
-  buf B410(WEN_[41], WEN[41]);
-  buf B411(WEN_[42], WEN[42]);
-  buf B412(WEN_[43], WEN[43]);
-  buf B413(WEN_[44], WEN[44]);
-  buf B414(WEN_[45], WEN[45]);
-  buf B415(WEN_[46], WEN[46]);
-  buf B416(WEN_[47], WEN[47]);
-  buf B417(WEN_[48], WEN[48]);
-  buf B418(WEN_[49], WEN[49]);
-  buf B419(WEN_[50], WEN[50]);
-  buf B420(WEN_[51], WEN[51]);
-  buf B421(WEN_[52], WEN[52]);
-  buf B422(WEN_[53], WEN[53]);
-  buf B423(WEN_[54], WEN[54]);
-  buf B424(WEN_[55], WEN[55]);
-  buf B425(WEN_[56], WEN[56]);
-  buf B426(WEN_[57], WEN[57]);
-  buf B427(WEN_[58], WEN[58]);
-  buf B428(WEN_[59], WEN[59]);
-  buf B429(WEN_[60], WEN[60]);
-  buf B430(WEN_[61], WEN[61]);
-  buf B431(WEN_[62], WEN[62]);
-  buf B432(WEN_[63], WEN[63]);
-  buf B433(STOV_, STOV);
-  buf B434(EMA_[0], EMA[0]);
-  buf B435(EMA_[1], EMA[1]);
-  buf B436(EMA_[2], EMA[2]);
-  buf B437(EMAW_[0], EMAW[0]);
-  buf B438(EMAW_[1], EMAW[1]);
-  buf B439(EMAS_, EMAS);
-  buf B440(RET1N_, RET1N);
-  buf B441(RAWL_, RAWL);
-  buf B442(RAWLM_[0], RAWLM[0]);
-  buf B443(RAWLM_[1], RAWLM[1]);
-  buf B444(WABL_, WABL);
-  buf B445(WABLM_[0], WABLM[0]);
-  buf B446(WABLM_[1], WABLM[1]);
-  buf B447(WABLM_[2], WABLM[2]);
+  buf B221(Q[0], Q_[0]);
+  buf B222(Q[1], Q_[1]);
+  buf B223(Q[2], Q_[2]);
+  buf B224(Q[3], Q_[3]);
+  buf B225(Q[4], Q_[4]);
+  buf B226(Q[5], Q_[5]);
+  buf B227(Q[6], Q_[6]);
+  buf B228(Q[7], Q_[7]);
+  buf B229(Q[8], Q_[8]);
+  buf B230(Q[9], Q_[9]);
+  buf B231(Q[10], Q_[10]);
+  buf B232(Q[11], Q_[11]);
+  buf B233(Q[12], Q_[12]);
+  buf B234(Q[13], Q_[13]);
+  buf B235(Q[14], Q_[14]);
+  buf B236(Q[15], Q_[15]);
+  buf B237(Q[16], Q_[16]);
+  buf B238(Q[17], Q_[17]);
+  buf B239(Q[18], Q_[18]);
+  buf B240(Q[19], Q_[19]);
+  buf B241(Q[20], Q_[20]);
+  buf B242(Q[21], Q_[21]);
+  buf B243(Q[22], Q_[22]);
+  buf B244(Q[23], Q_[23]);
+  buf B245(Q[24], Q_[24]);
+  buf B246(Q[25], Q_[25]);
+  buf B247(Q[26], Q_[26]);
+  buf B248(Q[27], Q_[27]);
+  buf B249(Q[28], Q_[28]);
+  buf B250(Q[29], Q_[29]);
+  buf B251(Q[30], Q_[30]);
+  buf B252(Q[31], Q_[31]);
+  buf B253(Q[32], Q_[32]);
+  buf B254(Q[33], Q_[33]);
+  buf B255(Q[34], Q_[34]);
+  buf B256(Q[35], Q_[35]);
+  buf B257(Q[36], Q_[36]);
+  buf B258(Q[37], Q_[37]);
+  buf B259(Q[38], Q_[38]);
+  buf B260(Q[39], Q_[39]);
+  buf B261(Q[40], Q_[40]);
+  buf B262(Q[41], Q_[41]);
+  buf B263(Q[42], Q_[42]);
+  buf B264(Q[43], Q_[43]);
+  buf B265(Q[44], Q_[44]);
+  buf B266(Q[45], Q_[45]);
+  buf B267(Q[46], Q_[46]);
+  buf B268(Q[47], Q_[47]);
+  buf B269(Q[48], Q_[48]);
+  buf B270(Q[49], Q_[49]);
+  buf B271(Q[50], Q_[50]);
+  buf B272(Q[51], Q_[51]);
+  buf B273(Q[52], Q_[52]);
+  buf B274(Q[53], Q_[53]);
+  buf B275(Q[54], Q_[54]);
+  buf B276(Q[55], Q_[55]);
+  buf B277(Q[56], Q_[56]);
+  buf B278(Q[57], Q_[57]);
+  buf B279(Q[58], Q_[58]);
+  buf B280(Q[59], Q_[59]);
+  buf B281(Q[60], Q_[60]);
+  buf B282(Q[61], Q_[61]);
+  buf B283(Q[62], Q_[62]);
+  buf B284(Q[63], Q_[63]);
+  buf B285(CLK_, CLK);
+  buf B286(CEN_, CEN);
+  buf B287(GWEN_, GWEN);
+  buf B288(A_[0], A[0]);
+  buf B289(A_[1], A[1]);
+  buf B290(A_[2], A[2]);
+  buf B291(A_[3], A[3]);
+  buf B292(A_[4], A[4]);
+  buf B293(A_[5], A[5]);
+  buf B294(A_[6], A[6]);
+  buf B295(A_[7], A[7]);
+  buf B296(A_[8], A[8]);
+  buf B297(A_[9], A[9]);
+  buf B298(A_[10], A[10]);
+  buf B299(A_[11], A[11]);
+  buf B300(D_[0], D[0]);
+  buf B301(D_[1], D[1]);
+  buf B302(D_[2], D[2]);
+  buf B303(D_[3], D[3]);
+  buf B304(D_[4], D[4]);
+  buf B305(D_[5], D[5]);
+  buf B306(D_[6], D[6]);
+  buf B307(D_[7], D[7]);
+  buf B308(D_[8], D[8]);
+  buf B309(D_[9], D[9]);
+  buf B310(D_[10], D[10]);
+  buf B311(D_[11], D[11]);
+  buf B312(D_[12], D[12]);
+  buf B313(D_[13], D[13]);
+  buf B314(D_[14], D[14]);
+  buf B315(D_[15], D[15]);
+  buf B316(D_[16], D[16]);
+  buf B317(D_[17], D[17]);
+  buf B318(D_[18], D[18]);
+  buf B319(D_[19], D[19]);
+  buf B320(D_[20], D[20]);
+  buf B321(D_[21], D[21]);
+  buf B322(D_[22], D[22]);
+  buf B323(D_[23], D[23]);
+  buf B324(D_[24], D[24]);
+  buf B325(D_[25], D[25]);
+  buf B326(D_[26], D[26]);
+  buf B327(D_[27], D[27]);
+  buf B328(D_[28], D[28]);
+  buf B329(D_[29], D[29]);
+  buf B330(D_[30], D[30]);
+  buf B331(D_[31], D[31]);
+  buf B332(D_[32], D[32]);
+  buf B333(D_[33], D[33]);
+  buf B334(D_[34], D[34]);
+  buf B335(D_[35], D[35]);
+  buf B336(D_[36], D[36]);
+  buf B337(D_[37], D[37]);
+  buf B338(D_[38], D[38]);
+  buf B339(D_[39], D[39]);
+  buf B340(D_[40], D[40]);
+  buf B341(D_[41], D[41]);
+  buf B342(D_[42], D[42]);
+  buf B343(D_[43], D[43]);
+  buf B344(D_[44], D[44]);
+  buf B345(D_[45], D[45]);
+  buf B346(D_[46], D[46]);
+  buf B347(D_[47], D[47]);
+  buf B348(D_[48], D[48]);
+  buf B349(D_[49], D[49]);
+  buf B350(D_[50], D[50]);
+  buf B351(D_[51], D[51]);
+  buf B352(D_[52], D[52]);
+  buf B353(D_[53], D[53]);
+  buf B354(D_[54], D[54]);
+  buf B355(D_[55], D[55]);
+  buf B356(D_[56], D[56]);
+  buf B357(D_[57], D[57]);
+  buf B358(D_[58], D[58]);
+  buf B359(D_[59], D[59]);
+  buf B360(D_[60], D[60]);
+  buf B361(D_[61], D[61]);
+  buf B362(D_[62], D[62]);
+  buf B363(D_[63], D[63]);
+  buf B364(WEN_[0], WEN[0]);
+  buf B365(WEN_[1], WEN[1]);
+  buf B366(WEN_[2], WEN[2]);
+  buf B367(WEN_[3], WEN[3]);
+  buf B368(WEN_[4], WEN[4]);
+  buf B369(WEN_[5], WEN[5]);
+  buf B370(WEN_[6], WEN[6]);
+  buf B371(WEN_[7], WEN[7]);
+  buf B372(WEN_[8], WEN[8]);
+  buf B373(WEN_[9], WEN[9]);
+  buf B374(WEN_[10], WEN[10]);
+  buf B375(WEN_[11], WEN[11]);
+  buf B376(WEN_[12], WEN[12]);
+  buf B377(WEN_[13], WEN[13]);
+  buf B378(WEN_[14], WEN[14]);
+  buf B379(WEN_[15], WEN[15]);
+  buf B380(WEN_[16], WEN[16]);
+  buf B381(WEN_[17], WEN[17]);
+  buf B382(WEN_[18], WEN[18]);
+  buf B383(WEN_[19], WEN[19]);
+  buf B384(WEN_[20], WEN[20]);
+  buf B385(WEN_[21], WEN[21]);
+  buf B386(WEN_[22], WEN[22]);
+  buf B387(WEN_[23], WEN[23]);
+  buf B388(WEN_[24], WEN[24]);
+  buf B389(WEN_[25], WEN[25]);
+  buf B390(WEN_[26], WEN[26]);
+  buf B391(WEN_[27], WEN[27]);
+  buf B392(WEN_[28], WEN[28]);
+  buf B393(WEN_[29], WEN[29]);
+  buf B394(WEN_[30], WEN[30]);
+  buf B395(WEN_[31], WEN[31]);
+  buf B396(WEN_[32], WEN[32]);
+  buf B397(WEN_[33], WEN[33]);
+  buf B398(WEN_[34], WEN[34]);
+  buf B399(WEN_[35], WEN[35]);
+  buf B400(WEN_[36], WEN[36]);
+  buf B401(WEN_[37], WEN[37]);
+  buf B402(WEN_[38], WEN[38]);
+  buf B403(WEN_[39], WEN[39]);
+  buf B404(WEN_[40], WEN[40]);
+  buf B405(WEN_[41], WEN[41]);
+  buf B406(WEN_[42], WEN[42]);
+  buf B407(WEN_[43], WEN[43]);
+  buf B408(WEN_[44], WEN[44]);
+  buf B409(WEN_[45], WEN[45]);
+  buf B410(WEN_[46], WEN[46]);
+  buf B411(WEN_[47], WEN[47]);
+  buf B412(WEN_[48], WEN[48]);
+  buf B413(WEN_[49], WEN[49]);
+  buf B414(WEN_[50], WEN[50]);
+  buf B415(WEN_[51], WEN[51]);
+  buf B416(WEN_[52], WEN[52]);
+  buf B417(WEN_[53], WEN[53]);
+  buf B418(WEN_[54], WEN[54]);
+  buf B419(WEN_[55], WEN[55]);
+  buf B420(WEN_[56], WEN[56]);
+  buf B421(WEN_[57], WEN[57]);
+  buf B422(WEN_[58], WEN[58]);
+  buf B423(WEN_[59], WEN[59]);
+  buf B424(WEN_[60], WEN[60]);
+  buf B425(WEN_[61], WEN[61]);
+  buf B426(WEN_[62], WEN[62]);
+  buf B427(WEN_[63], WEN[63]);
+  buf B428(STOV_, STOV);
+  buf B429(EMA_[0], EMA[0]);
+  buf B430(EMA_[1], EMA[1]);
+  buf B431(EMA_[2], EMA[2]);
+  buf B432(EMAW_[0], EMAW[0]);
+  buf B433(EMAW_[1], EMAW[1]);
+  buf B434(EMAS_, EMAS);
+  buf B435(RET1N_, RET1N);
+  buf B436(RAWL_, RAWL);
+  buf B437(RAWLM_[0], RAWLM[0]);
+  buf B438(RAWLM_[1], RAWLM[1]);
+  buf B439(WABL_, WABL);
+  buf B440(WABLM_[0], WABLM[0]);
+  buf B441(WABLM_[1], WABLM[1]);
 
 `ifdef POWER_PINS
   assign corrupt_power = bad_power;
@@ -5730,7 +5689,7 @@ parameter ARM_LOCAL_DISABLE_EMA_CHECK = 0;
 `endif
 
    `ifdef ARM_FAULT_MODELING
-     sram_l2_16384x64_error_injection u1(.CLK(CLK_), .Q_out(Q_out), .A(A_int), .CEN(CEN_int), .GWEN(GWEN_int), .WEN(WEN_int), .Q_in(Q_int));
+     sram_l2_4096x64_error_injection u1(.CLK(CLK_), .Q_out(Q_out), .A(A_int), .CEN(CEN_int), .GWEN(GWEN_int), .WEN(WEN_int), .Q_in(Q_int));
   `else
    assign Q_out = Q_int;
   `endif
@@ -5865,7 +5824,7 @@ task loadmem;
 	reg [BITS-1:0] memld [0:WORDS-1];
 	integer i;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 	$readmemb(filename, memld);
 `ifdef ARM_BACKDOOR_NOCEN
@@ -5947,7 +5906,7 @@ task loadmem;
 	input [1000*8-1:0] filename_dump;
 	integer i, dump_file_desc;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 	dump_file_desc = $fopen(filename_dump);
 `ifdef ARM_BACKDOOR_NOCEN
@@ -6003,10 +5962,10 @@ task loadmem;
   endtask
 
 task loadaddr;
-	input [13:0] load_addr;
+	input [11:0] load_addr;
 	input [63:0] load_data;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 `ifdef ARM_BACKDOOR_NOCEN
 `else
@@ -6083,9 +6042,9 @@ task loadaddr;
 
   task dumpaddr;
 	output [63:0] dump_data;
-	input [13:0] dump_addr;
+	input [11:0] dump_addr;
 	reg [BITS-1:0] wordtemp;
-	reg [13:0] Atemp;
+	reg [11:0] Atemp;
   begin
 `ifdef ARM_BACKDOOR_NOCEN
 `else
@@ -6189,7 +6148,7 @@ task loadaddr;
     end else if (CEN_int === 1'b0) begin
       mux_address = (A_int & 4'b1111);
       row_address = (A_int >> 4);
-      if (row_address > 1023)
+      if (row_address > 255)
         row = {1024{1'bx}};
       else
         row = mem[row_address];
@@ -6398,7 +6357,7 @@ if ($realtime != 0)  Q_latch_corrupt;
       Q_int_delayed = {64{1'bx}};
       CEN_int = 1'bx;
       GWEN_int = 1'bx;
-      A_int = {14{1'bx}};
+      A_int = {12{1'bx}};
       D_int = {64{1'bx}};
       WEN_int = {64{1'bx}};
       STOV_int = 1'bx;
@@ -6409,7 +6368,7 @@ if ($realtime != 0)  Q_latch_corrupt;
       RAWL_int = 1'bx;
       RAWLM_int = {2{1'bx}};
       WABL_int = 1'bx;
-      WABLM_int = {3{1'bx}};
+      WABLM_int = {2{1'bx}};
     end
     RET1N_int = RET1N_;
   end
@@ -6594,70 +6553,70 @@ if ($realtime != 0)  Q_latch_corrupt;
 
   assign D_int_bmux = D_;
 
-  datapath_latch_sram_l2_16384x64 uDQ0 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[0]), .DFTRAMBYP(1'b0), .mem_path(mem_path[0]), .XQ(XQ|XD_int[0]|1'b0), .Q(Q_int[0]));
-  datapath_latch_sram_l2_16384x64 uDQ1 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[0]), .D(D_int_bmux[1]), .DFTRAMBYP(1'b0), .mem_path(mem_path[1]), .XQ(XQ|XD_int[1]), .Q(Q_int[1]));
-  datapath_latch_sram_l2_16384x64 uDQ2 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[1]), .D(D_int_bmux[2]), .DFTRAMBYP(1'b0), .mem_path(mem_path[2]), .XQ(XQ|XD_int[2]), .Q(Q_int[2]));
-  datapath_latch_sram_l2_16384x64 uDQ3 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[2]), .D(D_int_bmux[3]), .DFTRAMBYP(1'b0), .mem_path(mem_path[3]), .XQ(XQ|XD_int[3]), .Q(Q_int[3]));
-  datapath_latch_sram_l2_16384x64 uDQ4 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[3]), .D(D_int_bmux[4]), .DFTRAMBYP(1'b0), .mem_path(mem_path[4]), .XQ(XQ|XD_int[4]), .Q(Q_int[4]));
-  datapath_latch_sram_l2_16384x64 uDQ5 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[4]), .D(D_int_bmux[5]), .DFTRAMBYP(1'b0), .mem_path(mem_path[5]), .XQ(XQ|XD_int[5]), .Q(Q_int[5]));
-  datapath_latch_sram_l2_16384x64 uDQ6 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[5]), .D(D_int_bmux[6]), .DFTRAMBYP(1'b0), .mem_path(mem_path[6]), .XQ(XQ|XD_int[6]), .Q(Q_int[6]));
-  datapath_latch_sram_l2_16384x64 uDQ7 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[6]), .D(D_int_bmux[7]), .DFTRAMBYP(1'b0), .mem_path(mem_path[7]), .XQ(XQ|XD_int[7]), .Q(Q_int[7]));
-  datapath_latch_sram_l2_16384x64 uDQ8 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[7]), .D(D_int_bmux[8]), .DFTRAMBYP(1'b0), .mem_path(mem_path[8]), .XQ(XQ|XD_int[8]), .Q(Q_int[8]));
-  datapath_latch_sram_l2_16384x64 uDQ9 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[8]), .D(D_int_bmux[9]), .DFTRAMBYP(1'b0), .mem_path(mem_path[9]), .XQ(XQ|XD_int[9]), .Q(Q_int[9]));
-  datapath_latch_sram_l2_16384x64 uDQ10 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[9]), .D(D_int_bmux[10]), .DFTRAMBYP(1'b0), .mem_path(mem_path[10]), .XQ(XQ|XD_int[10]), .Q(Q_int[10]));
-  datapath_latch_sram_l2_16384x64 uDQ11 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[10]), .D(D_int_bmux[11]), .DFTRAMBYP(1'b0), .mem_path(mem_path[11]), .XQ(XQ|XD_int[11]), .Q(Q_int[11]));
-  datapath_latch_sram_l2_16384x64 uDQ12 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[11]), .D(D_int_bmux[12]), .DFTRAMBYP(1'b0), .mem_path(mem_path[12]), .XQ(XQ|XD_int[12]), .Q(Q_int[12]));
-  datapath_latch_sram_l2_16384x64 uDQ13 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[12]), .D(D_int_bmux[13]), .DFTRAMBYP(1'b0), .mem_path(mem_path[13]), .XQ(XQ|XD_int[13]), .Q(Q_int[13]));
-  datapath_latch_sram_l2_16384x64 uDQ14 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[13]), .D(D_int_bmux[14]), .DFTRAMBYP(1'b0), .mem_path(mem_path[14]), .XQ(XQ|XD_int[14]), .Q(Q_int[14]));
-  datapath_latch_sram_l2_16384x64 uDQ15 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[14]), .D(D_int_bmux[15]), .DFTRAMBYP(1'b0), .mem_path(mem_path[15]), .XQ(XQ|XD_int[15]), .Q(Q_int[15]));
-  datapath_latch_sram_l2_16384x64 uDQ16 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[15]), .D(D_int_bmux[16]), .DFTRAMBYP(1'b0), .mem_path(mem_path[16]), .XQ(XQ|XD_int[16]), .Q(Q_int[16]));
-  datapath_latch_sram_l2_16384x64 uDQ17 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[16]), .D(D_int_bmux[17]), .DFTRAMBYP(1'b0), .mem_path(mem_path[17]), .XQ(XQ|XD_int[17]), .Q(Q_int[17]));
-  datapath_latch_sram_l2_16384x64 uDQ18 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[17]), .D(D_int_bmux[18]), .DFTRAMBYP(1'b0), .mem_path(mem_path[18]), .XQ(XQ|XD_int[18]), .Q(Q_int[18]));
-  datapath_latch_sram_l2_16384x64 uDQ19 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[18]), .D(D_int_bmux[19]), .DFTRAMBYP(1'b0), .mem_path(mem_path[19]), .XQ(XQ|XD_int[19]), .Q(Q_int[19]));
-  datapath_latch_sram_l2_16384x64 uDQ20 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[19]), .D(D_int_bmux[20]), .DFTRAMBYP(1'b0), .mem_path(mem_path[20]), .XQ(XQ|XD_int[20]), .Q(Q_int[20]));
-  datapath_latch_sram_l2_16384x64 uDQ21 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[20]), .D(D_int_bmux[21]), .DFTRAMBYP(1'b0), .mem_path(mem_path[21]), .XQ(XQ|XD_int[21]), .Q(Q_int[21]));
-  datapath_latch_sram_l2_16384x64 uDQ22 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[21]), .D(D_int_bmux[22]), .DFTRAMBYP(1'b0), .mem_path(mem_path[22]), .XQ(XQ|XD_int[22]), .Q(Q_int[22]));
-  datapath_latch_sram_l2_16384x64 uDQ23 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[22]), .D(D_int_bmux[23]), .DFTRAMBYP(1'b0), .mem_path(mem_path[23]), .XQ(XQ|XD_int[23]), .Q(Q_int[23]));
-  datapath_latch_sram_l2_16384x64 uDQ24 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[23]), .D(D_int_bmux[24]), .DFTRAMBYP(1'b0), .mem_path(mem_path[24]), .XQ(XQ|XD_int[24]), .Q(Q_int[24]));
-  datapath_latch_sram_l2_16384x64 uDQ25 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[24]), .D(D_int_bmux[25]), .DFTRAMBYP(1'b0), .mem_path(mem_path[25]), .XQ(XQ|XD_int[25]), .Q(Q_int[25]));
-  datapath_latch_sram_l2_16384x64 uDQ26 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[25]), .D(D_int_bmux[26]), .DFTRAMBYP(1'b0), .mem_path(mem_path[26]), .XQ(XQ|XD_int[26]), .Q(Q_int[26]));
-  datapath_latch_sram_l2_16384x64 uDQ27 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[26]), .D(D_int_bmux[27]), .DFTRAMBYP(1'b0), .mem_path(mem_path[27]), .XQ(XQ|XD_int[27]), .Q(Q_int[27]));
-  datapath_latch_sram_l2_16384x64 uDQ28 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[27]), .D(D_int_bmux[28]), .DFTRAMBYP(1'b0), .mem_path(mem_path[28]), .XQ(XQ|XD_int[28]), .Q(Q_int[28]));
-  datapath_latch_sram_l2_16384x64 uDQ29 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[28]), .D(D_int_bmux[29]), .DFTRAMBYP(1'b0), .mem_path(mem_path[29]), .XQ(XQ|XD_int[29]), .Q(Q_int[29]));
-  datapath_latch_sram_l2_16384x64 uDQ30 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[29]), .D(D_int_bmux[30]), .DFTRAMBYP(1'b0), .mem_path(mem_path[30]), .XQ(XQ|XD_int[30]), .Q(Q_int[30]));
-  datapath_latch_sram_l2_16384x64 uDQ31 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[30]), .D(D_int_bmux[31]), .DFTRAMBYP(1'b0), .mem_path(mem_path[31]), .XQ(XQ|XD_int[31]), .Q(Q_int[31]));
-  datapath_latch_sram_l2_16384x64 uDQ32 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[33]), .D(D_int_bmux[32]), .DFTRAMBYP(1'b0), .mem_path(mem_path[32]), .XQ(XQ|XD_int[32]), .Q(Q_int[32]));
-  datapath_latch_sram_l2_16384x64 uDQ33 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[34]), .D(D_int_bmux[33]), .DFTRAMBYP(1'b0), .mem_path(mem_path[33]), .XQ(XQ|XD_int[33]), .Q(Q_int[33]));
-  datapath_latch_sram_l2_16384x64 uDQ34 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[35]), .D(D_int_bmux[34]), .DFTRAMBYP(1'b0), .mem_path(mem_path[34]), .XQ(XQ|XD_int[34]), .Q(Q_int[34]));
-  datapath_latch_sram_l2_16384x64 uDQ35 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[36]), .D(D_int_bmux[35]), .DFTRAMBYP(1'b0), .mem_path(mem_path[35]), .XQ(XQ|XD_int[35]), .Q(Q_int[35]));
-  datapath_latch_sram_l2_16384x64 uDQ36 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[37]), .D(D_int_bmux[36]), .DFTRAMBYP(1'b0), .mem_path(mem_path[36]), .XQ(XQ|XD_int[36]), .Q(Q_int[36]));
-  datapath_latch_sram_l2_16384x64 uDQ37 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[38]), .D(D_int_bmux[37]), .DFTRAMBYP(1'b0), .mem_path(mem_path[37]), .XQ(XQ|XD_int[37]), .Q(Q_int[37]));
-  datapath_latch_sram_l2_16384x64 uDQ38 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[39]), .D(D_int_bmux[38]), .DFTRAMBYP(1'b0), .mem_path(mem_path[38]), .XQ(XQ|XD_int[38]), .Q(Q_int[38]));
-  datapath_latch_sram_l2_16384x64 uDQ39 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[40]), .D(D_int_bmux[39]), .DFTRAMBYP(1'b0), .mem_path(mem_path[39]), .XQ(XQ|XD_int[39]), .Q(Q_int[39]));
-  datapath_latch_sram_l2_16384x64 uDQ40 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[41]), .D(D_int_bmux[40]), .DFTRAMBYP(1'b0), .mem_path(mem_path[40]), .XQ(XQ|XD_int[40]), .Q(Q_int[40]));
-  datapath_latch_sram_l2_16384x64 uDQ41 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[42]), .D(D_int_bmux[41]), .DFTRAMBYP(1'b0), .mem_path(mem_path[41]), .XQ(XQ|XD_int[41]), .Q(Q_int[41]));
-  datapath_latch_sram_l2_16384x64 uDQ42 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[43]), .D(D_int_bmux[42]), .DFTRAMBYP(1'b0), .mem_path(mem_path[42]), .XQ(XQ|XD_int[42]), .Q(Q_int[42]));
-  datapath_latch_sram_l2_16384x64 uDQ43 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[44]), .D(D_int_bmux[43]), .DFTRAMBYP(1'b0), .mem_path(mem_path[43]), .XQ(XQ|XD_int[43]), .Q(Q_int[43]));
-  datapath_latch_sram_l2_16384x64 uDQ44 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[45]), .D(D_int_bmux[44]), .DFTRAMBYP(1'b0), .mem_path(mem_path[44]), .XQ(XQ|XD_int[44]), .Q(Q_int[44]));
-  datapath_latch_sram_l2_16384x64 uDQ45 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[46]), .D(D_int_bmux[45]), .DFTRAMBYP(1'b0), .mem_path(mem_path[45]), .XQ(XQ|XD_int[45]), .Q(Q_int[45]));
-  datapath_latch_sram_l2_16384x64 uDQ46 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[47]), .D(D_int_bmux[46]), .DFTRAMBYP(1'b0), .mem_path(mem_path[46]), .XQ(XQ|XD_int[46]), .Q(Q_int[46]));
-  datapath_latch_sram_l2_16384x64 uDQ47 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[48]), .D(D_int_bmux[47]), .DFTRAMBYP(1'b0), .mem_path(mem_path[47]), .XQ(XQ|XD_int[47]), .Q(Q_int[47]));
-  datapath_latch_sram_l2_16384x64 uDQ48 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[49]), .D(D_int_bmux[48]), .DFTRAMBYP(1'b0), .mem_path(mem_path[48]), .XQ(XQ|XD_int[48]), .Q(Q_int[48]));
-  datapath_latch_sram_l2_16384x64 uDQ49 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[50]), .D(D_int_bmux[49]), .DFTRAMBYP(1'b0), .mem_path(mem_path[49]), .XQ(XQ|XD_int[49]), .Q(Q_int[49]));
-  datapath_latch_sram_l2_16384x64 uDQ50 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[51]), .D(D_int_bmux[50]), .DFTRAMBYP(1'b0), .mem_path(mem_path[50]), .XQ(XQ|XD_int[50]), .Q(Q_int[50]));
-  datapath_latch_sram_l2_16384x64 uDQ51 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[52]), .D(D_int_bmux[51]), .DFTRAMBYP(1'b0), .mem_path(mem_path[51]), .XQ(XQ|XD_int[51]), .Q(Q_int[51]));
-  datapath_latch_sram_l2_16384x64 uDQ52 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[53]), .D(D_int_bmux[52]), .DFTRAMBYP(1'b0), .mem_path(mem_path[52]), .XQ(XQ|XD_int[52]), .Q(Q_int[52]));
-  datapath_latch_sram_l2_16384x64 uDQ53 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[54]), .D(D_int_bmux[53]), .DFTRAMBYP(1'b0), .mem_path(mem_path[53]), .XQ(XQ|XD_int[53]), .Q(Q_int[53]));
-  datapath_latch_sram_l2_16384x64 uDQ54 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[55]), .D(D_int_bmux[54]), .DFTRAMBYP(1'b0), .mem_path(mem_path[54]), .XQ(XQ|XD_int[54]), .Q(Q_int[54]));
-  datapath_latch_sram_l2_16384x64 uDQ55 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[56]), .D(D_int_bmux[55]), .DFTRAMBYP(1'b0), .mem_path(mem_path[55]), .XQ(XQ|XD_int[55]), .Q(Q_int[55]));
-  datapath_latch_sram_l2_16384x64 uDQ56 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[57]), .D(D_int_bmux[56]), .DFTRAMBYP(1'b0), .mem_path(mem_path[56]), .XQ(XQ|XD_int[56]), .Q(Q_int[56]));
-  datapath_latch_sram_l2_16384x64 uDQ57 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[58]), .D(D_int_bmux[57]), .DFTRAMBYP(1'b0), .mem_path(mem_path[57]), .XQ(XQ|XD_int[57]), .Q(Q_int[57]));
-  datapath_latch_sram_l2_16384x64 uDQ58 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[59]), .D(D_int_bmux[58]), .DFTRAMBYP(1'b0), .mem_path(mem_path[58]), .XQ(XQ|XD_int[58]), .Q(Q_int[58]));
-  datapath_latch_sram_l2_16384x64 uDQ59 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[60]), .D(D_int_bmux[59]), .DFTRAMBYP(1'b0), .mem_path(mem_path[59]), .XQ(XQ|XD_int[59]), .Q(Q_int[59]));
-  datapath_latch_sram_l2_16384x64 uDQ60 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[61]), .D(D_int_bmux[60]), .DFTRAMBYP(1'b0), .mem_path(mem_path[60]), .XQ(XQ|XD_int[60]), .Q(Q_int[60]));
-  datapath_latch_sram_l2_16384x64 uDQ61 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[62]), .D(D_int_bmux[61]), .DFTRAMBYP(1'b0), .mem_path(mem_path[61]), .XQ(XQ|XD_int[61]), .Q(Q_int[61]));
-  datapath_latch_sram_l2_16384x64 uDQ62 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[63]), .D(D_int_bmux[62]), .DFTRAMBYP(1'b0), .mem_path(mem_path[62]), .XQ(XQ|XD_int[62]), .Q(Q_int[62]));
-  datapath_latch_sram_l2_16384x64 uDQ63 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[63]), .DFTRAMBYP(1'b0), .mem_path(mem_path[63]), .XQ(XQ|XD_int[63]|1'b0), .Q(Q_int[63]));
+  datapath_latch_sram_l2_4096x64 uDQ0 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[0]), .DFTRAMBYP(1'b0), .mem_path(mem_path[0]), .XQ(XQ|XD_int[0]|1'b0), .Q(Q_int[0]));
+  datapath_latch_sram_l2_4096x64 uDQ1 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[0]), .D(D_int_bmux[1]), .DFTRAMBYP(1'b0), .mem_path(mem_path[1]), .XQ(XQ|XD_int[1]), .Q(Q_int[1]));
+  datapath_latch_sram_l2_4096x64 uDQ2 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[1]), .D(D_int_bmux[2]), .DFTRAMBYP(1'b0), .mem_path(mem_path[2]), .XQ(XQ|XD_int[2]), .Q(Q_int[2]));
+  datapath_latch_sram_l2_4096x64 uDQ3 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[2]), .D(D_int_bmux[3]), .DFTRAMBYP(1'b0), .mem_path(mem_path[3]), .XQ(XQ|XD_int[3]), .Q(Q_int[3]));
+  datapath_latch_sram_l2_4096x64 uDQ4 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[3]), .D(D_int_bmux[4]), .DFTRAMBYP(1'b0), .mem_path(mem_path[4]), .XQ(XQ|XD_int[4]), .Q(Q_int[4]));
+  datapath_latch_sram_l2_4096x64 uDQ5 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[4]), .D(D_int_bmux[5]), .DFTRAMBYP(1'b0), .mem_path(mem_path[5]), .XQ(XQ|XD_int[5]), .Q(Q_int[5]));
+  datapath_latch_sram_l2_4096x64 uDQ6 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[5]), .D(D_int_bmux[6]), .DFTRAMBYP(1'b0), .mem_path(mem_path[6]), .XQ(XQ|XD_int[6]), .Q(Q_int[6]));
+  datapath_latch_sram_l2_4096x64 uDQ7 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[6]), .D(D_int_bmux[7]), .DFTRAMBYP(1'b0), .mem_path(mem_path[7]), .XQ(XQ|XD_int[7]), .Q(Q_int[7]));
+  datapath_latch_sram_l2_4096x64 uDQ8 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[7]), .D(D_int_bmux[8]), .DFTRAMBYP(1'b0), .mem_path(mem_path[8]), .XQ(XQ|XD_int[8]), .Q(Q_int[8]));
+  datapath_latch_sram_l2_4096x64 uDQ9 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[8]), .D(D_int_bmux[9]), .DFTRAMBYP(1'b0), .mem_path(mem_path[9]), .XQ(XQ|XD_int[9]), .Q(Q_int[9]));
+  datapath_latch_sram_l2_4096x64 uDQ10 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[9]), .D(D_int_bmux[10]), .DFTRAMBYP(1'b0), .mem_path(mem_path[10]), .XQ(XQ|XD_int[10]), .Q(Q_int[10]));
+  datapath_latch_sram_l2_4096x64 uDQ11 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[10]), .D(D_int_bmux[11]), .DFTRAMBYP(1'b0), .mem_path(mem_path[11]), .XQ(XQ|XD_int[11]), .Q(Q_int[11]));
+  datapath_latch_sram_l2_4096x64 uDQ12 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[11]), .D(D_int_bmux[12]), .DFTRAMBYP(1'b0), .mem_path(mem_path[12]), .XQ(XQ|XD_int[12]), .Q(Q_int[12]));
+  datapath_latch_sram_l2_4096x64 uDQ13 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[12]), .D(D_int_bmux[13]), .DFTRAMBYP(1'b0), .mem_path(mem_path[13]), .XQ(XQ|XD_int[13]), .Q(Q_int[13]));
+  datapath_latch_sram_l2_4096x64 uDQ14 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[13]), .D(D_int_bmux[14]), .DFTRAMBYP(1'b0), .mem_path(mem_path[14]), .XQ(XQ|XD_int[14]), .Q(Q_int[14]));
+  datapath_latch_sram_l2_4096x64 uDQ15 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[14]), .D(D_int_bmux[15]), .DFTRAMBYP(1'b0), .mem_path(mem_path[15]), .XQ(XQ|XD_int[15]), .Q(Q_int[15]));
+  datapath_latch_sram_l2_4096x64 uDQ16 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[15]), .D(D_int_bmux[16]), .DFTRAMBYP(1'b0), .mem_path(mem_path[16]), .XQ(XQ|XD_int[16]), .Q(Q_int[16]));
+  datapath_latch_sram_l2_4096x64 uDQ17 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[16]), .D(D_int_bmux[17]), .DFTRAMBYP(1'b0), .mem_path(mem_path[17]), .XQ(XQ|XD_int[17]), .Q(Q_int[17]));
+  datapath_latch_sram_l2_4096x64 uDQ18 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[17]), .D(D_int_bmux[18]), .DFTRAMBYP(1'b0), .mem_path(mem_path[18]), .XQ(XQ|XD_int[18]), .Q(Q_int[18]));
+  datapath_latch_sram_l2_4096x64 uDQ19 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[18]), .D(D_int_bmux[19]), .DFTRAMBYP(1'b0), .mem_path(mem_path[19]), .XQ(XQ|XD_int[19]), .Q(Q_int[19]));
+  datapath_latch_sram_l2_4096x64 uDQ20 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[19]), .D(D_int_bmux[20]), .DFTRAMBYP(1'b0), .mem_path(mem_path[20]), .XQ(XQ|XD_int[20]), .Q(Q_int[20]));
+  datapath_latch_sram_l2_4096x64 uDQ21 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[20]), .D(D_int_bmux[21]), .DFTRAMBYP(1'b0), .mem_path(mem_path[21]), .XQ(XQ|XD_int[21]), .Q(Q_int[21]));
+  datapath_latch_sram_l2_4096x64 uDQ22 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[21]), .D(D_int_bmux[22]), .DFTRAMBYP(1'b0), .mem_path(mem_path[22]), .XQ(XQ|XD_int[22]), .Q(Q_int[22]));
+  datapath_latch_sram_l2_4096x64 uDQ23 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[22]), .D(D_int_bmux[23]), .DFTRAMBYP(1'b0), .mem_path(mem_path[23]), .XQ(XQ|XD_int[23]), .Q(Q_int[23]));
+  datapath_latch_sram_l2_4096x64 uDQ24 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[23]), .D(D_int_bmux[24]), .DFTRAMBYP(1'b0), .mem_path(mem_path[24]), .XQ(XQ|XD_int[24]), .Q(Q_int[24]));
+  datapath_latch_sram_l2_4096x64 uDQ25 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[24]), .D(D_int_bmux[25]), .DFTRAMBYP(1'b0), .mem_path(mem_path[25]), .XQ(XQ|XD_int[25]), .Q(Q_int[25]));
+  datapath_latch_sram_l2_4096x64 uDQ26 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[25]), .D(D_int_bmux[26]), .DFTRAMBYP(1'b0), .mem_path(mem_path[26]), .XQ(XQ|XD_int[26]), .Q(Q_int[26]));
+  datapath_latch_sram_l2_4096x64 uDQ27 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[26]), .D(D_int_bmux[27]), .DFTRAMBYP(1'b0), .mem_path(mem_path[27]), .XQ(XQ|XD_int[27]), .Q(Q_int[27]));
+  datapath_latch_sram_l2_4096x64 uDQ28 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[27]), .D(D_int_bmux[28]), .DFTRAMBYP(1'b0), .mem_path(mem_path[28]), .XQ(XQ|XD_int[28]), .Q(Q_int[28]));
+  datapath_latch_sram_l2_4096x64 uDQ29 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[28]), .D(D_int_bmux[29]), .DFTRAMBYP(1'b0), .mem_path(mem_path[29]), .XQ(XQ|XD_int[29]), .Q(Q_int[29]));
+  datapath_latch_sram_l2_4096x64 uDQ30 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[29]), .D(D_int_bmux[30]), .DFTRAMBYP(1'b0), .mem_path(mem_path[30]), .XQ(XQ|XD_int[30]), .Q(Q_int[30]));
+  datapath_latch_sram_l2_4096x64 uDQ31 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[30]), .D(D_int_bmux[31]), .DFTRAMBYP(1'b0), .mem_path(mem_path[31]), .XQ(XQ|XD_int[31]), .Q(Q_int[31]));
+  datapath_latch_sram_l2_4096x64 uDQ32 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[33]), .D(D_int_bmux[32]), .DFTRAMBYP(1'b0), .mem_path(mem_path[32]), .XQ(XQ|XD_int[32]), .Q(Q_int[32]));
+  datapath_latch_sram_l2_4096x64 uDQ33 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[34]), .D(D_int_bmux[33]), .DFTRAMBYP(1'b0), .mem_path(mem_path[33]), .XQ(XQ|XD_int[33]), .Q(Q_int[33]));
+  datapath_latch_sram_l2_4096x64 uDQ34 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[35]), .D(D_int_bmux[34]), .DFTRAMBYP(1'b0), .mem_path(mem_path[34]), .XQ(XQ|XD_int[34]), .Q(Q_int[34]));
+  datapath_latch_sram_l2_4096x64 uDQ35 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[36]), .D(D_int_bmux[35]), .DFTRAMBYP(1'b0), .mem_path(mem_path[35]), .XQ(XQ|XD_int[35]), .Q(Q_int[35]));
+  datapath_latch_sram_l2_4096x64 uDQ36 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[37]), .D(D_int_bmux[36]), .DFTRAMBYP(1'b0), .mem_path(mem_path[36]), .XQ(XQ|XD_int[36]), .Q(Q_int[36]));
+  datapath_latch_sram_l2_4096x64 uDQ37 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[38]), .D(D_int_bmux[37]), .DFTRAMBYP(1'b0), .mem_path(mem_path[37]), .XQ(XQ|XD_int[37]), .Q(Q_int[37]));
+  datapath_latch_sram_l2_4096x64 uDQ38 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[39]), .D(D_int_bmux[38]), .DFTRAMBYP(1'b0), .mem_path(mem_path[38]), .XQ(XQ|XD_int[38]), .Q(Q_int[38]));
+  datapath_latch_sram_l2_4096x64 uDQ39 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[40]), .D(D_int_bmux[39]), .DFTRAMBYP(1'b0), .mem_path(mem_path[39]), .XQ(XQ|XD_int[39]), .Q(Q_int[39]));
+  datapath_latch_sram_l2_4096x64 uDQ40 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[41]), .D(D_int_bmux[40]), .DFTRAMBYP(1'b0), .mem_path(mem_path[40]), .XQ(XQ|XD_int[40]), .Q(Q_int[40]));
+  datapath_latch_sram_l2_4096x64 uDQ41 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[42]), .D(D_int_bmux[41]), .DFTRAMBYP(1'b0), .mem_path(mem_path[41]), .XQ(XQ|XD_int[41]), .Q(Q_int[41]));
+  datapath_latch_sram_l2_4096x64 uDQ42 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[43]), .D(D_int_bmux[42]), .DFTRAMBYP(1'b0), .mem_path(mem_path[42]), .XQ(XQ|XD_int[42]), .Q(Q_int[42]));
+  datapath_latch_sram_l2_4096x64 uDQ43 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[44]), .D(D_int_bmux[43]), .DFTRAMBYP(1'b0), .mem_path(mem_path[43]), .XQ(XQ|XD_int[43]), .Q(Q_int[43]));
+  datapath_latch_sram_l2_4096x64 uDQ44 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[45]), .D(D_int_bmux[44]), .DFTRAMBYP(1'b0), .mem_path(mem_path[44]), .XQ(XQ|XD_int[44]), .Q(Q_int[44]));
+  datapath_latch_sram_l2_4096x64 uDQ45 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[46]), .D(D_int_bmux[45]), .DFTRAMBYP(1'b0), .mem_path(mem_path[45]), .XQ(XQ|XD_int[45]), .Q(Q_int[45]));
+  datapath_latch_sram_l2_4096x64 uDQ46 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[47]), .D(D_int_bmux[46]), .DFTRAMBYP(1'b0), .mem_path(mem_path[46]), .XQ(XQ|XD_int[46]), .Q(Q_int[46]));
+  datapath_latch_sram_l2_4096x64 uDQ47 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[48]), .D(D_int_bmux[47]), .DFTRAMBYP(1'b0), .mem_path(mem_path[47]), .XQ(XQ|XD_int[47]), .Q(Q_int[47]));
+  datapath_latch_sram_l2_4096x64 uDQ48 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[49]), .D(D_int_bmux[48]), .DFTRAMBYP(1'b0), .mem_path(mem_path[48]), .XQ(XQ|XD_int[48]), .Q(Q_int[48]));
+  datapath_latch_sram_l2_4096x64 uDQ49 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[50]), .D(D_int_bmux[49]), .DFTRAMBYP(1'b0), .mem_path(mem_path[49]), .XQ(XQ|XD_int[49]), .Q(Q_int[49]));
+  datapath_latch_sram_l2_4096x64 uDQ50 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[51]), .D(D_int_bmux[50]), .DFTRAMBYP(1'b0), .mem_path(mem_path[50]), .XQ(XQ|XD_int[50]), .Q(Q_int[50]));
+  datapath_latch_sram_l2_4096x64 uDQ51 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[52]), .D(D_int_bmux[51]), .DFTRAMBYP(1'b0), .mem_path(mem_path[51]), .XQ(XQ|XD_int[51]), .Q(Q_int[51]));
+  datapath_latch_sram_l2_4096x64 uDQ52 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[53]), .D(D_int_bmux[52]), .DFTRAMBYP(1'b0), .mem_path(mem_path[52]), .XQ(XQ|XD_int[52]), .Q(Q_int[52]));
+  datapath_latch_sram_l2_4096x64 uDQ53 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[54]), .D(D_int_bmux[53]), .DFTRAMBYP(1'b0), .mem_path(mem_path[53]), .XQ(XQ|XD_int[53]), .Q(Q_int[53]));
+  datapath_latch_sram_l2_4096x64 uDQ54 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[55]), .D(D_int_bmux[54]), .DFTRAMBYP(1'b0), .mem_path(mem_path[54]), .XQ(XQ|XD_int[54]), .Q(Q_int[54]));
+  datapath_latch_sram_l2_4096x64 uDQ55 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[56]), .D(D_int_bmux[55]), .DFTRAMBYP(1'b0), .mem_path(mem_path[55]), .XQ(XQ|XD_int[55]), .Q(Q_int[55]));
+  datapath_latch_sram_l2_4096x64 uDQ56 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[57]), .D(D_int_bmux[56]), .DFTRAMBYP(1'b0), .mem_path(mem_path[56]), .XQ(XQ|XD_int[56]), .Q(Q_int[56]));
+  datapath_latch_sram_l2_4096x64 uDQ57 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[58]), .D(D_int_bmux[57]), .DFTRAMBYP(1'b0), .mem_path(mem_path[57]), .XQ(XQ|XD_int[57]), .Q(Q_int[57]));
+  datapath_latch_sram_l2_4096x64 uDQ58 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[59]), .D(D_int_bmux[58]), .DFTRAMBYP(1'b0), .mem_path(mem_path[58]), .XQ(XQ|XD_int[58]), .Q(Q_int[58]));
+  datapath_latch_sram_l2_4096x64 uDQ59 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[60]), .D(D_int_bmux[59]), .DFTRAMBYP(1'b0), .mem_path(mem_path[59]), .XQ(XQ|XD_int[59]), .Q(Q_int[59]));
+  datapath_latch_sram_l2_4096x64 uDQ60 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[61]), .D(D_int_bmux[60]), .DFTRAMBYP(1'b0), .mem_path(mem_path[60]), .XQ(XQ|XD_int[60]), .Q(Q_int[60]));
+  datapath_latch_sram_l2_4096x64 uDQ61 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[62]), .D(D_int_bmux[61]), .DFTRAMBYP(1'b0), .mem_path(mem_path[61]), .XQ(XQ|XD_int[61]), .Q(Q_int[61]));
+  datapath_latch_sram_l2_4096x64 uDQ62 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(Q_int[63]), .D(D_int_bmux[62]), .DFTRAMBYP(1'b0), .mem_path(mem_path[62]), .XQ(XQ|XD_int[62]), .Q(Q_int[62]));
+  datapath_latch_sram_l2_4096x64 uDQ63 (.CLK(CLK), .Q_update(Q_update), .D_update(D_sh_update), .SE(1'b0), .SI(1'b0), .D(D_int_bmux[63]), .DFTRAMBYP(1'b0), .mem_path(mem_path[63]), .XQ(XQ|XD_int[63]|1'b0), .Q(Q_int[63]));
 
 
 
@@ -6668,8 +6627,7 @@ if ($realtime != 0)  Q_latch_corrupt;
     if ($realtime == 0) begin
     end else if (CEN_int === 1'bx || RAWLM_int[0] === 1'bx || RAWLM_int[1] === 1'bx || 
       RAWL_int === 1'bx || RET1N_int === 1'bx || (STOV_int && !CEN_int) === 1'bx || 
-      WABLM_int[0] === 1'bx || WABLM_int[1] === 1'bx || WABLM_int[2] === 1'bx || 
-      WABL_int === 1'bx || clk0_int === 1'bx) begin
+      WABLM_int[0] === 1'bx || WABLM_int[1] === 1'bx || WABL_int === 1'bx || clk0_int === 1'bx) begin
         XQ = 1'b1; Q_update = 1'b1;
     	 mem_path = {64{1'bx}};
       Q_int_delayed = {64{1'bx}};
@@ -6728,14 +6686,6 @@ always @ (CLK_)
   end
   always @ NOT_GWEN begin
     GWEN_int = 1'bx;
-    if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
-  end
-  always @ NOT_A13 begin
-    A_int[13] = 1'bx;
-    if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
-  end
-  always @ NOT_A12 begin
-    A_int[12] = 1'bx;
     if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
   end
   always @ NOT_A11 begin
@@ -7346,10 +7296,6 @@ always @ (CLK_)
     WABL_int = 1'bx;
     if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
   end
-  always @ NOT_WABLM2 begin
-    WABLM_int[2] = 1'bx;
-    if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
-  end
   always @ NOT_WABLM1 begin
     WABLM_int[1] = 1'bx;
     if ( globalNotifier0 === 1'b0 ) globalNotifier0 = 1'bx;
@@ -7461,7 +7407,7 @@ always @ (CLK_)
   wire RET1Neq1aCENeq0aWEN9eq0aGWENeq0, RET1Neq1aCENeq0aWEN8eq0aGWENeq0, RET1Neq1aCENeq0aWEN7eq0aGWENeq0;
   wire RET1Neq1aCENeq0aWEN6eq0aGWENeq0, RET1Neq1aCENeq0aWEN5eq0aGWENeq0, RET1Neq1aCENeq0aWEN4eq0aGWENeq0;
   wire RET1Neq1aCENeq0aWEN3eq0aGWENeq0, RET1Neq1aCENeq0aWEN2eq0aGWENeq0, RET1Neq1aCENeq0aWEN1eq0aGWENeq0;
-  wire RET1Neq1aCENeq0aWEN0eq0aGWENeq0, RET1Neq1aCENeq0aGWENeq0, RET1Neq1aCENeq0, RET1Neq1aGWENeq0aCENeq0;
+  wire RET1Neq1aCENeq0aWEN0eq0aGWENeq0, RET1Neq1aCENeq0, RET1Neq1aGWENeq0aCENeq0;
 
   assign STOVeq0aRET1Neq1aCENeq0aEMA2eq0aEMA1eq0aEMA0eq0aEMAW1eq0aEMAW0eq0aEMASeq0 = 
   !STOV&&RET1N&&!CEN&&!EMA[2]&&!EMA[1]&&!EMA[0]&&!EMAW[1]&&!EMAW[0]&&!EMAS;
@@ -7663,7 +7609,6 @@ always @ (CLK_)
   assign RET1Neq1aCENeq0aWEN2eq0aGWENeq0 = RET1N&&!CEN&&!WEN[2]&&!GWEN;
   assign RET1Neq1aCENeq0aWEN1eq0aGWENeq0 = RET1N&&!CEN&&!WEN[1]&&!GWEN;
   assign RET1Neq1aCENeq0aWEN0eq0aGWENeq0 = RET1N&&!CEN&&!WEN[0]&&!GWEN;
-  assign RET1Neq1aCENeq0aGWENeq0 = RET1N&&!CEN&&!GWEN;
   assign RET1Neq1aGWENeq0aCENeq0 = RET1N&&!GWEN&&!CEN;
 
   assign RET1Neq1 = RET1N;
@@ -8849,8 +8794,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RET1Neq1, negedge CEN, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_CEN);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge GWEN, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_GWEN);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge GWEN, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_GWEN);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -8863,8 +8806,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -8877,8 +8818,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -8891,8 +8830,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -8905,8 +8842,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, posedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -8919,8 +8854,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq1aRET1Neq1aCENeq0, negedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -8933,8 +8866,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq1aRET1Neq1aCENeq0, negedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -8947,8 +8878,6 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A2);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A1);
     $setuphold(posedge CLK &&& RAWLeq1aWABLeq0aRET1Neq1aCENeq0, negedge A[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A0);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A13);
-    $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A12);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A11);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A10);
     $setuphold(posedge CLK &&& RAWLeq0aWABLeq0aRET1Neq1aCENeq0, negedge A[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_A9);
@@ -9089,134 +9018,134 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0aWEN2eq0aGWENeq0, negedge D[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_D2);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0aWEN1eq0aGWENeq0, negedge D[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_D1);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0aWEN0eq0aGWENeq0, negedge D[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_D0);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, posedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1);
-    $setuphold(posedge CLK &&& RET1Neq1aCENeq0aGWENeq0, negedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[63], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN63);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[62], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN62);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[61], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN61);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[60], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN60);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[59], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN59);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[58], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN58);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[57], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN57);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[56], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN56);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[55], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN55);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[54], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN54);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[53], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN53);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[52], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN52);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[51], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN51);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[50], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN50);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[49], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN49);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[48], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN48);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[47], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN47);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[46], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN46);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[45], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN45);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[44], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN44);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[43], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN43);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[42], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN42);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[41], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN41);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[40], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN40);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[39], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN39);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[38], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN38);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[37], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN37);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[36], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN36);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[35], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN35);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[34], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN34);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[33], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN33);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[32], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN32);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[31], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN31);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[30], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN30);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[29], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN29);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[28], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN28);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[27], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN27);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[26], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN26);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[25], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN25);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[24], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN24);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[23], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN23);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[22], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN22);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[21], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN21);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[20], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN20);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[19], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN19);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[18], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN18);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[17], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN17);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[16], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN16);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[15], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN15);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[14], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN14);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[13], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN13);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[12], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN12);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[11], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN11);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[10], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN10);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[9], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN9);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[8], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN8);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[7], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN7);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[6], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN6);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[5], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN5);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[4], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN4);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[3], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN3);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN2);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN1);
+    $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge WEN[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WEN0);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge STOV, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_STOV);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge STOV, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_STOV);
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, posedge EMA[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_EMA2);
@@ -9239,10 +9168,8 @@ always @ (CLK_)
     $setuphold(posedge CLK &&& RET1Neq1aCENeq0, negedge RAWLM[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_RAWLM0);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABL, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABL);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABL, `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABL);
-    $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABLM[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM2);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABLM[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM1);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, posedge WABLM[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM0);
-    $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABLM[2], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM2);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABLM[1], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM1);
     $setuphold(posedge CLK &&& RET1Neq1aGWENeq0aCENeq0, negedge WABLM[0], `ARM_MEM_SETUP, `ARM_MEM_HOLD, NOT_WABLM0);
     $setuphold(negedge RET1N, negedge CEN, 0.000, `ARM_MEM_HOLD, NOT_RET1N);
@@ -9258,11 +9185,11 @@ endmodule
 `endif
 `ifdef ARM_FAULT_MODELING
 `timescale 1ns/1ps
-module sram_l2_16384x64_error_injection (Q_out, Q_in, CLK, A, CEN, WEN, GWEN);
+module sram_l2_4096x64_error_injection (Q_out, Q_in, CLK, A, CEN, WEN, GWEN);
    output [63:0] Q_out;
    input [63:0] Q_in;
    input CLK;
-   input [13:0] A;
+   input [11:0] A;
    input CEN;
    input [63:0] WEN;
    input GWEN;
@@ -9273,12 +9200,12 @@ module sram_l2_16384x64_error_injection (Q_out, Q_in, CLK, A, CEN, WEN, GWEN);
    reg [63:0] Q_out;
    reg entry_found;
    reg list_complete;
-   reg [24:0] fault_table [1023:0];
-   reg [24:0] fault_entry;
+   reg [22:0] fault_table [255:0];
+   reg [22:0] fault_entry;
 initial
 begin
-   `ifdef sram_l2_16384x64_pre_pend_path
-      `define pre_pend_path `sram_l2_16384x64_pre_pend_path
+   `ifdef sram_l2_4096x64_pre_pend_path
+      `define pre_pend_path `sram_l2_4096x64_pre_pend_path
    `else
       `ifdef DUT
          `define pre_pend_path TB.DUT_inst.CHIP.SMARCHCHKBVCD_LVISION_MBISTPG_ASSEMBLY_UNDER_TEST_INST.MEM0_MEM_INST
@@ -9287,12 +9214,12 @@ begin
       `endif
    `endif
    `ifdef ARM_NONREPAIRABLE_FAULT
-      `pre_pend_path.u1.add_fault(14'd13210,6'd6,2'd1,2'd0);
+      `pre_pend_path.u1.add_fault(12'd3718,6'd6,2'd1,2'd0);
    `endif
 end
    task add_fault;
    //This task injects fault in memory
-      input [13:0] address;
+      input [11:0] address;
       input [5:0] bitPlace;
       input [1:0] fault_type;
       input [1:0] red_fault;
@@ -9302,7 +9229,7 @@ end
    begin
       done = 1'b0;
       i = 0;
-      while ((!done) && i < 1023)
+      while ((!done) && i < 255)
       begin
          fault_entry = fault_table[i];
          if (fault_entry[0] === 1'b0 || fault_entry[0] === 1'bx)
@@ -9311,7 +9238,7 @@ end
             fault_entry[2:1] = red_fault;
             fault_entry[4:3] = fault_type;
             fault_entry[10:5] = bitPlace;
-            fault_entry[24:11] = address;
+            fault_entry[22:11] = address;
             fault_table[i] = fault_entry;
             done = 1'b1;
          end
@@ -9323,7 +9250,7 @@ end
 task remove_all_faults;
    integer i;
 begin
-   for (i = 0; i < 1024; i=i+1)
+   for (i = 0; i < 256; i=i+1)
    begin
       fault_entry = fault_table[i];
       fault_entry[0] = 1'b0;
@@ -9363,8 +9290,8 @@ task error_injection_on_output;
    output [63:0] Q_output;
    reg list_complete;
    integer i;
-   reg [7:0] FRA_reg;
-   reg [9:0] row_address;
+   reg [5:0] FRA_reg;
+   reg [7:0] row_address;
    reg [3:0] column_address;
    reg [5:0] bitPlace;
    reg [1:0] fault_type;
@@ -9386,7 +9313,7 @@ begin
       begin
          if (red_fault === NO_RED_FAULT)
          begin
-            if (row_address == A[13:4] && column_address == A[3:0])
+            if (row_address == A[11:4] && column_address == A[3:0])
             begin
                if (bitPlace < 32)
                   bit_error(Q_output,fault_type, bitPlace);
