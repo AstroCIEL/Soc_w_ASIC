@@ -441,7 +441,8 @@ module ariane_soc_top import axi_pkg::*; #(
     '{ idx: ariane_soc::AxuCfg,    start_addr: ariane_soc::AxuCfgBase,    end_addr: ariane_soc::AxuCfgBase    + ariane_soc::AxuCfgLength },
     '{ idx: ariane_soc::AxuOpABuf, start_addr: ariane_soc::AxuOpABufBase, end_addr: ariane_soc::AxuOpABufBase + ariane_soc::AxuOpABufLength },
     '{ idx: ariane_soc::AxuOpBBuf, start_addr: ariane_soc::AxuOpBBufBase, end_addr: ariane_soc::AxuOpBBufBase + ariane_soc::AxuOpBBufLength },
-    '{ idx: ariane_soc::AxuOutBuf, start_addr: ariane_soc::AxuOutBufBase, end_addr: ariane_soc::AxuOutBufBase + ariane_soc::AxuOutBufLength }
+    '{ idx: ariane_soc::AxuOutBuf, start_addr: ariane_soc::AxuOutBufBase, end_addr: ariane_soc::AxuOutBufBase + ariane_soc::AxuOutBufLength },
+    '{ idx: ariane_soc::DMA,       start_addr: ariane_soc::DMABase,       end_addr: ariane_soc::DMABase       + ariane_soc::DMALength }
   };
 
   localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
@@ -519,6 +520,7 @@ module ariane_soc_top import axi_pkg::*; #(
     .AxiAddrWidth ( AXI_ADDRESS_WIDTH            ),
     .AxiDataWidth ( AXI_DATA_WIDTH               ),
     .AxiIdWidth   ( ariane_axi_soc::IdWidthSlave ),
+    .AxiMstIdWidth( ariane_axi_soc::IdWidth      ),
     .AxiUserWidth ( AXI_USER_WIDTH               ),
     .DRAMBase     ( ariane_soc::DRAMBase         ),
     .DRAMLength   ( ariane_soc::DRAMLength       )
@@ -540,6 +542,9 @@ module ariane_soc_top import axi_pkg::*; #(
     .axu_opa        (master[ariane_soc::AxuOpABuf]    ),
     .axu_opb        (master[ariane_soc::AxuOpBBuf]    ),
     .axu_out        (master[ariane_soc::AxuOutBuf]    ),
+
+    .dma_cfg        (master[ariane_soc::DMA]          ),
+    .dma_mst        (slave [ariane_soc::DMAMst]       ),
 
     .irq_o          ( irqs                         ),
     .exit_o         ( ctrl_exit                    ),

@@ -18,6 +18,7 @@ module ariane_peripherals #(
     parameter int           AxiAddrWidth  = -1,
     parameter int           AxiDataWidth  = -1,
     parameter int           AxiIdWidth    = -1,      // id width on peripheral (xbar-master) ports
+    parameter int           AxiMstIdWidth = -1,      // id width on xbar-slave (upstream master) ports
     parameter int           AxiUserWidth  = 1,
     parameter logic [63:0]  DRAMBase      = 64'h8000_0000,
     parameter logic [63:0]  DRAMLength    = 64'h4000_0000
@@ -40,6 +41,8 @@ module ariane_peripherals #(
     AXI_BUS.Slave      axu_opb         ,
     AXI_BUS.Slave      axu_out         ,
 
+    AXI_BUS.Slave      dma_cfg         , // DMA config slave @ DMABase
+    AXI_BUS.Master     dma_mst         , // DMA data master back into xbar
 
     output logic [1:0] irq_o           ,
     // ctrl_registers outputs
@@ -57,7 +60,7 @@ module ariane_peripherals #(
     logic [ariane_soc::NumSources-1:0] irq_sources;
 
     // Unused interrupt sources
-    assign irq_sources[ariane_soc::NumSources-1:7] = '0;
+    assign irq_sources[ariane_soc::NumSources-1:8] = '0;
 
     REG_BUS #(
         .ADDR_WIDTH ( 32 ),
@@ -513,5 +516,53 @@ module ariane_peripherals #(
         .irq_o    ( irq_sources[1] )
     );
 
+    // ---------------
+    // 10. DMA (iDMA desc64 frontend + rw_axi backend)
+    // ---------------
+    typedef logic [AxiAddrWidth-1:0]   dma_cfg_addr_t;
+    typedef logic [AxiDataWidth-1:0]   dma_cfg_data_t;
+    typedef logic [AxiDataWidth/8-1:0] dma_cfg_strb_t;
+    typedef logic [AxiIdWidth-1:0]     dma_cfg_id_t;
+    typedef logic [AxiUserWidth-1:0]   dma_cfg_user_t;
+    `AXI_TYPEDEF_ALL(dma_cfg_axi, dma_cfg_addr_t, dma_cfg_id_t,
+                                  dma_cfg_data_t, dma_cfg_strb_t, dma_cfg_user_t)
+
+    typedef logic [AxiMstIdWidth-1:0]  dma_mst_id_t;
+    `AXI_TYPEDEF_ALL(dma_mst_axi, dma_cfg_addr_t, dma_mst_id_t,
+                                  dma_cfg_data_t, dma_cfg_strb_t, dma_cfg_user_t)
+
+    dma_cfg_axi_req_t  dma_cfg_req;
+    dma_cfg_axi_resp_t dma_cfg_rsp;
+    dma_mst_axi_req_t  dma_mst_req;
+    dma_mst_axi_resp_t dma_mst_rsp;
+
+    `AXI_ASSIGN_TO_REQ   (dma_cfg_req, dma_cfg)
+    `AXI_ASSIGN_FROM_RESP(dma_cfg,     dma_cfg_rsp)
+
+    `AXI_ASSIGN_FROM_REQ (dma_mst,     dma_mst_req)
+    `AXI_ASSIGN_TO_RESP  (dma_mst_rsp, dma_mst)
+
+    ariane_dma_desc64 #(
+        .AxiCfgAddrWidth ( AxiAddrWidth       ),
+        .AxiCfgDataWidth ( AxiDataWidth       ),
+        .AxiCfgIdWidth   ( AxiIdWidth         ),
+        .AxiCfgUserWidth ( AxiUserWidth       ),
+        .AxiMstAddrWidth ( AxiAddrWidth       ),
+        .AxiMstDataWidth ( AxiDataWidth       ),
+        .AxiMstIdWidth   ( AxiMstIdWidth      ),
+        .AxiMstUserWidth ( AxiUserWidth       ),
+        .axi_cfg_req_t   ( dma_cfg_axi_req_t  ),
+        .axi_cfg_rsp_t   ( dma_cfg_axi_resp_t ),
+        .axi_mst_req_t   ( dma_mst_axi_req_t  ),
+        .axi_mst_rsp_t   ( dma_mst_axi_resp_t )
+    ) i_dma (
+        .clk_i,
+        .rst_ni,
+        .cfg_req_i ( dma_cfg_req    ),
+        .cfg_rsp_o ( dma_cfg_rsp    ),
+        .mst_req_o ( dma_mst_req    ),
+        .mst_rsp_i ( dma_mst_rsp    ),
+        .irq_o     ( irq_sources[7] )
+    );
 
 endmodule
