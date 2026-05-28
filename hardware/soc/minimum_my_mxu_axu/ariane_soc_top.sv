@@ -442,7 +442,8 @@ module ariane_soc_top import axi_pkg::*; #(
     '{ idx: ariane_soc::AxuOpABuf, start_addr: ariane_soc::AxuOpABufBase, end_addr: ariane_soc::AxuOpABufBase + ariane_soc::AxuOpABufLength },
     '{ idx: ariane_soc::AxuOpBBuf, start_addr: ariane_soc::AxuOpBBufBase, end_addr: ariane_soc::AxuOpBBufBase + ariane_soc::AxuOpBBufLength },
     '{ idx: ariane_soc::AxuOutBuf, start_addr: ariane_soc::AxuOutBufBase, end_addr: ariane_soc::AxuOutBufBase + ariane_soc::AxuOutBufLength },
-    '{ idx: ariane_soc::DMA,       start_addr: ariane_soc::DMABase,       end_addr: ariane_soc::DMABase       + ariane_soc::DMALength }
+    '{ idx: ariane_soc::DMA,       start_addr: ariane_soc::DMABase,       end_addr: ariane_soc::DMABase       + ariane_soc::DMALength },
+    '{ idx: ariane_soc::GlobalBuffer, start_addr: ariane_soc::GlobalBufferBase, end_addr: ariane_soc::GlobalBufferBase + ariane_soc::GlobalBufferLength }
   };
 
   localparam axi_pkg::xbar_cfg_t AXI_XBAR_CFG = '{
@@ -545,6 +546,7 @@ module ariane_soc_top import axi_pkg::*; #(
 
     .dma_cfg        (master[ariane_soc::DMA]          ),
     .dma_mst        (slave [ariane_soc::DMAMst]       ),
+    .global_buf     (master[ariane_soc::GlobalBuffer] ),
 
     .irq_o          ( irqs                         ),
     .exit_o         ( ctrl_exit                    ),
