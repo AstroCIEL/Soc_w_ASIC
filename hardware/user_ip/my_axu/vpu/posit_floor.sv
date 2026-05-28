@@ -10,10 +10,17 @@ import posit_types_pkg::*;
  * int_o：5-bit 无符号整数，表示 floor 结果，取值区间 [0, 32)（即 0~31）；
  * 负数 floor 结果输出 0；NaR 输出 0；≥32 饱和为 31。
  */
+
+
+
 module posit_floor #(
     parameter int unsigned n  = 16,
     parameter int unsigned es = 2
 )(
+    input  logic              clk_i,
+    input  logic              rstn_i,
+
+    
     input  logic [n-1:0]      posit_i,
     output logic [n-1:0]      posit_o,
     output logic [4:0]        int_o
@@ -30,6 +37,8 @@ module posit_floor #(
     logic signed [EXP_WIDTH:0]   rg_exp;
     logic        [FULL_MANT-1:0] mant;
 
+
+
     posit_decoder #(
         .n (n),
         .es(es)
@@ -39,6 +48,18 @@ module posit_floor #(
         .rg_exp_o    (rg_exp),
         .mant_norm_o (mant)
     );
+
+
+    logic                        sign_ff;
+    logic signed [EXP_WIDTH:0]   rg_exp_ff;
+    logic        [FULL_MANT-1:0] mant_ff;
+    logic        [n-1:0]         posit_i_ff;
+
+`FFARN(sign_ff,     sign,    1'b0, clk_i, rstn_i)
+`FFARN(rg_exp_ff,   rg_exp,  '0,   clk_i, rstn_i)
+`FFARN(mant_ff,     mant,    '0,   clk_i, rstn_i)
+`FFARN(posit_i_ff,  posit_i, '0,   clk_i, rstn_i)
+
 
     logic is_nar;
     logic is_zero;
@@ -50,32 +71,32 @@ module posit_floor #(
     logic [FULL_MANT:0]        mant_wide;
     logic                      floor_to_neg_one;
 
-    assign is_nar       = (posit_i == NAR_POSIT);
-    assign is_zero      = ~mant[MANT_WIDTH];
-    assign frac_bits_s  = MANT_WIDTH - rg_exp;
-    assign frac_valid   = (rg_exp >= 0) && (rg_exp < MANT_WIDTH);
+    assign is_nar       = (posit_i_ff == NAR_POSIT);
+    assign is_zero      = ~mant_ff[MANT_WIDTH];
+    assign frac_bits_s  = MANT_WIDTH - rg_exp_ff;
+    assign frac_valid   = (rg_exp_ff >= 0) && (rg_exp_ff < MANT_WIDTH);
 
     always_comb begin
         if (frac_valid)
             frac_mask = (1'b1 << FULL_MANT'(frac_bits_s)) - 1;
-        else if (rg_exp < 0)
+        else if (rg_exp_ff < 0)
             frac_mask = {MANT_WIDTH{1'b1}};
         else
             frac_mask = {MANT_WIDTH{1'b0}};
     end
 
-    assign rem          = mant[MANT_WIDTH-1:0] & frac_mask;
-    assign mant_cleared = {mant[MANT_WIDTH], mant[MANT_WIDTH-1:0] & ~frac_mask};
+    assign rem          = mant_ff[MANT_WIDTH-1:0] & frac_mask;
+    assign mant_cleared = {mant_ff[MANT_WIDTH], mant_ff[MANT_WIDTH-1:0] & ~frac_mask};
 
     always_comb begin
-        if (frac_valid && sign && |rem)
+        if (frac_valid && sign_ff && |rem)
             mant_wide = {1'b0, mant_cleared} + (FULL_MANT'(1'b1) << FULL_MANT'(frac_bits_s));
         else
             mant_wide = {1'b0, mant_cleared};
     end
 
   // |x| < 1 的负数：截断后需落到 -1
-    assign floor_to_neg_one = sign && !is_zero && (rg_exp < 0) && (mant_wide == '0);
+    assign floor_to_neg_one = sign_ff && !is_zero && (rg_exp_ff < 0) && (mant_wide == '0);
 
     logic                      floor_sign;
     logic signed [EXP_WIDTH:0] floor_rg_exp;
@@ -83,7 +104,7 @@ module posit_floor #(
 
     always_comb begin
         if (is_zero || (mant_wide == '0 && !floor_to_neg_one) ||
-            (!sign && (rg_exp < 0))) begin
+            (!sign_ff && (rg_exp_ff < 0))) begin
             floor_sign   = 1'b0;
             floor_rg_exp = '0;
             floor_mant   = '0;
@@ -92,8 +113,8 @@ module posit_floor #(
             floor_rg_exp = '0;
             floor_mant   = MANT_ONE;
         end else begin
-            floor_sign   = sign;
-            floor_rg_exp = rg_exp;
+            floor_sign   = sign_ff;
+            floor_rg_exp = rg_exp_ff;
             floor_mant   = mant_wide[FULL_MANT-1:0];
         end
     end
@@ -110,7 +131,7 @@ module posit_floor #(
         .result_o    (encoded_o)
     );
 
-    assign posit_o = is_nar ? posit_i : encoded_o;
+    assign posit_o = is_nar ? posit_i_ff : encoded_o;
 
     // ======================================
     // 5-bit 无符号整数输出，取值 [0, 32) -> 0~31

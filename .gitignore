@@ -9,3 +9,5 @@ gcc-install
 /tools/python3
 /tools/src
 *.log
+syn/build
+
