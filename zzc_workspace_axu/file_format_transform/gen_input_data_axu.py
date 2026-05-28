@@ -33,6 +33,93 @@ TOTAL_ROWS       = 256
 
 PackedWord = Tuple[int, int]  # (lo, hi) two 64-bit words per (row, bank)
 
+# Test case configurations: defines which rows each test case needs
+CASE_CONFIGS = {
+    "vpu_add": {
+        "opa_rows": list(range(0, 10)),
+        "opb_rows": list(range(0, 10)),
+        "golden_rows": list(range(0, 10)),
+    },
+    "vpu_sub": {
+        "opa_rows": list(range(10, 20)),
+        "opb_rows": list(range(10, 20)),
+        "golden_rows": list(range(10, 20)),
+    },
+    "vpu_mul": {
+        "opa_rows": list(range(20, 30)),
+        "opb_rows": list(range(20, 30)),
+        "golden_rows": list(range(20, 30)),
+    },
+    "vpu_max": {
+        "opa_rows": list(range(30, 40)),
+        "opb_rows": list(range(30, 40)),
+        "golden_rows": list(range(30, 40)),
+    },
+    "vpu_min": {
+        "opa_rows": list(range(40, 50)),
+        "opb_rows": list(range(40, 50)),
+        "golden_rows": list(range(40, 50)),
+    },
+    "vpu_reduce_max": {
+        "opa_rows": list(range(50, 60)),
+        "opb_rows": list(range(50, 60)),
+        "golden_rows": list(range(50, 60)),
+    },
+    "vpu_reduce_sum": {
+        "opa_rows": list(range(60, 70)),
+        "opb_rows": list(range(60, 70)),
+        "golden_rows": list(range(60, 70)),
+    },
+    "sfu_int2posit": {
+        "opa_rows": list(range(80, 90)),
+        "opb_rows": list(range(80, 90)),
+        "golden_rows": list(range(80, 90)),
+    },
+    "sfu_rng": {
+        "opa_rows": [48, 49],  # seed high/low, lanes 0..15
+        "opb_rows": [48, 49],  # seed high/low, lanes 16..31
+        "golden_rows": list(range(90, 100)),
+    },
+    "nli_mish": {
+        "opa_rows": list(range(90, 128)),  # full LUT rows 90..95 + compute rows 96..127
+        "opb_rows": [50],
+        "golden_rows": list(range(100, 132)),
+    },
+    "nli_tanh": {
+        "opa_rows": list(range(128, 166)),  # full LUT rows 128..133 + compute rows 134..165
+        "opb_rows": [51],
+        "golden_rows": list(range(132, 164)),
+    },
+    "scheduler": {
+        "opa_rows": list(range(166, 182)),  # scheduler input rows 166..181
+        "opb_rows": [],
+        "golden_rows": list(range(164, 193)),  # scheduler output rows 164..192
+    },
+}
+
+
+def validate_case_config(case_name: str) -> None:
+    """Validate case-specific row requirements that are easy to under-specify."""
+    cfg = CASE_CONFIGS[case_name]
+
+    if case_name == "sfu_rng":
+        if cfg["opa_rows"] != [48, 49] or cfg["opb_rows"] != [48, 49]:
+            raise ValueError("sfu_rng requires seed rows 48/49 in both OP_A and OP_B")
+
+    if case_name == "scheduler":
+        if cfg["opa_rows"] != list(range(166, 182)):
+            raise ValueError("scheduler requires OP_A rows 166..181")
+
+    if case_name == "nli_mish":
+        if cfg["opa_rows"] != list(range(90, 128)):
+            raise ValueError(
+                "nli_mish requires OP_A rows 90..127, including full LUT rows 90..95 and compute rows 96..127")
+
+    if case_name == "nli_tanh":
+        if cfg["opa_rows"] != list(range(128, 166)):
+            raise ValueError(
+                "nli_tanh requires OP_A rows 128..165, including full LUT rows 128..133 and compute rows 134..165")
+
 
 def parse_blank_sections(path: Path) -> List[List[List[int]]]:
     """Parse a data file into sections separated by blank lines only.
@@ -324,9 +411,189 @@ def load_all_in_one(data_dir: Path,
     return op_a, op_b, golden
 
 
+def load_single_case(case_name: str,
+                     data_dir: Path,
+                     golden_dir: Path) -> Tuple[List[List[PackedWord]], 
+                                                  List[List[PackedWord]], 
+                                                  List[List[PackedWord]]]:
+    """Load data for a single test case, extracting only the required rows.
+    
+    Note: Returns sparse arrays to preserve row indices used in main.c CASES array.
+    DEPRECATED: Use load_single_case_compact() instead.
+    """
+    if case_name not in CASE_CONFIGS:
+        raise ValueError("Unknown test case: {}. Available: {}".format(
+            case_name, ", ".join(CASE_CONFIGS.keys())))
+    
+    config = CASE_CONFIGS[case_name]
+    
+    # Load full data files
+    a_path = data_dir / "axu_all_in_one_a.txt"
+    b_path = data_dir / "axu_all_in_one_b.txt"
+    g_path = golden_dir / "axu_all_in_one_out_reference.txt"
+    
+    a_sections = parse_blank_sections(a_path)
+    b_sections = parse_blank_sections(b_path)
+    g_sections = parse_comment_sections(g_path)
+    
+    # Build full 256-row arrays
+    zero_row = [pack_bank_tokens([0] * TOKENS_PER_BANK) for _ in range(BANK_COUNT)]
+    full_op_a: List[List[PackedWord]] = [list(zero_row) for _ in range(TOTAL_ROWS)]
+    full_op_b: List[List[PackedWord]] = [list(zero_row) for _ in range(TOTAL_ROWS)]
+    full_golden: List[List[PackedWord]] = [list(zero_row) for _ in range(TOTAL_ROWS)]
+    
+    # Fill OP_A
+    cur = 0
+    for sec in a_sections:
+        for r in sec:
+            if cur >= TOTAL_ROWS:
+                break
+            full_op_a[cur] = pack_row(r)
+            cur += 1
+    
+    # Fill OP_B
+    cur = 0
+    for sec in b_sections:
+        for r in sec:
+            if cur >= TOTAL_ROWS:
+                break
+            full_op_b[cur] = pack_row(r)
+            cur += 1
+    
+    # Fill GOLDEN using layout
+    GOLDEN_LAYOUT = [
+        (0, 10), (10, 10), (20, 10), (30, 10), (40, 10), (50, 10), (60, 10),
+        (70, 10), (80, 10), (90, 10), (100, 32), (132, 32), (164, 29),
+    ]
+    for sec_idx, (row_start, length) in enumerate(GOLDEN_LAYOUT):
+        if sec_idx >= len(g_sections):
+            break
+        sec = g_sections[sec_idx]
+        for i in range(min(length, len(sec))):
+            full_golden[row_start + i] = pack_row(sec[i])
+    
+    # Extract only the rows needed for this test case
+    opa_rows = config["opa_rows"]
+    opb_rows = config["opb_rows"]
+    golden_rows = config["golden_rows"]
+    
+    # Find the maximum row index to determine array size (preserve sparse structure)
+    max_row = max(
+        max(opa_rows) if opa_rows else 0,
+        max(opb_rows) if opb_rows else 0,
+        max(golden_rows) if golden_rows else 0
+    ) + 1
+    
+    # Create sparse arrays (with zeros for unused rows)
+    compact_op_a: List[List[PackedWord]] = [list(zero_row) for _ in range(max_row)]
+    compact_op_b: List[List[PackedWord]] = [list(zero_row) for _ in range(max_row)]
+    compact_golden: List[List[PackedWord]] = [list(zero_row) for _ in range(max_row)]
+    
+    # Copy required rows (preserving their original indices)
+    for row in opa_rows:
+        if row < len(full_op_a) and row < max_row:
+            compact_op_a[row] = full_op_a[row]
+    
+    for row in opb_rows:
+        if row < len(full_op_b) and row < max_row:
+            compact_op_b[row] = full_op_b[row]
+    
+    for row in golden_rows:
+        if row < len(full_golden) and row < max_row:
+            compact_golden[row] = full_golden[row]
+    
+    return compact_op_a, compact_op_b, compact_golden
+
+
+def load_single_case_compact(case_name: str,
+                             data_dir: Path,
+                             golden_dir: Path) -> Tuple[List[List[PackedWord]], 
+                                                          List[List[PackedWord]], 
+                                                          List[List[PackedWord]],
+                                                          dict, dict, dict]:
+    """Load data for a single test case, generating compact arrays.
+    
+    Returns:
+        (compact_op_a, compact_op_b, compact_golden, opa_map, opb_map, golden_map)
+        where *_map is {original_row: compact_index}
+    """
+    if case_name not in CASE_CONFIGS:
+        raise ValueError("Unknown test case: {}. Available: {}".format(
+            case_name, ", ".join(CASE_CONFIGS.keys())))
+    
+    config = CASE_CONFIGS[case_name]
+    
+    # Load full 256-row data
+    a_path = data_dir / "axu_all_in_one_a.txt"
+    b_path = data_dir / "axu_all_in_one_b.txt"
+    g_path = golden_dir / "axu_all_in_one_out_reference.txt"
+    
+    a_sections = parse_blank_sections(a_path)
+    b_sections = parse_blank_sections(b_path)
+    g_sections = parse_comment_sections(g_path)
+    
+    # Build full arrays
+    zero_row = [pack_bank_tokens([0] * TOKENS_PER_BANK) for _ in range(BANK_COUNT)]
+    full_op_a: List[List[PackedWord]] = [list(zero_row) for _ in range(TOTAL_ROWS)]
+    full_op_b: List[List[PackedWord]] = [list(zero_row) for _ in range(TOTAL_ROWS)]
+    full_golden: List[List[PackedWord]] = [list(zero_row) for _ in range(TOTAL_ROWS)]
+    
+    # Fill OP_A
+    cur = 0
+    for sec in a_sections:
+        for r in sec:
+            if cur >= TOTAL_ROWS:
+                break
+            full_op_a[cur] = pack_row(r)
+            cur += 1
+    
+    # Fill OP_B
+    cur = 0
+    for sec in b_sections:
+        for r in sec:
+            if cur >= TOTAL_ROWS:
+                break
+            full_op_b[cur] = pack_row(r)
+            cur += 1
+    
+    # Fill GOLDEN
+    GOLDEN_LAYOUT = [
+        (0, 10), (10, 10), (20, 10), (30, 10), (40, 10), (50, 10), (60, 10),
+        (70, 10), (80, 10), (90, 10), (100, 32), (132, 32), (164, 29),
+    ]
+    for sec_idx, (row_start, length) in enumerate(GOLDEN_LAYOUT):
+        if sec_idx >= len(g_sections):
+            break
+        sec = g_sections[sec_idx]
+        for i in range(min(length, len(sec))):
+            full_golden[row_start + i] = pack_row(sec[i])
+    
+    # Extract only needed rows and create compact arrays
+    opa_rows = sorted(config["opa_rows"])
+    opb_rows = sorted(config["opb_rows"])
+    golden_rows = sorted(config["golden_rows"])
+    
+    # Build compact arrays (only valid data, no zeros)
+    compact_op_a = [full_op_a[r] for r in opa_rows] if opa_rows else [list(zero_row)]
+    compact_op_b = [full_op_b[r] for r in opb_rows] if opb_rows else [list(zero_row)]
+    compact_golden = [full_golden[r] for r in golden_rows] if golden_rows else [list(zero_row)]
+    
+    # Create index mappings: original_row -> compact_index
+    opa_map = {old: new for new, old in enumerate(opa_rows)} if opa_rows else {}
+    opb_map = {old: new for new, old in enumerate(opb_rows)} if opb_rows else {}
+    golden_map = {old: new for new, old in enumerate(golden_rows)} if golden_rows else {}
+    
+    return compact_op_a, compact_op_b, compact_golden, opa_map, opb_map, golden_map
+
+
 def build_header_all(op_a: List[List[PackedWord]],
                      op_b: List[List[PackedWord]],
-                     golden: List[List[PackedWord]]) -> str:
+                     golden: List[List[PackedWord]],
+                     case_name: str = "all_in_one",
+                     total_rows: int = None) -> str:
+    if total_rows is None:
+        total_rows = TOTAL_ROWS
+    
     return "\n".join([
         "#ifndef AXU_INPUT_DATA_H",
         "#define AXU_INPUT_DATA_H",
@@ -334,19 +601,77 @@ def build_header_all(op_a: List[List[PackedWord]],
         "#include <stdint.h>",
         "#include \"my_axu.h\"",
         "",
-        "#define AXU_TEST_MODE_NAME    \"all_in_one\"",
+        "#define AXU_TEST_MODE_NAME    \"{}\"".format(case_name),
         "#define AXU_INPUT_BANK_COUNT  8u",
-        "#define AXU_TOTAL_ROW_COUNT   {}u".format(TOTAL_ROWS),
+        "#define AXU_TOTAL_ROW_COUNT   {}u".format(total_rows),
         "",
-        format_array_fixed_size("AXU_OP_A_DATA", TOTAL_ROWS, op_a),
+        format_array_fixed_size("AXU_OP_A_DATA", total_rows, op_a),
         "",
-        format_array_fixed_size("AXU_OP_B_DATA", TOTAL_ROWS, op_b),
+        format_array_fixed_size("AXU_OP_B_DATA", total_rows, op_b),
         "",
-        format_array_fixed_size("AXU_GOLDEN_DATA", TOTAL_ROWS, golden),
+        format_array_fixed_size("AXU_GOLDEN_DATA", total_rows, golden),
         "",
         "#endif",
         "",
     ])
+
+
+def build_header_compact(case_name: str,
+                        op_a: List[List[PackedWord]],
+                        op_b: List[List[PackedWord]],
+                        golden: List[List[PackedWord]],
+                        opa_map: dict,
+                        opb_map: dict,
+                        golden_map: dict) -> str:
+    """Build header with compact arrays and index mapping macros."""
+    
+    lines = [
+        "#ifndef AXU_INPUT_DATA_H",
+        "#define AXU_INPUT_DATA_H",
+        "",
+        "#include <stdint.h>",
+        "#include \"my_axu.h\"",
+        "",
+        "#define AXU_TEST_MODE_NAME    \"{}\"".format(case_name),
+        "#define AXU_INPUT_BANK_COUNT  8u",
+        "",
+        "/* Compact array sizes (only valid data rows) */",
+        "#define AXU_TOTAL_ROW_COUNT_OPA    {}u".format(len(op_a)),
+        "#define AXU_TOTAL_ROW_COUNT_OPB    {}u".format(len(op_b)),
+        "#define AXU_TOTAL_ROW_COUNT_GOLDEN {}u".format(len(golden)),
+        "",
+        "/* Index mapping macros: original row -> compact index */",
+    ]
+    
+    # Generate mapping macros for OP_A
+    if opa_map:
+        for old_row, new_idx in sorted(opa_map.items()):
+            lines.append("#define AXU_MAP_OPA_{}  {}u".format(old_row, new_idx))
+    
+    # Generate mapping macros for OP_B
+    if opb_map:
+        for old_row, new_idx in sorted(opb_map.items()):
+            lines.append("#define AXU_MAP_OPB_{}  {}u".format(old_row, new_idx))
+    
+    # Generate mapping macros for GOLDEN
+    if golden_map:
+        for old_row, new_idx in sorted(golden_map.items()):
+            lines.append("#define AXU_MAP_GOLDEN_{}  {}u".format(old_row, new_idx))
+    
+    lines.extend([
+        "",
+        "/* Compact data arrays */",
+        format_array_fixed_size("AXU_OP_A_DATA", len(op_a), op_a),
+        "",
+        format_array_fixed_size("AXU_OP_B_DATA", len(op_b), op_b),
+        "",
+        format_array_fixed_size("AXU_GOLDEN_DATA", len(golden), golden),
+        "",
+        "#endif",
+        "",
+    ])
+    
+    return "\n".join(lines)
 
 
 # -------------------- main --------------------
@@ -354,6 +679,8 @@ def build_header_all(op_a: List[List[PackedWord]],
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", required=True, choices=["vpu_add", "all"])
+    parser.add_argument("--case", required=False, default=None,
+                        help="specific test case name (e.g., vpu_add, sfu_rng, nli_mish)")
     parser.add_argument("--data-dir", required=True, type=Path,
                         help="directory containing axu_all_in_one_{a,b}.txt")
     parser.add_argument("--golden-dir", required=True, type=Path,
@@ -365,12 +692,25 @@ def main() -> int:
     data_dir = args.data_dir.resolve()
     golden_dir = args.golden_dir.resolve()
 
+    # Handle single test case with compact arrays
+    if args.case and args.case != "all":
+        validate_case_config(args.case)
+        op_a, op_b, golden, opa_map, opb_map, golden_map = \
+            load_single_case_compact(args.case, data_dir, golden_dir)
+        header = build_header_compact(args.case, op_a, op_b, golden,
+                                      opa_map, opb_map, golden_map)
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(header, encoding="utf-8")
+        print("generated {} for case={} (compact: {}/{}/{} rows)".format(
+            args.out, args.case, len(op_a), len(op_b), len(golden)))
+        return 0
+
+    # Legacy modes (deprecated, but kept for reference)
     if args.mode == "vpu_add":
         op_a, op_b, golden = load_vpu_add(data_dir, golden_dir, row_count=10)
         header = build_header_vpu_add(op_a, op_b, golden)
     elif args.mode == "all":
-        op_a, op_b, golden = load_all_in_one(data_dir, golden_dir)
-        header = build_header_all(op_a, op_b, golden)
+        raise ValueError("mode=all is deprecated, use --case=<test_name> instead")
     else:
         raise ValueError("unsupported mode: {}".format(args.mode))
 

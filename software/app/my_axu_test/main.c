@@ -47,33 +47,75 @@ struct axu_case {
 
 /* Test program mirrors axu_top_tb.sv stimulus order so that data placement
  * in OP_A / OP_B / GOLDEN matches the testbench expectations. */
+
+#if defined(AXU_TEST_CASE_vpu_add)
 static const struct axu_case CASES[] = {
-    /* name              unit            func                  opaB opbB vecB redB batch outR cnt mask         special */
-    { "vpu_add",         AXU_UNIT_VPU,   AXU_VPU_ADD,            0,   0,   0,   0,  10,   0, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
-    { "vpu_sub",         AXU_UNIT_VPU,   AXU_VPU_SUB,           10,  10,  10,   0,  10,  10, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
-    { "vpu_mul",         AXU_UNIT_VPU,   AXU_VPU_MUL,           20,  20,  20,   0,  10,  20, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
-    { "vpu_max",         AXU_UNIT_VPU,   AXU_VPU_MAX_EW,        30,  30,  30,   0,  10,  30, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
-    { "vpu_min",         AXU_UNIT_VPU,   AXU_VPU_MIN_EW,        40,  40,  40,   0,  10,  40, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
-    { "vpu_reduce_max",  AXU_UNIT_VPU,   AXU_VPU_REDUCE_MAX,    50,  50,   0,  50,  10,  50, 10, LANE_MASK_BANK0,   CASE_NORMAL    },
-    { "vpu_reduce_sum",  AXU_UNIT_VPU,   AXU_VPU_REDUCE_SUM,    60,  60,   0,  60,  10,  60, 10, LANE_MASK_BANK0,   CASE_NORMAL    },
-    // { "sfu_sincos",      AXU_UNIT_SFU,   AXU_SFU_CORDIC,        70,  70,  70,   0,  10,  70, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
-    { "sfu_int2posit",   AXU_UNIT_SFU,   AXU_SFU_ITP,           80,  80,  80,   0,  10,  80, 10, LANE_MASK_FIRST32, CASE_NORMAL    },
-    { "sfu_rng_seed",    AXU_UNIT_SFU,   0,                      0,   0,   0,   0,   0,   0,  0, 0,                 CASE_SEED_LOAD },
-    { "sfu_rng",         AXU_UNIT_SFU,   AXU_SFU_RNG,            0,   0,  90,   0,  10,  90, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
-    { "nli_mish_mul",    AXU_UNIT_NLI,   AXU_NLI_LOAD_MULT,     90,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
-    { "nli_mish_ybnd",   AXU_UNIT_NLI,   AXU_NLI_LOAD_YBND,     91,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
-    { "nli_mish",        AXU_UNIT_NLI,   AXU_NLI_COMPUTE,       96,  50, 100,   0,  32, 100, 32, LANE_MASK_FIRST32, CASE_NORMAL    },
-    { "nli_tanh_mul",    AXU_UNIT_NLI,   AXU_NLI_LOAD_MULT,    128,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
-    { "nli_tanh_ybnd",   AXU_UNIT_NLI,   AXU_NLI_LOAD_YBND,    129,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
-    { "nli_tanh",        AXU_UNIT_NLI,   AXU_NLI_COMPUTE,      134,  51, 132,   0,  32, 132, 32, LANE_MASK_FIRST32, CASE_NORMAL    },
-    { "scheduler",       AXU_UNIT_SCH,   AXU_SCH_RUN,          166,   0, 164,   0,   0, 164, 29, LANE_MASK_BANK0,   CASE_NORMAL    },
+    { "vpu_add",         AXU_UNIT_VPU,   AXU_VPU_ADD,            AXU_MAP_OPA_0,   AXU_MAP_OPB_0,   AXU_MAP_GOLDEN_0,   0,  10,   AXU_MAP_GOLDEN_0, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
 };
+#elif defined(AXU_TEST_CASE_vpu_sub)
+static const struct axu_case CASES[] = {
+    { "vpu_sub",         AXU_UNIT_VPU,   AXU_VPU_SUB,            AXU_MAP_OPA_10,  AXU_MAP_OPB_10,  AXU_MAP_GOLDEN_10,  0,  10,  AXU_MAP_GOLDEN_10, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_vpu_mul)
+static const struct axu_case CASES[] = {
+    { "vpu_mul",         AXU_UNIT_VPU,   AXU_VPU_MUL,            AXU_MAP_OPA_20,  AXU_MAP_OPB_20,  AXU_MAP_GOLDEN_20,  0,  10,  AXU_MAP_GOLDEN_20, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_vpu_max)
+static const struct axu_case CASES[] = {
+    { "vpu_max",         AXU_UNIT_VPU,   AXU_VPU_MAX_EW,         AXU_MAP_OPA_30,  AXU_MAP_OPB_30,  AXU_MAP_GOLDEN_30,  0,  10,  AXU_MAP_GOLDEN_30, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_vpu_min)
+static const struct axu_case CASES[] = {
+    { "vpu_min",         AXU_UNIT_VPU,   AXU_VPU_MIN_EW,         AXU_MAP_OPA_40,  AXU_MAP_OPB_40,  AXU_MAP_GOLDEN_40,  0,  10,  AXU_MAP_GOLDEN_40, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_vpu_reduce_max)
+static const struct axu_case CASES[] = {
+    { "vpu_reduce_max",  AXU_UNIT_VPU,   AXU_VPU_REDUCE_MAX,     AXU_MAP_OPA_50,  AXU_MAP_OPB_50,  0,  AXU_MAP_GOLDEN_50,  10,  AXU_MAP_GOLDEN_50, 10, LANE_MASK_BANK0,   CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_vpu_reduce_sum)
+static const struct axu_case CASES[] = {
+    { "vpu_reduce_sum",  AXU_UNIT_VPU,   AXU_VPU_REDUCE_SUM,     AXU_MAP_OPA_60,  AXU_MAP_OPB_60,  0,  AXU_MAP_GOLDEN_60,  10,  AXU_MAP_GOLDEN_60, 10, LANE_MASK_BANK0,   CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_sfu_int2posit)
+static const struct axu_case CASES[] = {
+    { "sfu_int2posit",   AXU_UNIT_SFU,   AXU_SFU_ITP,            AXU_MAP_OPA_80,  AXU_MAP_OPB_80,  AXU_MAP_GOLDEN_80,  0,  10,  AXU_MAP_GOLDEN_80, 10, LANE_MASK_FIRST32, CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_sfu_rng)
+static const struct axu_case CASES[] = {
+    { "sfu_rng_seed",    AXU_UNIT_SFU,   0,                      0,   0,   0,   0,   0,   0,  0, 0,                 CASE_SEED_LOAD },
+    { "sfu_rng",         AXU_UNIT_SFU,   AXU_SFU_RNG,            0,   0,  AXU_MAP_GOLDEN_90,   0,  10,  AXU_MAP_GOLDEN_90, 10, LANE_MASK_FULL64,  CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_nli_mish)
+static const struct axu_case CASES[] = {
+    { "nli_mish_mul",    AXU_UNIT_NLI,   AXU_NLI_LOAD_MULT,      AXU_MAP_OPA_90,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
+    { "nli_mish_ybnd",   AXU_UNIT_NLI,   AXU_NLI_LOAD_YBND,      AXU_MAP_OPA_91,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
+    { "nli_mish",        AXU_UNIT_NLI,   AXU_NLI_COMPUTE,        AXU_MAP_OPA_96,  AXU_MAP_OPB_50, AXU_MAP_GOLDEN_100,   0,  32, AXU_MAP_GOLDEN_100, 32, LANE_MASK_FIRST32, CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_nli_tanh)
+static const struct axu_case CASES[] = {
+    { "nli_tanh_mul",    AXU_UNIT_NLI,   AXU_NLI_LOAD_MULT,      AXU_MAP_OPA_128,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
+    { "nli_tanh_ybnd",   AXU_UNIT_NLI,   AXU_NLI_LOAD_YBND,      AXU_MAP_OPA_129,   0,   0,   0,   0,   0,  0, 0,                 CASE_LUT_LOAD  },
+    { "nli_tanh",        AXU_UNIT_NLI,   AXU_NLI_COMPUTE,        AXU_MAP_OPA_134,  AXU_MAP_OPB_51, AXU_MAP_GOLDEN_132,   0,  32, AXU_MAP_GOLDEN_132, 32, LANE_MASK_FIRST32, CASE_NORMAL    },
+};
+#elif defined(AXU_TEST_CASE_scheduler)
+static const struct axu_case CASES[] = {
+    { "scheduler",       AXU_UNIT_SCH,   AXU_SCH_RUN,            AXU_MAP_OPA_166,   0, AXU_MAP_GOLDEN_164,   0,   0, AXU_MAP_GOLDEN_164, 29, LANE_MASK_BANK0,   CASE_NORMAL    },
+};
+#else
+/* Full test suite removed - use individual test cases only */
+#error "Must specify AXU_TEST_CASE_xxx macro"
+#endif
 
 #define NUM_CASES  (sizeof(CASES) / sizeof(CASES[0]))
 
 /* SFU rng seed source rows inside op_a buffer (matches axu_top_tb.sv). */
+#ifdef AXU_TEST_CASE_sfu_rng
+#define SFU_SEED_HIGH_ROW  AXU_MAP_OPA_48
+#define SFU_SEED_LOW_ROW   AXU_MAP_OPA_49
+#else
 #define SFU_SEED_HIGH_ROW  48u
 #define SFU_SEED_LOW_ROW   49u
+#endif
 
 static inline volatile uint64_t *axu_buf64(volatile uint8_t *buf,
                                            unsigned bank,
@@ -86,10 +128,17 @@ static inline volatile uint64_t *axu_buf64(volatile uint8_t *buf,
 
 static void write_all_input_buffers(struct my_axu_drv *axu)
 {
-    for (unsigned row = 0; row < AXU_TOTAL_ROW_COUNT; row++) {
+    // Write OP_A (compact array)
+    for (unsigned row = 0; row < AXU_TOTAL_ROW_COUNT_OPA; row++) {
         for (unsigned b = 0; b < AXU_INPUT_BANK_COUNT; b++) {
             *axu_buf64(axu->opabuf, b, row, 0) = AXU_OP_A_DATA[row][b][0];
             *axu_buf64(axu->opabuf, b, row, 1) = AXU_OP_A_DATA[row][b][1];
+        }
+    }
+    
+    // Write OP_B (compact array)
+    for (unsigned row = 0; row < AXU_TOTAL_ROW_COUNT_OPB; row++) {
+        for (unsigned b = 0; b < AXU_INPUT_BANK_COUNT; b++) {
             *axu_buf64(axu->opbbuf, b, row, 0) = AXU_OP_B_DATA[row][b][0];
             *axu_buf64(axu->opbbuf, b, row, 1) = AXU_OP_B_DATA[row][b][1];
         }
@@ -101,6 +150,14 @@ static int compare_output_range(struct my_axu_drv *axu,
 {
     for (unsigned r = 0; r < c->out_row_count; r++) {
         unsigned row = (unsigned)c->out_row_start + r;
+        
+        // Bounds check for compact golden array
+        if (row >= AXU_TOTAL_ROW_COUNT_GOLDEN) {
+            printf("ERROR: golden_row %u out of bounds (max %u)\n",
+                   row, AXU_TOTAL_ROW_COUNT_GOLDEN);
+            return -1;
+        }
+        
         for (unsigned b = 0; b < AXU_INPUT_BANK_COUNT; b++) {
             if (((c->bank_mask >> b) & 0x1u) == 0u) {
                 continue;
