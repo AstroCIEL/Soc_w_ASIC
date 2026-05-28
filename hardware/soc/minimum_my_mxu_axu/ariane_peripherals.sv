@@ -43,6 +43,7 @@ module ariane_peripherals #(
 
     AXI_BUS.Slave      dma_cfg         , // DMA config slave @ DMABase
     AXI_BUS.Master     dma_mst         , // DMA data master back into xbar
+    AXI_BUS.Slave      global_buf      , // global_buffer @ GlobalBufferBase
 
     output logic [1:0] irq_o           ,
     // ctrl_registers outputs
@@ -517,7 +518,51 @@ module ariane_peripherals #(
     );
 
     // ---------------
-    // 10. DMA (iDMA desc64 frontend + rw_axi backend)
+    // 10. Global Buffer
+    // ---------------
+    logic                          gbuf_req;
+    logic                          gbuf_we;
+    logic [AxiAddrWidth-1:0]       gbuf_addr;
+    logic [AxiDataWidth/8-1:0]     gbuf_be;
+    logic [AxiDataWidth-1:0]       gbuf_wdata;
+    logic [AxiDataWidth-1:0]       gbuf_rdata;
+
+    axi2mem #(
+        .AXI_ID_WIDTH   ( $bits(global_buf.aw_id) ),
+        .AXI_ADDR_WIDTH ( AxiAddrWidth            ),
+        .AXI_DATA_WIDTH ( AxiDataWidth            ),
+        .AXI_USER_WIDTH ( AxiUserWidth            )
+    ) i_axi2gbuf (
+        .clk_i  ( clk_i      ),
+        .rst_ni ( rst_ni     ),
+        .slave  ( global_buf ),
+        .req_o  ( gbuf_req   ),
+        .we_o   ( gbuf_we    ),
+        .addr_o ( gbuf_addr  ),
+        .be_o   ( gbuf_be    ),
+        .user_o (            ),
+        .data_o ( gbuf_wdata ),
+        .user_i ( '0         ),
+        .data_i ( gbuf_rdata )
+    );
+
+    global_buffer #(
+        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
+        .AXI_DATA_WIDTH ( AxiDataWidth ),
+        .NUM_BANKS      ( 1            )
+    ) i_global_buffer (
+        .clk_i          ( clk_i      ),
+        .rstn_i         ( rst_ni     ),
+        .axi_req_i      ( gbuf_req   ),
+        .axi_write_en_i ( gbuf_we    ),
+        .axi_addr_i     ( gbuf_addr  ),
+        .axi_byte_en_i  ( gbuf_be    ),
+        .axi_wdata_i    ( gbuf_wdata ),
+        .axi_rdata_o    ( gbuf_rdata )
+    );
+
+    // ---------------
+    // 11. DMA (iDMA desc64 frontend + rw_axi backend)
     // ---------------
     typedef logic [AxiAddrWidth-1:0]   dma_cfg_addr_t;
     typedef logic [AxiDataWidth-1:0]   dma_cfg_data_t;

@@ -49,8 +49,9 @@ package ariane_soc;
     AxuOutBuf  =16, //output buffer sram接口
 
     DMA        =17,
+    GlobalBuffer =18,
 
-    NB_PERIPHERALS = 18
+    NB_PERIPHERALS = 19
 
   } axi_slaves_t;
 
@@ -74,6 +75,7 @@ package ariane_soc;
   localparam logic[63:0] AxuOpABufLength   = 64'h8000; // 256*128*8/8=32KB
   localparam logic[63:0] AxuOpBBufLength   = 64'h8000; // 256*128*8/8=32KB
   localparam logic[63:0] AxuOutBufLength   = 64'h8000; // 256*128*8/8=32KB
+  localparam logic[63:0] GlobalBufferLength = 64'h8000; // 4096*64/8=32KB
 
   // localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB 
   localparam logic[63:0] DRAMLength     = 64'h8000; // 128 kB 改成32kB试试
@@ -101,6 +103,7 @@ package ariane_soc;
     AxuOpABufBase     = 64'h7002_8000,
     AxuOpBBufBase     = 64'h7003_0000,
     AxuOutBufBase     = 64'h7003_8000,
+    GlobalBufferBase  = 64'h7004_0000,
 
     DRAMBase     = 64'h8000_0000,
     CtrlBase     = 64'hD000_0000
