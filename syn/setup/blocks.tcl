@@ -34,9 +34,9 @@
 # HIER_BLOCKS definition
 # ---------------------------------------------------------------------------
 set HIER_BLOCKS {
-    {i_ara_system                            ara_system          "CVA6 + Ara vector processor core"}
-    {i_ariane_peripherals                    ariane_peripherals  "Peripherals: PLIC, UART, Timer, DMA"}
-    {i_dm_top                                dm_top              "RISC-V Debug Module"}
-    {i_axi_xbar                              axi_xbar_intf       "AXI crossbar interconnect"}
-    {i_ariane_peripherals/i_default_slave    default_slave       "Default slave (mem + IRQ doorbell)"}
+    {i_ara_system                                              ara_system          "CVA6 + Ara vector processor core"}
+    {i_axi_xbar                                                axi_xbar_intf       "AXI crossbar interconnect"}
+    {i_ariane_peripherals/i_mxu_top_wrapper/i_mxu_top          mxu_top             "MXU top"}
+    {i_ariane_peripherals/i_axu_top_wrapper/u_axu_top          axu_top             "AXU top"}
+
 }
