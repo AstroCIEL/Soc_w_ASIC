@@ -38,7 +38,7 @@ module axi_to_mem_split #(
   /// Depth of output fifo/fall_through_register. Increase for asymmetric backpressure (contention) on banks.
   parameter int unsigned OutFifoDepth = 1,
   /// Dependent parameters, do not override. Number of memory ports.
-  parameter int unsigned NumMemPorts  = 2*AxiDataWidth/MemDataWidth,
+  parameter int unsigned NumMemPorts  = (MemDataWidth == 0) ? 1 : 2*AxiDataWidth/MemDataWidth,
   /// Dependent parameter, do not override. Memory address type.
   parameter type         addr_t       = logic [AddrWidth-1:0],
   /// Dependent parameter, do not override. Memory data type.
@@ -184,7 +184,7 @@ module axi_to_mem_split_intf #(
   /// Depth of output fifo/fall_through_register. Increase for asymmetric backpressure (contention) on banks.
   parameter int unsigned OUT_FIFO_DEPTH = 32'd1,
   /// Dependent parameters, do not override. Number of memory ports.
-  parameter int unsigned NUM_MEM_PORTS  = 2*AXI_DATA_WIDTH/MEM_DATA_WIDTH,
+  parameter int unsigned NUM_MEM_PORTS  = (MEM_DATA_WIDTH == 0) ? 1 : 2*AXI_DATA_WIDTH/MEM_DATA_WIDTH,
   /// Dependent parameter, do not override. See `axi_to_mem`, parameter `addr_t`.
   parameter type addr_t     = logic [AXI_ADDR_WIDTH-1:0],
   /// Dependent parameter, do not override. See `axi_to_mem`, parameter `mem_data_t`.

@@ -23,6 +23,7 @@ read_xdc {../constraints/pin_assign.xdc}
 read_xdc {../constraints/constraints.xdc}
 read_xdc {../constraints/cdc_timing.xdc}
 read_xdc {../constraints/sync.xdc}
+read_xdc {../constraints/dsp_force.xdc}
 
 set_property top ariane_soc_top_wrapper [current_fileset]
 set_property source_mgmt_mode None [current_project]

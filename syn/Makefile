@@ -8,90 +8,104 @@ SYN_ROOT   := $(shell pwd)
 PROJ_ROOT  := $(shell cd .. && pwd)
 BUILD_DIR  := $(SYN_ROOT)/build
 
-PDK_ROOT   ?= $(HOME)/workspace/work2026_2/work_for_tapeout_2026_v2/tsmc22
+PDK_ROOT   ?= $(HOME)/workspace/tsmc22
 export PDK_ROOT
 
-# SoC RTL configuration: selects hardware/soc/filelist_<SOC_CONFIG>.f via syn/filelist.f
-SOC_CONFIG ?= minimum_my_mxu_axu
-SOC_FILELIST := $(PROJ_ROOT)/hardware/soc/filelist_$(SOC_CONFIG).f
-export SOC_CONFIG
+# Checkpoint to resume from (NONE = full compile from RTL)
+# Valid: NONE, post_constraints, post_compile
+INCR_CHECKPOINT ?= NONE
 
-GEN_FILELIST := python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
-	$(SYN_ROOT)/filelist.f $(PROJ_ROOT) --format dc \
-	--var SOC_CONFIG=$(SOC_CONFIG)
+# Block(s) to recompile in hier mode (empty = assemble-only from cached DDCs)
+# Use hierarchical instance paths from setup/blocks.tcl, e.g.:
+#   BLOCK=i_ara_system
+#   BLOCK=i_ariane_peripherals/i_default_slave
+#   BLOCK="i_ara_system i_dm_top"
+BLOCK ?=
 
-# Checkpoint to resume from (for syn_incr); valid: post_elab post_constraints post_compile final
-INCR_CHECKPOINT ?= post_constraints
+.PHONY: all flat hier gen_filelist check clean help
 
-.PHONY: all syn syn_incr gen_filelist check clean help
-
-all: syn
+all: help
 
 # ---------------------------------------------------------------------------
 # gen_filelist: parse filelist.f → build/input.tcl
 # ---------------------------------------------------------------------------
 gen_filelist:
-	@if [ ! -f "$(SOC_FILELIST)" ]; then \
-		echo "ERROR: SOC_CONFIG='$(SOC_CONFIG)' -> missing $(SOC_FILELIST)"; \
-		echo "       Available:"; \
-		ls -1 $(PROJ_ROOT)/hardware/soc/filelist_*.f 2>/dev/null \
-			| sed 's|.*/filelist_||;s|\.f$$||' | sed 's/^/         /'; \
-		exit 1; \
-	fi
 	@mkdir -p $(BUILD_DIR)
-	$(GEN_FILELIST) -o $(BUILD_DIR)/input.tcl
+	python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
+		$(SYN_ROOT)/filelist.f \
+		$(PROJ_ROOT) \
+		--format dc \
+		-o $(BUILD_DIR)/input.tcl
 
 # ---------------------------------------------------------------------------
-# syn: full synthesis from RTL
+# flat: flat synthesis
+#   INCR_CHECKPOINT=NONE               → full compile from RTL (default)
+#   INCR_CHECKPOINT=post_constraints   → resume: compile_ultra -incremental + report
+#   INCR_CHECKPOINT=post_compile       → resume: re-run reports only
 # ---------------------------------------------------------------------------
-syn: gen_filelist
+flat: gen_filelist
 	@mkdir -p $(BUILD_DIR)/WORK
+	@if [ "$(INCR_CHECKPOINT)" != "NONE" ]; then \
+		if ! ls "$(BUILD_DIR)/outputs/"*_$(INCR_CHECKPOINT).ddc 2>/dev/null | grep -q .; then \
+			echo "ERROR: No checkpoint DDC for '$(INCR_CHECKPOINT)' in $(BUILD_DIR)/outputs/."; \
+			echo "       Run 'make flat' first (without INCR_CHECKPOINT)."; \
+			exit 1; \
+		fi; \
+	fi
 	$(DC_SHELL) \
 		-x "set PDK_ROOT $(PDK_ROOT); \
 		    set SYN_ROOT $(SYN_ROOT); \
 		    set BUILD_DIR $(BUILD_DIR); \
-		    set INCR_MODE 0; \
-		    set INCR_CHECKPOINT post_constraints" \
+		    set SYN_MODE flat; \
+		    set INCR_CHECKPOINT $(INCR_CHECKPOINT); \
+		    set HIER_COMPILE_BLOCKS {}" \
 		-f $(SYN_ROOT)/scripts/synth.tcl \
-		2>&1 | tee $(BUILD_DIR)/syn.log
-	@echo "===== Synthesis done (SOC_CONFIG=$(SOC_CONFIG)). See build/ ====="
+		2>&1 | tee $(BUILD_DIR)/flat_$(INCR_CHECKPOINT).log
+	@echo "===== Flat synthesis done (INCR_CHECKPOINT=$(INCR_CHECKPOINT)). See build/ ====="
 
 # ---------------------------------------------------------------------------
-# syn_incr: incremental re-run from a saved checkpoint DDC
+# hier: hierarchical block-level synthesis
+#   BLOCK=<paths>                      → recompile specified blocks + assemble top
+#   BLOCK= (empty)                     → assemble top from cached block DDCs only
+#   INCR_CHECKPOINT=NONE               → full elaborate from RTL (default)
+#   INCR_CHECKPOINT=post_constraints   → resume: compile + report
+#   INCR_CHECKPOINT=post_compile       → resume: re-run reports only
 # ---------------------------------------------------------------------------
-syn_incr:
-	@mkdir -p $(BUILD_DIR)/WORK
-	@if ls "$(BUILD_DIR)/outputs/"*_$(INCR_CHECKPOINT).ddc 2>/dev/null | grep -q .; then \
-		true; \
-	else \
-		echo "ERROR: No checkpoint DDC for '$(INCR_CHECKPOINT)' in $(BUILD_DIR)/outputs/."; \
-		echo "       Run 'make syn' first, or choose a valid INCR_CHECKPOINT."; \
-		exit 1; fi
+hier: gen_filelist
+	@mkdir -p $(BUILD_DIR)/WORK $(BUILD_DIR)/blocks
+	@if [ "$(INCR_CHECKPOINT)" != "NONE" ]; then \
+		if ! ls "$(BUILD_DIR)/outputs/"*_$(INCR_CHECKPOINT).ddc 2>/dev/null | grep -q .; then \
+			echo "ERROR: No checkpoint DDC for '$(INCR_CHECKPOINT)' in $(BUILD_DIR)/outputs/."; \
+			echo "       Run 'make hier' first (without INCR_CHECKPOINT)."; \
+			exit 1; \
+		fi; \
+	fi
 	$(DC_SHELL) \
 		-x "set PDK_ROOT $(PDK_ROOT); \
 		    set SYN_ROOT $(SYN_ROOT); \
 		    set BUILD_DIR $(BUILD_DIR); \
-		    set INCR_MODE 1; \
-		    set INCR_CHECKPOINT $(INCR_CHECKPOINT)" \
+		    set SYN_MODE hier; \
+		    set INCR_CHECKPOINT $(INCR_CHECKPOINT); \
+		    set HIER_COMPILE_BLOCKS {$(BLOCK)}" \
 		-f $(SYN_ROOT)/scripts/synth.tcl \
-		2>&1 | tee $(BUILD_DIR)/syn_incr_$(INCR_CHECKPOINT).log
-	@echo "===== Incremental synthesis done (SOC_CONFIG=$(SOC_CONFIG), from $(INCR_CHECKPOINT)). See build/ ====="
+		2>&1 | tee $(BUILD_DIR)/hier_$(INCR_CHECKPOINT).log
+	@echo "===== Hierarchical synthesis done (INCR_CHECKPOINT=$(INCR_CHECKPOINT)). See build/ ====="
 
 # ---------------------------------------------------------------------------
 # check: verify all source files in filelist.f exist
 # ---------------------------------------------------------------------------
 check:
-	@echo "--- Filelist integrity check (SOC_CONFIG=$(SOC_CONFIG)) ---"
-	@if [ ! -f "$(SOC_FILELIST)" ]; then \
-		echo "ERROR: SOC_CONFIG='$(SOC_CONFIG)' -> missing $(SOC_FILELIST)"; \
-		exit 1; \
-	fi
-	@$(GEN_FILELIST) -o /dev/null && echo "gen_filelist.py parse OK"
+	@echo "--- Filelist integrity check ---"
+	@python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
+		$(SYN_ROOT)/filelist.f $(PROJ_ROOT) \
+		--format dc -o /dev/null && \
+		echo "gen_filelist.py parse OK"
 	@count=0; err=0; \
 	while IFS= read -r f; do \
 		if [ ! -f "$$f" ]; then echo "MISSING: $$f"; err=1; fi; \
 		count=$$((count+1)); \
-	done < <($(GEN_FILELIST) -o /dev/null --check 2>/dev/null); \
+	done < <(python3 $(PROJ_ROOT)/scripts/gen_filelist.py \
+		$(SYN_ROOT)/filelist.f $(PROJ_ROOT) --format dc -o /dev/null --check 2>/dev/null); \
 	echo "Total source files checked: $$count"; \
 	if [ "$$err" -eq 0 ]; then echo "All files exist."; else echo "Some files are MISSING!"; exit 1; fi
 
@@ -110,24 +124,28 @@ help:
 	@echo "Ara SoC DC NXT Synthesis"
 	@echo ""
 	@echo "Targets:"
+	@echo "  make flat                       Flat synthesis from RTL"
+	@echo "  make hier                       Hierarchical block-level synthesis"
 	@echo "  make gen_filelist               Parse filelist.f → build/input.tcl"
-	@echo "  make syn                        Full synthesis from RTL"
-	@echo "  make syn_incr                   Incremental (default: post_constraints)"
 	@echo "  make check                      Verify filelist integrity"
 	@echo "  make clean                      Remove build/"
 	@echo ""
 	@echo "Variables:"
-	@echo "  SOC_CONFIG=<name>               SoC filelist (default: maximum)"
-	@echo "                                    uses hardware/soc/filelist_<name>.f"
 	@echo "  PDK_ROOT=<path>                 PDK root (default: \$$HOME/workspace/tsmc22)"
-	@echo "  INCR_CHECKPOINT=<phase>         Checkpoint to resume from:"
-	@echo "                                    post_elab        (re-apply constraints + compile)"
-	@echo "                                    post_constraints (compile -incremental)  [default]"
-	@echo "                                    post_compile     (reports only)"
-	@echo "                                    final            (outputs + reports only)"
+	@echo "  INCR_CHECKPOINT=<phase>         Checkpoint to resume from (both modes):"
+	@echo "                                    post_constraints, post_compile"
+	@echo "  BLOCK=<hier_path>               Block(s) to recompile (hier only):"
+	@echo "                                    i_ara_system"
+	@echo "                                    i_ariane_peripherals"
+	@echo "                                    i_dm_top"
+	@echo "                                    i_axi_xbar"
+	@echo "                                    i_ariane_peripherals/i_default_slave"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make syn SOC_CONFIG=minimum_my_mxu"
-	@echo "  make check SOC_CONFIG=minimum"
-	@echo "  make syn PDK_ROOT=/path/to/pdk SOC_CONFIG=maximum"
-	@echo "  make syn_incr INCR_CHECKPOINT=post_elab SOC_CONFIG=minimum_my_mxu"
+	@echo "  make flat                                         Full flat from RTL"
+	@echo "  make flat INCR_CHECKPOINT=post_constraints        Flat: resume from constraints"
+	@echo "  make flat INCR_CHECKPOINT=post_compile            Flat: re-run reports only"
+	@echo "  make hier BLOCK=i_ara_system                      Hier: recompile one block"
+	@echo "  make hier BLOCK=\"i_ara_system i_dm_top\"           Hier: recompile multiple"
+	@echo "  make hier                                         Hier: assemble-only"
+	@echo "  make hier INCR_CHECKPOINT=post_constraints        Hier: resume from constraints"

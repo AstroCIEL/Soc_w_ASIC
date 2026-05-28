@@ -284,8 +284,9 @@ import cf_math_pkg::idx_width;
   // pragma translate_on
 endmodule
 
+`ifndef SYNTHESIS
 `ifndef VCS
-// As of now, VCS does not support multi-dimensional array of interfaces.
+// As of now, VCS/Genus do not support multi-dimensional array of interfaces.
 `include "axi/assign.svh"
 `include "axi/typedef.svh"
 
@@ -367,3 +368,4 @@ import cf_math_pkg::idx_width;
 endmodule
 
 `endif
+`endif // SYNTHESIS

@@ -257,8 +257,30 @@ module ariane_soc_top import axi_pkg::*; #(
     .data_i     ( dm_slave_rdata            )
   );
 
-  `AXI_ASSIGN_FROM_REQ(slave[ariane_soc::DebugMst], dm_axi_m_req)
-  `AXI_ASSIGN_TO_RESP(dm_axi_m_resp, slave[ariane_soc::DebugMst])
+  // Intermediate AXI bus for dm_top master output (before register cut)
+  AXI_BUS #(
+    .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH       ),
+    .AXI_DATA_WIDTH ( AXI_DATA_WIDTH          ),
+    .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidth ),
+    .AXI_USER_WIDTH ( AXI_USER_WIDTH          )
+  ) dm_master_bus();
+
+  `AXI_ASSIGN_FROM_REQ(dm_master_bus, dm_axi_m_req)
+  `AXI_ASSIGN_TO_RESP(dm_axi_m_resp, dm_master_bus)
+
+  // AXI register slice to break combinational path from i_dm_top to xbar
+  axi_cut_intf #(
+    .BYPASS     ( 1'b0                    ),
+    .ADDR_WIDTH ( AXI_ADDRESS_WIDTH       ),
+    .DATA_WIDTH ( AXI_DATA_WIDTH          ),
+    .ID_WIDTH   ( ariane_axi_soc::IdWidth ),
+    .USER_WIDTH ( AXI_USER_WIDTH          )
+  ) i_dm_axi_cut (
+    .clk_i      ( clk_i                       ),
+    .rst_ni     ( ndmreset_n                  ),
+    .in         ( dm_master_bus               ),
+    .out        ( slave[ariane_soc::DebugMst] )
+  );
 
   axi_adapter #(
     .CVA6Cfg               ( CVA6Cfg                   ),
@@ -363,20 +385,24 @@ module ariane_soc_top import axi_pkg::*; #(
   logic [AXI_USER_WIDTH-1:0]    wuser;
   logic [AXI_USER_WIDTH-1:0]    ruser;
 
-  axi_riscv_atomics_wrap #(
-    .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH            ),
-    .AXI_DATA_WIDTH ( AXI_DATA_WIDTH               ),
-    .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
-    .AXI_USER_WIDTH ( AXI_USER_WIDTH               ),
-    .AXI_MAX_READ_TXNS  ( 4  ),
-    .AXI_MAX_WRITE_TXNS ( 4  ),
-    .RISCV_WORD_WIDTH   ( 64 )
-  ) i_axi_riscv_atomics (
-    .clk_i,
-    .rst_ni ( ndmreset_n               ),
-    .slv    ( master[ariane_soc::DRAM] ),
-    .mst    ( dram                     )
-  );
+  if (CVA6Cfg.RVA) begin : gen_riscv_atomics
+    axi_riscv_atomics_wrap #(
+      .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH            ),
+      .AXI_DATA_WIDTH ( AXI_DATA_WIDTH               ),
+      .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
+      .AXI_USER_WIDTH ( AXI_USER_WIDTH               ),
+      .AXI_MAX_READ_TXNS  ( 4  ),
+      .AXI_MAX_WRITE_TXNS ( 4  ),
+      .RISCV_WORD_WIDTH   ( 64 )
+    ) i_axi_riscv_atomics (
+      .clk_i,
+      .rst_ni ( ndmreset_n               ),
+      .slv    ( master[ariane_soc::DRAM] ),
+      .mst    ( dram                     )
+    );
+  end else begin : gen_no_riscv_atomics
+    `AXI_ASSIGN(dram, master[ariane_soc::DRAM])
+  end
 
   axi2mem_burst_rw #(
     .AXI_ID_WIDTH   ( ariane_axi_soc::IdWidthSlave ),
