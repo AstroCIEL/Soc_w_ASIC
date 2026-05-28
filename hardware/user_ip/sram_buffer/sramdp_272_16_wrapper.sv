@@ -42,12 +42,12 @@ module sramdp_272_16_wrapper #(
 
     // EMA (Extra Margin Adjustment) settings for optimal timing/power.
     // ARM Memory Compiler recommended defaults for this instance.
-    wire [2:0] emaa  = 3'b111;     // Port A read margin (recommended: 7)
-    wire [1:0] emawa = 2'b11;      // Port A write margin (recommended: 3)
-    wire       emasa = 1'b1;       // Port A sense amp margin (recommended: 1)
-    wire [2:0] emab  = 3'b111;     // Port B read margin (recommended: 7)
-    wire [1:0] emawb = 2'b11;      // Port B write margin (recommended: 3)
-    wire       emasb = 1'b1;       // Port B sense amp margin (recommended: 1)
+    wire [2:0] emaa  = 3'b100;     // Port A read margin (recommended: 7)
+    wire [1:0] emawa = 2'b10;      // Port A write margin (recommended: 3)
+    wire       emasa = 1'b0;       // Port A sense amp margin (recommended: 1)
+    wire [2:0] emab  = 3'b100;     // Port B read margin (recommended: 7)
+    wire [1:0] emawb = 2'b10;      // Port B write margin (recommended: 3)
+    wire       emasb = 1'b0;       // Port B sense amp margin (recommended: 1)
 
     // Test and DFT signals - tied off for normal operation
     wire       ret1n     = 1'b1;   // Retention mode disabled (normal operation)
