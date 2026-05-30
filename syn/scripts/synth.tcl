@@ -53,6 +53,15 @@ source ${SCRIPTS_DIR}/check-env.tcl
 
 file mkdir ${BUILD_DIR} ${REPORT_DIR} ${OUTPUT_DIR}
 
+# ===========================================================================
+# 0529： 添加SVF文件的生成命令
+# ===========================================================================
+set SVF_FILE ${OUTPUT_DIR}/${TOP_MODULE}.svf
+file delete -force $SVF_FILE
+puts "== \[svf\] writing Formality guidance: $SVF_FILE"
+set_svf $SVF_FILE
+
+
 # Load block definitions and helper procs for hier mode
 if {$SYN_MODE eq "hier"} {
     source ${SETUP_DIR}/blocks.tcl
@@ -283,6 +292,16 @@ timer_mark "Step 8: Compile"
 # Step 9: Post-compile outputs
 # ===========================================================================
 output_post_compile $TOP_MODULE $ELAB_NAME $OUTPUT_DIR $ACTIVE_SCENARIOS
+
+
+# ===========================================================================
+#  Close SVF file
+# ===========================================================================
+puts "== \[svf\] closing Formality guidance: $SVF_FILE"
+set_svf -off
+
+
+
 
 timer_mark "Step 9: Post-compile outputs"
 

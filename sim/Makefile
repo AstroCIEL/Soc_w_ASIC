@@ -29,7 +29,7 @@ DPI_SRCS := $(filter-out $(DPI_DIR)/SimDTM.cc, $(wildcard $(DPI_DIR)/*.cc)) \
             $(wildcard $(DPI_DIR)/*.c)
 
 
-app      ?= ../software/build/bin/my_axu_test
+app      ?= ../software/build/bin/hello_world
 
 # FESVR (Front-End Server) from RISC-V Spike installation
 # This provides the fesvr library for ELF loading and host-target communication

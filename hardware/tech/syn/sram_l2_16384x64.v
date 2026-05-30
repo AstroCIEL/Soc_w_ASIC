@@ -59,7 +59,7 @@
 `define ARM_OFFSET_TIME 0
 
   `define SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMA_VALUE   4
-  `define SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE  1 //shvt的推荐值为0，svt推荐值为1
+  `define SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAW_VALUE  0 //shvt的推荐值为0，svt推荐值为1
   `define SRAM_SP_HDE_SHVT_MVT_ARM_REF_EMAS_VALUE  0
 
 
