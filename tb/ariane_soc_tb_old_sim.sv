@@ -125,106 +125,48 @@ module ariane_soc_tb;
   /*************************
    *  DRAM Initialization  *
    *************************/
-  // Behavioral sim (filelist_sim.f): use init_val backdoor.
-  // Syn SRAM / gate sim (filelist_simsyn.f + GATE_SIM): use macro loadaddr task.
-  `ifdef GATE_SIM
-    localparam bit USE_REAL_SRAM = 1'b1;
-  `elsif SYN_SRAM
-    localparam bit USE_REAL_SRAM = 1'b1;
-  `else
-    localparam bit USE_REAL_SRAM = 1'b0;
-  `endif
 
-  if (USE_REAL_SRAM) begin : gen_real_sram_init
-    `ifdef GATE_SIM
-      // DC flattens gen block + instance name into one cell instance.
-      `define L2_MACRO dut.i_sram.i_tc_sram_wrapper.i_tc_sram.gen_l2_4096x64_mem_i_macro
-    `else
-      `define L2_MACRO dut.i_sram.i_tc_sram_wrapper.i_tc_sram.gen_l2_4096x64_mem.i_macro
-    `endif
+  `define MAIN_MEM(P) dut.i_sram.i_tc_sram_wrapper.i_tc_sram.init_val[(``P``)]
 
-    initial begin : dram_init
-      automatic logic [7:0][7:0] mem_row;
-      longint address, load_address, last_load_address, len;
-      byte buffer[];
-      string binary;
-      @(posedge rst_n);
-      repeat (2) @(posedge clk);
+  initial begin : dram_init
+    automatic logic [7:0][7:0] mem_row;
+    longint address, load_address, last_load_address, len;
+    byte buffer[];
+    string binary;
 
-      void'($value$plusargs("PRELOAD=%s", binary));
-      if (binary != "") begin
-        read_elf(binary);
-        $display("Loading ELF file %s into real SRAM via backdoor", binary);
+    // Wait for clock
+    repeat (2) #ClockPeriod;
 
-        last_load_address = 'hFFFFFFFF;
-        while (get_section(address, len)) begin
-          automatic int num_words = (len + 7) / 8;
-          $display("Loading section 0x%x, length 0x%x (%0d 64-bit words)", address, len, num_words);
-          buffer = new [num_words * 8];
-          void'(read_section(address, buffer));
-          for (int i = 0; i < num_words; i++) begin
-            mem_row = '0;
-            for (int j = 0; j < 8; j++) begin
-              mem_row[j] = buffer[i * 8 + j];
-            end
-            // Word address: strip byte offset (low 3 bits), keep only the
-            // portion that falls within the SRAM window (24-bit address space).
-            load_address = (address[23:0] >> 3) + i;
-            if (load_address != last_load_address) begin
-              `L2_MACRO.loadaddr(load_address[11:0], mem_row);
-              last_load_address = load_address;
-            end
+    // Initialize memories
+    void'($value$plusargs("PRELOAD=%s", binary));
+    if (binary != "") begin
+      read_elf(binary);
+      $display("Loading ELF file %s", binary);
+      wait(clk);
+
+      last_load_address = 'hFFFFFFFF;
+      while (get_section(address, len)) begin
+        automatic int num_words = (len+7)/8;
+        $display("Loading section %x of length %x", address, len);
+        buffer = new [num_words*8];
+        void'(read_section(address, buffer));
+        for (int i = 0; i < num_words; i++) begin
+          mem_row = '0;
+          for (int j = 0; j < 8; j++) begin
+            mem_row[j] = buffer[i*8 + j];
+          end
+          load_address = (address[23:0] >> 3) + i;
+          if (load_address != last_load_address) begin
+            `MAIN_MEM(load_address) = mem_row;
+            last_load_address = load_address;
           end
         end
-        $display("SRAM backdoor load complete.");
-      end else begin
-        $error("Expecting a firmware to run, none was provided!");
-        $finish;
       end
-    end : dram_init
-
-  end else begin : gen_sim_sram_init
-    `define MAIN_MEM(P) dut.i_sram.i_tc_sram_wrapper.i_tc_sram.init_val[(``P``)]
-    initial begin : dram_init
-      automatic logic [7:0][7:0] mem_row;
-      longint address, load_address, last_load_address, len;
-      byte buffer[];
-      string binary;
-
-      // Wait for clock
-      repeat (2) #ClockPeriod;
-
-      // Initialize memories
-      void'($value$plusargs("PRELOAD=%s", binary));
-      if (binary != "") begin
-        read_elf(binary);
-        $display("Loading ELF file %s", binary);
-        wait(clk);
-
-        last_load_address = 'hFFFFFFFF;
-        while (get_section(address, len)) begin
-          automatic int num_words = (len+7)/8;
-          $display("Loading section %x of length %x", address, len);
-          buffer = new [num_words*8];
-          void'(read_section(address, buffer));
-          for (int i = 0; i < num_words; i++) begin
-            mem_row = '0;
-            for (int j = 0; j < 8; j++) begin
-              mem_row[j] = buffer[i*8 + j];
-            end
-            load_address = (address[23:0] >> 3) + i;
-            if (load_address != last_load_address) begin
-              `MAIN_MEM(load_address) = mem_row;
-              last_load_address = load_address;
-            end
-          end
-        end
-      end else begin
-        $error("Expecting a firmware to run, none was provided!");
-        $finish;
-      end
-    end : dram_init
-  end : gen_sim_sram_init
+    end else begin
+      $error("Expecting a firmware to run, none was provided!");
+      $finish;
+    end
+  end : dram_init
 
   /*********
    *  EOC  *

@@ -1,18 +1,60 @@
-TEST_MODE=int_ff
+#!/usr/bin/env bash
+set -euo pipefail
 
-cd ./software && make clean && cd ..
-cd ./sim && make clean && cd ..
+TEST_MODE=${TEST_MODE:-posit_bp}                                       #posit_ff, posit_bp, int_ff
+RUN_STAGE=${1:-sim_post_syn}                                         # sim, sim_post_syn
+FILELIST=${FILELIST:-filelist_minimum_my_mxu_axu.f}
+APP=${APP:-../software/build/bin/my_mxu_test}
 
-# input_data.h is regenerated from DPRL_V14_AXU/data_for_axu/*.txt by
-# software/app/my_axu_test/app.mk before main.c is compiled.
-# Generator script: zzc_workspace_axu/file_format_transform/gen_input_data_axu.py
+usage() {
+    echo "Usage: $0 [sim|sim_post_syn]"
+    echo ""
+    echo "Environment variables:"
+    echo "  TEST_MODE  MXU test mode, default: int_ff"
+    echo "  FILELIST   simulation filelist, default: filelist_minimum_my_mxu_axu.f"
+}
 
-cd ./software && make my_mxu_test MXU_TEST_MODE=$TEST_MODE 
-cd ..
+build_software() {
+    cd ./software
+    make clean
+    make my_mxu_test MXU_TEST_MODE="$TEST_MODE"
+    cd ..
+}
 
-cd ./sim && make vcs-wave \
-                 app=../software/build/bin/my_mxu_test \
-                 FILELIST=filelist_minimum_my_mxu_axu.f \
-         && cd ..
+run_sim() {
+    cd ./sim
+    make clean
+    make vcs-wave \
+        app="$APP" \
+        FILELIST="$FILELIST"
+    cd ..
+    cp ./sim/uart0.log ./sim/uart_logs/test_mxu_${TEST_MODE}_uart0.log
+}
 
-cp ./sim/uart0.log ./sim/uart_logs/test_mxu_${TEST_MODE}_uart0.log
+run_sim_post_syn() {
+    cd ./sim_post_syn
+    # 如果 netlist 已经编译过，可以不执行 make compile-gate；注意不要 make clean，否则需要重新编译。
+    make run-gate \
+        app="$APP"     #FILELIST是默认的网表文件，不需要指定
+    cd ..
+    cp ./sim_post_syn/uart0.log ./sim_post_syn/uart_logs/test_mxu_${TEST_MODE}_uart0.log
+}
+
+case "$RUN_STAGE" in
+    sim)
+        build_software
+        run_sim
+        ;;
+    sim_post_syn)
+        build_software
+        run_sim_post_syn
+        ;;
+    -h|--help|help)
+        usage
+        ;;
+    *)
+        echo "Error: unknown stage '$RUN_STAGE'" >&2
+        usage >&2
+        exit 1
+        ;;
+esac

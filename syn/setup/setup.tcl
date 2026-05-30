@@ -56,10 +56,10 @@ set SRAM_MACROS [list \
     # func_ssg_m40c
     # func_ffg_125c
     # func_tt_85c
+    # func_ssg_0c
+    # func_ffg_0c
 set ACTIVE_SCENARIOS {
     func_tt_25c
-    func_ssg_0c
-    func_ffg_0c
 }
 
 # ===========================================================================
@@ -79,8 +79,10 @@ set COMPILE_OPTIONS {
     -no_autoungroup
     -no_boundary_optimization
     -timing
-    -gate_clock   
+
 }
+    # -gate_clock   0529:关闭了clockgating
+
 
 # Parallel threads for compile_ultra
 set COMPILE_MAX_CORES 32
