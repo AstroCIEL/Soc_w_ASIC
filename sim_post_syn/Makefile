@@ -49,7 +49,7 @@ SYN_BUILD   ?= $(ROOT)/syn/build
 export SYN_BUILD
 
 # SDF annotation (set USE_SDF=1 to enable back-annotated timing)
-USE_SDF      ?= 1
+USE_SDF      ?= 0
 SDF_SCENARIO ?= func_tt_25c
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
