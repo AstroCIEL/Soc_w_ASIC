@@ -1,560 +1,378 @@
-# 阶段一：如何修改 hardware 文件夹，把 MXU 接到 CPU 的 AXI 总线
+# 阶段一：如何修改 hardware 文件夹，把自定义硬件接到 CVA6 的 AXI 总线
 
-本文是“往 CPU 的 AXI 总线上加自定义模块”系列教程的第 1 篇，目标是解释已经跑通的 `my_mxu` 版本中，hardware 目录到底改了什么、为什么这样改、初学者如何按步骤复现。
+本文是“往 CPU 的 AXI 总线上加自定义模块”系列教程的第 1 篇。
+它不再只面向 MXU，而是总结当前最新前端设计中，把任意自定义硬件模块挂到 CVA6 AXI 总线上的通用方法。
 
-当前教程以 `work_for_tapeout_2026/Soc_w_ASIC-main` 中已经验证通过的版本为事实基准。该版本已经完成：
+当前最新主线是 `minimum_my_mxu_axu`：同一个 SoC 变体中已经集成 MXU、AXU、GlobalBuffer 和 iDMA。
 
-- `int_ff` 通过。
-- `posit_ff` 通过。
-- `posit_bp` 通过。
-- 三个模式的 `compare_report.txt` 均显示 `result: PASS`。
+MXU、AXU 在本文中只是两个例子；真正需要掌握的是 AXI/MMIO wrapper 型外设接入方法。
 
-本阶段只讲 hardware 和 sim filelist，不讲 C 驱动、不讲测试数据转换。软件部分见 `如何修改softwareware文件夹下的内容？.md`，测试数据和脚本见 `如何准备测试数据和测试脚本？.md`。
+本文只讲 hardware 和 filelist，不讲 C 驱动、不讲测试数据转换。
 
-## 0. 本文最终要解决什么问题
+软件部分见 `如何修改softwareware文件夹下的内容？.md`，测试数据和脚本见 `如何准备测试数据和测试脚本？.md`。
 
-原始 MXU 顶层来自：
+## 0. 文档适用范围
 
-`DPRL_V14_MXU/rtl/mxu_top/mxu_top.sv`
+本文适用于这类自定义硬件：
 
-它不是标准 AXI slave。它暴露的是一组内部控制信号和三组 buffer 访问口，例如：
+1. 原始计算核心不是标准 AXI slave。
+2. CPU 通过 load/store 访问固定物理地址来配置、启动、读写 buffer。
+3. 自定义模块外面包一层 AXI/MMIO wrapper。
+4. wrapper 内部把 AXI slave 请求转换为寄存器访问或 SRAM-like buffer 访问。
 
-- `cfg_set_i`
-- `cfg_addr_i`
-- `cfg_data_i`
-- `start_i`
-- `busy_o`
-- `done_o`
-- `wgt_axi_req_i / wgt_axi_write_en_i / wgt_axi_addr_i / wgt_axi_wdata_i / wgt_axi_rdata_o`
-- `act_axi_*`
-- `out_axi_*`
+当前 MXU 和 AXU 都属于这种模式。它们不是通过 CV-X-IF 自定义指令路径接入，而是 memory-mapped accelerator。
 
-CPU 不能直接访问这些 RTL 信号。CPU 只能通过 SoC 总线访问某些地址。因此 hardware 阶段的核心任务是：
+需要区分几个 SoC 变体：
 
-1. 给 `mxu_top` 外面包一层 AXI/MMIO wrapper。
-2. 在 SoC 地址空间中分配 4 个地址窗口。
-3. 把这 4 个地址窗口接到 AXI crossbar。
-4. 在 peripherals 里实例化 MXU wrapper。
-5. 把 MXU RTL 和新 SoC 变体加入 filelist，让仿真能编译。
+| 变体 | 定位 | 说明 |
+|---|---|---|
+| `minimum_my_mxu` | 早期 MXU-only 版本 | 适合回看单模块接入过程 |
+| `minimum_my_mxu_axu` | 当前最新主线 | 同时包含 MXU、AXU、GlobalBuffer、iDMA |
+| `minimum_asic_dma` / `minimum_vmma_dma` | 早期/并行 DMA 型探索 | 可参考，但不要和本文 MMIO buffer 型流程混用 |
 
-最终 CPU 看到的是 4 个 MMIO 区域：
+后续新增模块时，优先参照 `minimum_my_mxu_axu` 的组织方式。
 
-| 地址窗口 | 当前跑通版本 base | 大小 | 用途 |
-|---|---:|---:|---|
-| `MY_MXU_CFG_BASE` | `0x70000000` | `0x1000` | 控制寄存器、状态寄存器、cfg 写入、irq |
-| `MY_MXU_WGT_BASE` | `0x70008000` | `0x8000` | weight buffer |
-| `MY_MXU_ACT_BASE` | `0x70010000` | `0x8000` | activation buffer |
-| `MY_MXU_OUT_BASE` | `0x70018000` | `0x8000` | output buffer |
+## 1. 总体架构、通用模型与实施顺序
 
-这 4 个 base 必须同时与以下文件一致：
+本节先给出完整路线图。读者在进入具体文件修改前，应该先理解三件事：CPU 访问自定义硬件的总路径、一个模块应该抽象成哪些 AXI 窗口、以及新增模块时推荐按什么顺序推进。
 
-- `hardware/soc/minimum_my_mxu/ariane_soc_pkg.sv`
-- `hardware/soc/minimum_my_mxu/ariane_soc_top.sv`
-- `software/soc/include/my_mxu.h`
+### 1.1 CPU 访问自定义硬件的总体路径
 
-## 1. 总体架构
-
-接入后的硬件数据流如下：
+当前 CVA6 访问自定义硬件的路径如下：
 
 ```mermaid
 flowchart LR
-  cpu["CPU"] --> axiXbar["AXI Crossbar"]
-  axiXbar --> cfgSlave["MY_MXU_CFG"]
-  axiXbar --> wgtSlave["MY_MXU_WGT"]
-  axiXbar --> actSlave["MY_MXU_ACT"]
-  axiXbar --> outSlave["MY_MXU_OUT"]
-  cfgSlave --> wrapper["mxu_top_wrapper"]
-  wgtSlave --> wrapper
-  actSlave --> wrapper
-  outSlave --> wrapper
-  wrapper --> mxuTop["mxu_top"]
-  mxuTop --> doneIrq["done irq to PLIC"]
+  cva6["CVA6"] --> araSystem["ara_system noc_req/noc_resp"]
+  araSystem --> axiXbar["axi_xbar_intf"]
+  axiXbar --> addrMap["addr_map 路由"]
+  addrMap --> peripherals["ariane_peripherals"]
+  peripherals --> mxuWrapper["mxu_top_wrapper"]
+  peripherals --> axuWrapper["axu_top_wrapper"]
+  peripherals --> globalBuffer["GlobalBuffer"]
+  mxuWrapper --> mxuCore["mxu_top"]
+  axuWrapper --> axuCore["axu_top"]
+  mxuWrapper --> plic["PLIC IRQ"]
+  axuWrapper --> plic
 ```
 
-四个 AXI slave 的分工：
-
-1. `cfg`：CPU 访问控制寄存器，包括 START、STATUS、CFG_WRITE、IRQ。
-2. `wgtbuf`：CPU 写入 weight buffer，计算时 MXU 读取。
-3. `actbuf`：CPU 写入 activation buffer，计算时 MXU 读取。
-4. `outbuf`：计算时 MXU 写入 output buffer，计算结束后 CPU 读取。
-
-为什么要拆成 4 个窗口？
-
-- cfg 寄存器是很小的控制空间，适合 4 KiB。
-- 三个 buffer 各自有独立访问口，拆开后地址映射、软件驱动和排错都更清楚。
-- wrapper 内部可以分别把 4 个 AXI slave 转换成 `mxu_top` 所需的简单访问口。
-
-## 2. 当前跑通版本的硬件文件地图
-
-重点文件如下。
-
-一、MXU 用户 IP：
-
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/mxu_top_wrapper.sv`
-  - 最关键文件。
-  - 把 4 个 AXI slave 转换成 `mxu_top` 的 cfg/start/buffer 信号。
-  - 软件寄存器 offset 必须与这里一致。
-
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/filelist_mxu_top_sim.f`
-  - 列出 MXU wrapper、mxu_top、pdpu、stu、sram wrapper 等全部依赖。
-  - 编译报 module/package 找不到时优先检查这里。
-
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/mxu_top/mxu_top.sv`
-  - 原始 MXU 顶层。
-  - SoC 中不直接把它接到 crossbar，而是由 `mxu_top_wrapper.sv` 实例化。
-
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/mxu_top/mxu_ctrl.sv`
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/mxu_top/mxu_top_no_ctrl.sv`
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/mxu/*.sv`
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/pdpu/*.sv`
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/stu/*.sv`
-- `Soc_w_ASIC-main/hardware/user_ip/my_mxu/pkgs/*.sv`
-  - MXU 内部依赖。
-
-二、SoC 变体：
-
-- `Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/ariane_soc_pkg.sv`
-  - 定义 AXI slave 枚举。
-  - 定义 MXU 四个地址窗口的 base 和 length。
-
-- `Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/ariane_soc_top.sv`
-  - 定义 AXI crossbar 的 `addr_map`。
-  - 把 `master[MxuCfg]`、`master[MxuWgtBuf]`、`master[MxuActBuf]`、`master[MxuOutBuf]` 接到 peripherals。
-
-- `Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/ariane_peripherals.sv`
-  - 顶层端口增加 4 个 MXU AXI slave。
-  - 实例化 `mxu_top_wrapper`。
-  - 把 `irq_o` 接到 `irq_sources[2]`。
-
-- `Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/ara_system.sv`
-- `Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/cva6_accel_first_pass_decoder.sv`
-  - 当前路线是 AXI/MMIO 外设路线，不是 custom instruction 路线。
-  - 这两个文件基本保持 minimum SoC 结构，不需要把 MXU 接成 CV-X-IF 自定义指令加速器。
-
-三、filelist：
-
-- `Soc_w_ASIC-main/hardware/soc/filelist_minimum_my_mxu.f`
-  - 引入 `minimum_my_mxu` 版本的 SoC 文件。
-
-- `Soc_w_ASIC-main/sim/filelist_minimum_my_mxu.f`
-  - 仿真入口 filelist。
-  - 引入基础 IP、`filelist_minimum_my_mxu.f`、`default_slave`、`my_mxu/filelist_mxu_top_sim.f` 和 testbench。
-
-## 3. 为什么新建 minimum_my_mxu，而不是直接改 minimum
-
-推荐做法是复制原始 minimum SoC，形成独立变体：
-
-`hardware/soc/minimum_my_mxu/`
-
-这样做有三个好处：
-
-1. 原始 `minimum/` 保持干净，后续可以作为对照。
-2. MXU 接入失败时，能确认问题来自新变体，而不是把原始 SoC 改坏。
-3. filelist 可以显式选择 `filelist_minimum_my_mxu.f`，便于和其他实验版本共存。
-
-当前跑通版本实际使用的是 `minimum_my_mxu`，而不是早期草稿中写到的 `minimum_mxu`。后续软件和脚本也使用 `my_mxu` 命名。
-
-## 4. wrapper：mxu_top_wrapper.sv 的职责
-
-路径：
-
-`Soc_w_ASIC-main/hardware/user_ip/my_mxu/mxu_top_wrapper.sv`
-
-wrapper 对外提供：
-
-- `input logic clk_i`
-- `input logic rst_ni`
-- `AXI_BUS.Slave cfg`
-- `AXI_BUS.Slave wgtbuf`
-- `AXI_BUS.Slave actbuf`
-- `AXI_BUS.Slave outbuf`
-- `output logic irq_o`
-
-wrapper 对内实例化：
-
-- 4 个 `axi2mem`。
-- 1 个 `mxu_top`。
-
-4 个 `axi2mem` 分别把 AXI slave 转成简单访存信号：
-
-- `req`
-- `we`
-- `addr`
-- `be`
-- `wdata`
-- `rdata`
-
-其中：
-
-- cfg 的 `axi2mem` 用于访问 wrapper 内部寄存器。
-- wgt/act/out 的 `axi2mem` 用于连接 `mxu_top` 三个 buffer 访问口。
-
-## 5. wrapper 的寄存器契约
-
-当前跑通版本的 cfg 寄存器如下，必须与 `software/soc/include/my_mxu.h` 一致。
-
-| offset | 名称 | 方向 | 说明 |
-|---:|---|---|---|
-| `0x000` | `CTRL` | W | bit0 START，bit1 CLR_DONE |
-| `0x008` | `STATUS` | R | bit0 BUSY，bit1 DONE |
-| `0x010` | `WGT_BUF_CTL` | R/W | bit0 读端给 MXU，bit1 写端给 MXU |
-| `0x018` | `ACT_BUF_CTL` | R/W | bit0 读端给 MXU，bit1 写端给 MXU |
-| `0x020` | `OUT_BUF_CTL` | R/W | bit0 读端给 MXU，bit1 写端给 MXU |
-| `0x030` | `CFG_WRITE` | W | bit[3:0] cfg_addr，bit[15:8] cfg_data |
-| `0x038` | `IRQ_MASK` | R/W | bit0 done irq enable |
-| `0x040` | `IRQ_STAT` | R/W1C | bit0 done irq sticky，写 1 清除 |
-
-几个关键点：
-
-1. `START` 是脉冲。
-   - CPU 写 `CTRL.START=1`。
-   - wrapper 产生一个周期的 `start_pulse`。
-   - 不应长期把 `start_i` 拉高。
-
-2. `CFG_WRITE` 是写触发。
-   - CPU 每写一次 `CFG_WRITE`，wrapper 产生一个周期的 `cfg_set_pulse`。
-   - `cfg_addr_i = cfg_wdata[3:0]`。
-   - `cfg_data_i = cfg_wdata[15:8]`。
-
-3. `DONE` 使用 sticky 状态。
-   - `mxu_top.done_o` 可能只是短脉冲。
-   - wrapper 用 `done_sticky_q` 保存完成状态。
-   - 软件读 `STATUS.DONE` 或 `STATUS.BUSY` 判断是否结束。
-
-4. IRQ 当前接到了 PLIC。
-   - `irq_o = irq_status_q & irq_mask_q`。
-   - `ariane_peripherals.sv` 中接到 `irq_sources[2]`。
-   - 软件头文件中对应 `IRQn_MY_MXU = 3`。
-   - 当前测试软件主要使用轮询，不依赖中断也可以跑通。
-
-## 6. buffer ownership 的含义
-
-MXU 的三个 buffer 都有 CPU 访问口和 MXU 内核访问口。为了避免同一个端口同时被 CPU 和 MXU 使用，wrapper 提供了三个 buffer control 寄存器。
-
-每个 buffer control 寄存器约定：
-
-- bit0：读端口是否交给 MXU。
-- bit1：写端口是否交给 MXU。
-
-软件中的典型顺序是：
-
-1. CPU 写输入数据之前：
-   - `wgt`：读端 0，写端 0。
-   - `act`：读端 0，写端 0。
-   - `out`：读端 0，写端 0。
-
-2. 开始计算之前：
-   - `wgt`：读端给 MXU，写端不给 MXU，即 `(1,0)`。
-   - `act`：读端给 MXU，写端不给 MXU，即 `(1,0)`。
-   - `out`：读端不给 MXU，写端给 MXU，即 `(0,1)`。
-
-3. 计算完成后 CPU 读输出：
-   - `out` 切回 `(0,0)`。
-
-如果 ownership 错误，常见现象是：
-
-- DONE 有了，但 output 全 0。
-- 只有部分 bank 正确。
-- 计算卡住或输出 X。
-
-## 7. 修改 ariane_soc_pkg.sv
-
-路径：
-
-`Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/ariane_soc_pkg.sv`
-
-这个文件定义 SoC 地址空间。当前跑通版本增加了 4 个 AXI slave：
-
-- `MxuCfg = 10`
-- `MxuWgtBuf = 11`
-- `MxuActBuf = 12`
-- `MxuOutBuf = 13`
-- `NB_PERIPHERALS = 14`
-
-并定义窗口大小：
-
-- `MxuCfgLength = 64'h1000`
-- `MxuWgtBufLength = 64'h8000`
-- `MxuActBufLength = 64'h8000`
-- `MxuOutBufLength = 64'h8000`
-
-以及窗口 base：
-
-- `MxuCfgBase = 64'h7000_0000`
-- `MxuWgtBufBase = 64'h7000_8000`
-- `MxuActBufBase = 64'h7001_0000`
-- `MxuOutBufBase = 64'h7001_8000`
-
-检查点：
-
-- `NB_PERIPHERALS` 必须覆盖新增的最大 slave 编号。
-- base address 不能和已有 `UARTBase`、`PLICBase`、`DRAMBase`、`CtrlBase` 冲突。
-- 软件 `my_mxu.h` 中 base 必须完全一致。
-
-## 8. 修改 ariane_soc_top.sv
-
-路径：
-
-`Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/ariane_soc_top.sv`
-
-这个文件至少要完成两件事。
-
-一、给 AXI crossbar 增加地址规则：
-
-- `MxuCfgBase` 到 `MxuCfgBase + MxuCfgLength`
-- `MxuWgtBufBase` 到 `MxuWgtBufBase + MxuWgtBufLength`
-- `MxuActBufBase` 到 `MxuActBufBase + MxuActBufLength`
-- `MxuOutBufBase` 到 `MxuOutBufBase + MxuOutBufLength`
-
-如果只在 `ariane_soc_pkg.sv` 里定义了 base，但没有在 `addr_map` 里加入规则，CPU 访问 `0x70000000` 会进 default slave 或触发异常。
-
-二、把 crossbar master 端口接到 peripherals：
-
-- `master[ariane_soc::MxuCfg]` 接 `mxu_cfg`
-- `master[ariane_soc::MxuWgtBuf]` 接 `mxu_wgt`
-- `master[ariane_soc::MxuActBuf]` 接 `mxu_act`
-- `master[ariane_soc::MxuOutBuf]` 接 `mxu_out`
-
-检查点：
-
-- `addr_map` 条目数量与 `NB_PERIPHERALS` 匹配。
-- `AXI_XBAR_CFG.NoAddrRules` 使用 `NB_PERIPHERALS`。
-- master 数组声明使用 `ariane_soc::NB_PERIPHERALS-1:0`。
-
-## 9. 修改 ariane_peripherals.sv
-
-路径：
-
-`Soc_w_ASIC-main/hardware/soc/minimum_my_mxu/ariane_peripherals.sv`
-
-需要在模块端口中增加：
-
-- `AXI_BUS.Slave mxu_cfg`
-- `AXI_BUS.Slave mxu_wgt`
-- `AXI_BUS.Slave mxu_act`
-- `AXI_BUS.Slave mxu_out`
-
-并实例化 wrapper：
-
-```systemverilog
-mxu_top_wrapper #(
-    .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( AxiDataWidth )
-) i_mxu_top_wrapper (
-    .clk_i  ( clk_i          ),
-    .rst_ni ( rst_ni         ),
-    .cfg    ( mxu_cfg        ),
-    .wgtbuf ( mxu_wgt        ),
-    .actbuf ( mxu_act        ),
-    .outbuf ( mxu_out        ),
-    .irq_o  ( irq_sources[2] )
-);
+核心文件是：
+
+| 文件 | 作用 |
+|---|---|
+| `hardware/soc/minimum_my_mxu_axu/ariane_soc_pkg.sv` | 定义 xbar 上游 master、下游 slave/peripheral、base、length |
+| `hardware/soc/minimum_my_mxu_axu/ariane_soc_top.sv` | 配置 `addr_map`，实例化 `axi_xbar_intf`，连接 `master[]` 与 peripherals |
+| `hardware/soc/minimum_my_mxu_axu/ariane_peripherals.sv` | 实例化 MXU、AXU、GlobalBuffer、DMA、PLIC 等外设 |
+| `hardware/user_ip/my_mxu/mxu_top_wrapper.sv` | MXU 的 AXI/MMIO wrapper |
+| `hardware/user_ip/my_axu/axu_top_wrapper.sv` | AXU 的 AXI/MMIO wrapper |
+| `hardware/soc/filelist_minimum_my_mxu_axu.f` | 当前 SoC RTL filelist |
+| `hardware/soc/filelist_syn_minimum_my_mxu_axu.f` | 当前综合侧 filelist |
+
+### 1.2 先抽象访问模型：cfg + buffer 窗口
+
+对任意一个新加速器，推荐先按“1 个 cfg + N 个 buffer”的方式抽象。MXU/AXU 采用的是 4 窗口模板：
+
+| 通用窗口 | MXU 示例 | AXU 示例 | 用途 |
+|---|---|---|---|
+| `cfg` | `MxuCfg` | `AxuCfg` | 控制寄存器、状态寄存器、内部 cfg 写入、IRQ |
+| `input0` | `MxuWgtBuf` | `AxuOpABuf` | 输入 buffer 0 |
+| `input1` | `MxuActBuf` | `AxuOpBBuf` | 输入 buffer 1 |
+| `output` | `MxuOutBuf` | `AxuOutBuf` | 输出 buffer |
+
+不是所有模块都必须有 4 个窗口。简单外设可以只有一个 cfg 窗口；更复杂模块可以有更多 buffer 窗口。但文档、硬件、软件、测试脚本都必须围绕同一个窗口契约展开。
+
+### 1.3 新增任意模块的推荐实施顺序
+
+假设要新增一个 `my_accel`，推荐按下面顺序推进：
+
+1. 明确模块访问模型：需要几个 AXI 窗口、每个窗口大小、是否需要中断、是否需要 DMA master。
+2. 编写 `my_accel_top_wrapper.sv`：把 AXI cfg/buffer port 转为内部控制和 SRAM-like 访问。
+3. 在 `ariane_soc_pkg.sv` 添加 enum、base、length，更新 `NB_PERIPHERALS`。
+4. 在 `ariane_soc_top.sv` 添加 `addr_map` 规则，并把 `master[MyAccel*]` 接到 peripherals。
+5. 在 `ariane_peripherals.sv` 添加端口、实例化 wrapper、连接 irq。
+6. 更新 filelist。
+7. 写最小 C 程序，只读 status 或写读 cfg 寄存器，确认地址通。
+8. 再写输入 buffer、cfg、start、wait done、读输出。
+9. 最后接入完整数据生成和回归脚本。
+
+不要一开始就把完整模型、完整数据、DMA、中断、后仿全部混在一起调。更稳妥的路线是：先定访问模型，再写 wrapper，再接 SoC，再做最小软件验证，最后才进入完整数据和回归脚本。
+
+### 1.4 本文后续章节如何展开
+
+后续章节会按这个实施顺序展开：先说明当前 `minimum_my_mxu_axu` 的地址空间，再分别说明 package 枚举、top 层 `addr_map`、`ariane_peripherals`、wrapper、buffer ownership、filelist，最后给出 checklist 和常见问题排查。
+
+## 2. 当前 `minimum_my_mxu_axu` 地址空间
+
+当前组合变体中，自定义外设集中放在 `0x6000_0000` 和 `0x7000_0000` 之后：
+
+| 外设窗口 | xbar enum | base | size | 用途 |
+|---|---:|---:|---:|---|
+| iDMA cfg | `DMA` | `0x6000_0000` | `0x1000` | desc64 DMA 配置口 |
+| MXU cfg | `MxuCfg` | `0x7000_0000` | `0x1000` | MXU 控制/状态/cfg/IRQ |
+| MXU weight buffer | `MxuWgtBuf` | `0x7000_8000` | `0x8000` | MXU weight buffer |
+| MXU activation buffer | `MxuActBuf` | `0x7001_0000` | `0x8000` | MXU activation buffer |
+| MXU output buffer | `MxuOutBuf` | `0x7001_8000` | `0x8000` | MXU output buffer |
+| AXU cfg | `AxuCfg` | `0x7002_0000` | `0x1000` | AXU 控制/状态/cfg/IRQ |
+| AXU op_a buffer | `AxuOpABuf` | `0x7002_8000` | `0x8000` | AXU operand A |
+| AXU op_b buffer | `AxuOpBBuf` | `0x7003_0000` | `0x8000` | AXU operand B |
+| AXU output buffer | `AxuOutBuf` | `0x7003_8000` | `0x8000` | AXU output buffer |
+| GlobalBuffer | `GlobalBuffer` | `0x7004_0000` | `0x8000` | DMA/软件共享缓冲 |
+
+这些地址在硬件侧来自 `hardware/soc/minimum_my_mxu_axu/ariane_soc_pkg.sv`，软件侧必须在 `software/soc/include/*.h` 中完全镜像。地址不能只改一边。
+
+## 3. 第一步：在 `ariane_soc_pkg.sv` 中增加 xbar 下游端口
+
+`ariane_soc_pkg.sv` 里有两个枚举：
+
+1. `axi_masters_t`：表示进入 xbar 的上游 requester。当前包括 CVA6、Debug、DMA master。
+2. `axi_slaves_t`：表示 xbar 下游可访问的 peripheral/slave port。
+
+当前 `minimum_my_mxu_axu` 中，自定义模块相关的下游端口是：
+
+```text
+MxuCfg       = 9
+MxuWgtBuf    = 10
+MxuActBuf    = 11
+MxuOutBuf    = 12
+AxuCfg       = 13
+AxuOpABuf    = 14
+AxuOpBBuf    = 15
+AxuOutBuf    = 16
+DMA          = 17
+GlobalBuffer = 18
+NB_PERIPHERALS = 19
 ```
 
-注意：这里的代码块是教程示意，实际文件中以当前仓库代码为准。
+新增模块时需要：
 
-当前跑通版本的中断连接：
+1. 给每个 AXI slave 窗口分配一个 enum。
+2. 更新 `NB_PERIPHERALS`。
+3. 增加每个窗口的 `Length`。
+4. 增加每个窗口的 `Base`。
+5. 确认 `ValidRule` 的宽度跟 `NB_PERIPHERALS` 匹配。
 
-- UART 使用 `irq_sources[0]`。
-- default slave 使用 `irq_sources[1]`。
-- MXU 使用 `irq_sources[2]`。
-- timer 使用 `irq_sources[6:3]`。
-- `irq_sources[NumSources-1:7]` 置 0。
+常见错误：只增加了 base，却忘了增加 enum；或增加了 enum，却忘了更新 `NB_PERIPHERALS`。
 
-因此软件中写：
+## 4. 第二步：在 `ariane_soc_top.sv` 中配置 xbar 地址路由
 
-- `MY_MXU_PLIC_IRQ_SRC = 2`
-- `IRQn_MY_MXU = 3`
+`ariane_soc_top.sv` 负责把地址窗口真正喂给 `axi_xbar_intf`。
 
-## 10. 新增 hardware/soc filelist
+对每个外设窗口，都要在 `addr_map` 中加入规则：
 
-路径：
+```text
+idx        = 对应 axi_slaves_t enum
+start_addr = Base
+end_addr   = Base + Length
+```
 
-`Soc_w_ASIC-main/hardware/soc/filelist_minimum_my_mxu.f`
+理解成半开区间更安全：`[start_addr, end_addr)`。例如 `MxuCfgBase=0x7000_0000`、`MxuCfgLength=0x1000`，则有效范围是 `0x7000_0000` 到 `0x7000_0fff`。
 
-当前内容的核心是：
+新增模块时，检查三件事：
 
-- `../hardware/soc/minimum_my_mxu/ariane_soc_pkg.sv`
-- `-f ../hardware/soc/common/filelist.f`
-- `../hardware/soc/minimum_my_mxu/cva6_accel_first_pass_decoder.sv`
-- `../hardware/soc/minimum_my_mxu/ara_system.sv`
-- `../hardware/soc/minimum_my_mxu/ariane_peripherals.sv`
-- `../hardware/soc/minimum_my_mxu/ariane_soc_top.sv`
+1. `addr_map` 中的 `idx` 与 `ariane_soc_pkg.sv` enum 一致。
+2. `start_addr/end_addr` 与 package 中 base/length 一致。
+3. `axi_xbar_intf` 的 slave/master 数量参数没有被旧值卡住。
 
-检查点：
+## 5. 第三步：扩展 `ariane_peripherals.sv`
 
-- package 文件必须在使用它的文件之前。
-- 路径必须指向 `minimum_my_mxu`，不要误指向 `minimum` 或旧草稿中的 `minimum_mxu`。
+`ariane_peripherals.sv` 是 SoC 外设汇聚层。新增模块时通常要做两类改动：
 
-## 11. 新增 sim filelist
+1. 在端口列表中增加 AXI slave port。
+2. 在模块体内实例化 wrapper，并把 AXI port、clock、reset、irq 接好。
 
-路径：
+当前 MXU 实例化方式是：
 
-`Soc_w_ASIC-main/sim/filelist_minimum_my_mxu.f`
+```text
+mxu_top_wrapper
+  .clk_i(clk_i)
+  .rst_ni(rst_ni)
+  .cfg(mxu_cfg)
+  .wgtbuf(mxu_wgt)
+  .actbuf(mxu_act)
+  .outbuf(mxu_out)
+  .irq_o(irq_sources[2])
+```
 
-它的职责是把完整仿真需要的依赖串起来：
+当前 AXU 实例化方式是：
 
-1. technology filelist。
-2. common_cells、obi、apb、axi、register_interface、cva6、ara、plic、uart、timer 等基础 IP。
-3. `hardware/soc/filelist_minimum_my_mxu.f`。
-4. `hardware/user_ip/default_slave/filelist_sim.f`。
-5. `hardware/user_ip/my_mxu/filelist_mxu_top_sim.f`。
-6. `tb/common/SimJTAG.sv`。
-7. `tb/common/uartdpi.sv`。
-8. `tb/ara_tb.sv`。
+```text
+axu_top_wrapper
+  .clk_i(clk_i)
+  .rst_ni(rst_ni)
+  .cfg(axu_cfg)
+  .op_a_buf(axu_opa)
+  .op_b_buf(axu_opb)
+  .out_buf(axu_out)
+  .irq_o(irq_sources[1])
+```
 
-重要提醒：不要把 `DPRL_V14_MXU/sim/testbench/mxu_top_tb.sv` 当成 SoC 仿真入口。那个是 MXU 单模块 testbench，只能作为数据、配置顺序和 golden 的参考。SoC 仿真入口仍然是 `Soc_w_ASIC-main/tb/ara_tb.sv`。
+新增模块时，如果需要中断，必须同时确认：
 
-## 12. 新增 my_mxu/filelist_mxu_top_sim.f
+| 硬件信号 | 软件含义 |
+|---|---|
+| `irq_sources[i]` | PLIC source index |
+| `IRQn = i + 1` | 软件侧 PLIC interrupt id |
 
-路径：
+当前约定：AXU 使用 `irq_sources[1]`，软件 IRQn 为 2；MXU 使用 `irq_sources[2]`，软件 IRQn 为 3；DMA 使用 `irq_sources[7]`，软件 IRQn 为 8。
 
-`Soc_w_ASIC-main/hardware/user_ip/my_mxu/filelist_mxu_top_sim.f`
+## 6. 第四步：设计 AXI/MMIO wrapper
 
-这个 filelist 需要注意顺序：
+wrapper 是最关键的边界层。它的任务不是实现计算，而是把 SoC AXI 总线协议转换成计算核心容易使用的控制接口和 buffer 访问接口。
 
-1. `+incdir+` 先覆盖 `pkgs` 和 `pdpu`。
-2. package 文件在使用者之前。
-3. pdpu 基础模块在 pdpu top 之前。
-4. MXU 内部乘法、加法、PE、SA 依赖按被依赖关系排列。
-5. `rf2p_256_128.v` 和 `rf2p_256_128_wrapper.sv` 要在 `mxu_top` 使用前出现。
-6. `mxu_top_no_ctrl.sv`、`mxu_ctrl.sv`、`mxu_top.sv` 在 wrapper 之前。
-7. `mxu_top_wrapper.sv` 放最后。
+MXU/AXU wrapper 可以理解为三层嵌套结构：最外层是 SoC 看到的 AXI slave interface，中间层是负责协议转换和控制封装的 protocol adaptation layer，最内层才是真正的用户自定义计算核心。
 
-如果编译报：
+```mermaid
+flowchart TD
+  subgraph axiLayer [AXI Slave Interface Layer]
+    subgraph adapterLayer [Protocol Adaptation Layer]
+      adapter["axi2mem 
+               register decode 
+               CFG_WRITE 
+               buffer ownership
+              done / irq status"]
 
-- `package not found`
-- `Unknown module type`
-- `Undefined macro`
-- `Cannot find include file`
+      subgraph coreLayer [User Compute Core]
+        core["
+         my_accel_top
+         start
+         cfg
+         input buffers
+         output buffer
+         done
+         "]
+      end
+    end
+        cfgWindow["cfg window
+                  input0 buffer window
+                  input1 buffer window
+                  output buffer window"]
+  end
 
-优先检查这个 filelist 的顺序和 `+incdir+`。
 
-## 13. hardware 阶段推荐实施顺序
+```
 
-如果从零复现，建议按以下顺序：
+推荐 wrapper 至少提供这些功能：
 
-1. 复制或整理 MXU RTL 到 `hardware/user_ip/my_mxu/`。
-2. 写 `filelist_mxu_top_sim.f`，先保证 MXU 依赖完整。
-3. 写 `mxu_top_wrapper.sv`，先实现 cfg/status/start 和三个 buffer AXI 转接。
-4. 从 `minimum/` 复制出 `minimum_my_mxu/`。
-5. 修改 `minimum_my_mxu/ariane_soc_pkg.sv`，增加 4 个 slave、base、length。
-6. 修改 `minimum_my_mxu/ariane_soc_top.sv`，增加 `addr_map` 和 peripherals 连接。
-7. 修改 `minimum_my_mxu/ariane_peripherals.sv`，实例化 `mxu_top_wrapper`。
-8. 新增 `hardware/soc/filelist_minimum_my_mxu.f`。
-9. 新增 `sim/filelist_minimum_my_mxu.f`。
-10. 跑 VCS compile/elaboration，先只要求硬件能编译。
-11. 再进入软件阶段，写最小 C 程序读 `STATUS`。
+| 功能 | 说明 |
+|---|---|
+| `CTRL.START` | 软件写 1 后产生单周期 `start_pulse` |
+| `CTRL.CLR_DONE` | 清除 done sticky 和 irq sticky |
+| `STATUS.BUSY` | 返回核心 busy 状态 |
+| `STATUS.DONE` | 返回 sticky done 状态 |
+| buffer control | 控制每个 buffer 的读端/写端属于 CPU 还是加速器 |
+| `CFG_WRITE` | 软件写内部 cfg address/data，wrapper 产生 `cfg_set_pulse` |
+| `IRQ_MASK/IRQ_STAT` | 支持 done 中断屏蔽和清除 |
 
-不要一开始就把硬件、软件、三种数据、自动脚本全部混在一起调。否则失败时很难判断问题在哪一层。
+当前 MXU/AXU 的 `CFG_WRITE` 约定为：
 
-## 14. 编译和运行时的硬件检查点
+```text
+bit [3:0]   cfg_addr
+bit [15:8]  cfg_data
+```
 
-完成 hardware 阶段后，应满足：
+也就是说内部 cfg address 只有 4 bit，cfg data 只有 8 bit。未来如果新模块需要更宽配置，必须同步修改 wrapper、核心和软件头文件，不能只改 C 宏。
 
-- [ ] `hardware/user_ip/my_mxu/mxu_top_wrapper.sv` 存在。
-- [ ] `hardware/user_ip/my_mxu/filelist_mxu_top_sim.f` 存在并包含 wrapper 和所有 MXU RTL。
-- [ ] `hardware/soc/minimum_my_mxu/` 存在。
-- [ ] `ariane_soc_pkg.sv` 中有 `MxuCfg/MxuWgtBuf/MxuActBuf/MxuOutBuf`。
-- [ ] `ariane_soc_pkg.sv` 中 base 为 `0x70000000/0x70008000/0x70010000/0x70018000`。
-- [ ] `ariane_soc_top.sv` 的 `addr_map` 有 4 条 MXU 规则。
-- [ ] `ariane_soc_top.sv` 把 4 个 master 端口接到 peripherals。
-- [ ] `ariane_peripherals.sv` 实例化 `mxu_top_wrapper`。
-- [ ] `mxu_top_wrapper.irq_o` 接到 `irq_sources[2]`。
-- [ ] `hardware/soc/filelist_minimum_my_mxu.f` 存在。
-- [ ] `sim/filelist_minimum_my_mxu.f` 存在。
-- [ ] VCS 能找到所有 package、module、SRAM wrapper。
+## 7. 第五步：定义 buffer ownership 协议
 
-## 15. 常见错误排查
+新增 AXI/MMIO 加速器时，必须明确 CPU 和加速器在不同阶段分别拥有哪些 buffer 读写端口。MXU/AXU 的 buffer 都不是普通 DRAM，而是加速器内部 SRAM-like buffer，CPU 和加速器不能随意同时占用读写端口。
 
-一、编译报 package 找不到
+当前 buffer control 的通用含义是：
+
+| bit | 含义 |
+|---:|---|
+| bit0 | 读端口交给加速器 |
+| bit1 | 写端口交给加速器 |
+
+典型顺序是：
+
+1. 初始化阶段：所有 buffer 端口归 CPU。
+2. CPU 写输入 buffer。
+3. CPU 写 cfg。
+4. 运行阶段：输入 buffer 的读端交给加速器，输出 buffer 的写端交给加速器。
+5. 等 done。
+6. 结果读取阶段：输出 buffer 切回 CPU。
+
+如果 ownership 错了，常见现象是：
+
+- AXI 写输入成功，但核心读不到。
+- 核心 done 了，但 CPU 读到的 output 仍然是 0 或 poison 值。
+- 部分 bank 正确、部分 bank 错误。
+- 仿真中出现 X 或长期 timeout。
+
+## 8. 第六步：更新 SoC、仿真和综合 filelist
+
+新增 RTL 后，必须把 wrapper、计算核心和相关 SoC 文件加入对应 filelist；否则仿真和综合都不会看到它。当前组合变体相关 filelist 包括：
+
+| 文件 | 用途 |
+|---|---|
+| `hardware/soc/filelist_minimum_my_mxu_axu.f` | SoC 级 RTL 仿真/构建入口 |
+| `hardware/soc/filelist_syn_minimum_my_mxu_axu.f` | 综合侧 user IP/SoC filelist |
+| `hardware/user_ip/my_mxu/filelist_mxu_top_syn.f` | MXU 内部 RTL filelist |
+| `hardware/user_ip/my_axu/filelist_axu_top_syn.f` | AXU 内部 RTL filelist |
+| `sim/filelist_minimum_my_mxu_axu.f` | 仿真目录侧引用入口 |
+
+经验规则：app、SoC 变体、filelist 必须匹配。AXU app 不能拿只包含 MXU 的 filelist 跑；组合 SoC 也不要误引用旧 `minimum_my_mxu` 地址表。
+
+## 9. 第七步: 按照 checklist 进行检查
+
+- [ ] 新模块有清晰的 AXI 窗口划分。
+- [ ] `ariane_soc_pkg.sv` 中 enum、base、length、`NB_PERIPHERALS` 一致。
+- [ ] `ariane_soc_top.sv` 中 `addr_map` 覆盖所有窗口，且不重叠。
+- [ ] `ariane_soc_top.sv` 中 xbar `master[]` 端口接到了 `ariane_peripherals`。
+- [ ] `ariane_peripherals.sv` 端口名、实例化名、wrapper port 名一致。
+- [ ] reset 极性统一，当前 wrapper 使用低有效 `rst_ni`。
+- [ ] irq source 没有和已有外设冲突。
+- [ ] wrapper 的寄存器 offset 与软件头文件一致。
+- [ ] buffer ownership 协议已经写入软件驱动。
+- [ ] RTL 已加入 SoC、user IP、仿真、综合 filelist。
+- [ ] app 使用的 filelist 是当前 SoC 变体对应 filelist。
+
+## 10. 常见问题排查
+
+### 12.1 CPU 访问地址无响应
 
 优先检查：
 
-- `filelist_mxu_top_sim.f` 中是否有 `+incdir+../hardware/user_ip/my_mxu/pkgs`。
-- package 文件是否排在使用者之前。
-- 文件路径是否是相对 `sim/` 目录的正确路径。
+1. 软件 base address 是否与 `ariane_soc_pkg.sv` 一致。
+2. `addr_map` 是否添加该地址窗口。
+3. `NB_PERIPHERALS` 是否更新。
+4. `master[Enum]` 是否接入 `ariane_peripherals`。
+5. wrapper 是否进入 filelist。
 
-二、编译报 module 找不到
-
-优先检查：
-
-- `mxu_top_wrapper.sv` 是否被加入 filelist。
-- `mxu_top.sv`、`mxu_ctrl.sv`、`mxu_top_no_ctrl.sv` 是否都在 filelist 中。
-- `rf2p_256_128_wrapper.sv` 是否在 filelist 中。
-
-三、AXI interface 端口不匹配
+### 12.2 start 后一直 timeout
 
 优先检查：
 
-- wrapper 端口是否使用 `AXI_BUS.Slave`。
-- `ariane_peripherals.sv` 中传入的端口名是否与 wrapper 端口名一致，例如 `cfg/wgtbuf/actbuf/outbuf`。
-- `AXI_ADDR_WIDTH` 和 `AXI_DATA_WIDTH` 参数是否正确传入。
+1. `CTRL` offset 是否一致。
+2. `CFG_WRITE` 是否真的产生 `cfg_set_pulse`。
+3. 输入 buffer ownership 是否切给加速器读端。
+4. 输出 buffer ownership 是否切给加速器写端。
+5. 核心 done 信号是否接回 wrapper。
 
-四、CPU 访问 MXU 地址后 trap
-
-优先检查：
-
-- `ariane_soc_pkg.sv` 是否定义了 base。
-- `ariane_soc_top.sv` 的 `addr_map` 是否加入对应规则。
-- 软件 `my_mxu.h` 的 base 是否和硬件一致。
-- `sim` 是否真的使用了 `filelist_minimum_my_mxu.f`。
-
-五、STATUS 一直是 0
-
-可能原因：
-
-- cfg AXI slave 没接到 wrapper。
-- `STATUS` offset 不一致。
-- 软件访问了错误 base。
-- `cfg_rdata_q` 没有在读 `REG_STATUS` 时返回 busy/done。
-
-六、busy 一直不结束
-
-可能原因：
-
-- cfg 没写对。
-- start pulse 没产生。
-- input buffer 没写对。
-- buffer ownership 错。
-- 原始 MXU 内核本身没有进入 done。
-
-七、DONE 有但输出全 0
+### 12.3 done 了但结果不对
 
 优先检查：
 
-- 计算前 `out` 写端是否交给 MXU。
-- 读输出前 `out` 是否切回 CPU。
-- output buffer 地址计算是否和硬件一致。
-- 软件是否读取了正确 row 和 bank。
+1. buffer 地址公式是否与 bank/row/half64 硬件布局一致。
+2. 输出 buffer 是否在 CPU 读取前切回 CPU。
+3. cfg base row、batch、mode 是否写对。
+4. 数据打包脚本是否匹配硬件期望。
 
-八、SRAM timing check 或 X 值
+### 12.4 中断收不到
 
-当前功能仿真可使用 `+notimingchecks` 绕开部分 SRAM macro timing check，但这不是 tapeout 前的时序 signoff。若输出 X，检查：
+优先检查：
 
-- `rf2p_256_128.v` 和 wrapper 是否加入 filelist。
-- 读写时序是否满足 SRAM 模型要求。
-- reset 和 port ownership 是否正确。
-- CPU 写 buffer 后是否使用 fence。
+1. wrapper `irq_o` 是否接到 `irq_sources[i]`。
+2. 软件 IRQn 是否使用 `i + 1`。
+3. `IRQ_MASK` 是否打开。
+4. `IRQ_STAT` 是否被提前清掉。
+5. PLIC priority、enable、threshold 是否配置。
 
-## 16. 与后续文档的关系
+## 11. 本阶段结论
 
-hardware 阶段完成后，下一步读：
+硬件阶段的核心不是“把 MXU 的几行代码复制出来”，而是建立一个稳定的 AXI/MMIO 外设接入模板：
 
-`如何修改softwareware文件夹下的内容？.md`
+```text
+CVA6 -> AXI xbar -> 地址窗口 -> ariane_peripherals -> wrapper -> 自定义核心
+```
 
-重点核对：
-
-- `my_mxu.h` 中的 base address 是否与 `ariane_soc_pkg.sv` 一致。
-- `my_mxu.h` 中的 register offset 是否与 `mxu_top_wrapper.sv` 一致。
-- buffer 地址公式是否符合 wrapper 和 `mxu_top` 的 bank/row/half 组织方式。
-
-再下一步读：
-
-`如何准备测试数据和测试脚本？.md`
-
-重点理解：
-
-- `gen_input_data.py` 如何生成 `input_data.h`。
-- `my_mxu_test/main.c` 如何通过 UART marker 输出结果。
-- `log2txt_mxu.py` 和 `compare_mxu.py` 如何确认三个样例 PASS。
+MXU 和 AXU 已经证明这个模板可以复用。后续新增任意自定义模块时，只要窗口规划、地址映射、wrapper 协议、软件镜像、filelist 五件事保持一致，就可以按同一流程接入 CVA6 的 AXI 总线。
