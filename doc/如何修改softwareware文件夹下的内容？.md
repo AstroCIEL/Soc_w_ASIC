@@ -1,680 +1,498 @@
-# 阶段二：如何修改 software 文件夹，让 CPU 通过 MMIO 控制 MXU
+# 阶段二：如何修改 software 文件夹，让 CPU 通过 MMIO 控制自定义硬件
 
-本文是“往 CPU 的 AXI 总线上加自定义模块”系列教程的第 2 篇，目标是解释已经跑通的 `my_mxu` 版本中，software 目录到底改了什么、为什么这样改、初学者如何按步骤复现。
+本文是“往 CPU 的 AXI 总线上加自定义模块”系列教程的第 2 篇。
 
-当前教程以 `work_for_tapeout_2026/Soc_w_ASIC-main` 中已经验证通过的版本为事实基准。该版本已经完成：
+它从当前最新 `minimum_my_mxu_axu` 版本出发，总结 software 目录中应该如何为任意 AXI/MMIO 自定义外设编写地址契约、驱动、测试 app 和构建入口。
 
-- `int_ff` 通过。
-- `posit_ff` 通过。
-- `posit_bp` 通过。
-- 三个模式的 `compare_report.txt` 均显示 `result: PASS`。
+MXU 和 AXU 只是本文的两个例子。真正需要掌握的是：硬件 wrapper 暴露了一组 MMIO 地址后，软件如何准确镜像这组地址、寄存器、bit、buffer 布局和中断编号，并把这些契约落到 driver、app、`app.mk` 和仿真运行配置中。
 
-读本文前，应该先理解硬件教程：
+当前 MXU/AXU 软件主要是 baremetal 直接 MMIO 访问。本文不讨论 Linux kernel driver、设备树节点、`/dev/mem` 或 userspace `mmap` 方案。
 
-`如何修改hardware文件夹下的内容？.md`
+## 0. 软件阶段要解决什么问题
 
-因为软件不能自己发明地址、寄存器和 bit 定义。软件里的所有 base address、register offset、buffer 地址公式，都必须和硬件 wrapper、SoC address map 保持一致。
+硬件阶段完成后，CPU 看到的是若干固定物理地址窗口。例如当前 `minimum_my_mxu_axu` 中：
 
-## 0. software 阶段最终要完成什么
+| 模块 | cfg | input0 | input1 | output |
+|---|---:|---:|---:|---:|
+| MXU | `0x7000_0000` | `0x7000_8000` | `0x7001_0000` | `0x7001_8000` |
+| AXU | `0x7002_0000` | `0x7002_8000` | `0x7003_0000` | `0x7003_8000` |
 
-hardware 阶段完成后，CPU 能通过 AXI 访问 4 个 MXU 地址窗口：
+software 阶段要完成的是：
 
-| 软件宏 | base | 用途 |
-|---|---:|---|
-| `MY_MXU_CFG_BASE` | `0x70000000` | 控制寄存器窗口 |
-| `MY_MXU_WGT_BASE` | `0x70008000` | weight buffer |
-| `MY_MXU_ACT_BASE` | `0x70010000` | activation buffer |
-| `MY_MXU_OUT_BASE` | `0x70018000` | output buffer |
+1. 在 `software/soc/include/*.h` 中定义硬件/软件共同契约。
+2. 在 `software/soc/src/*.c` 中实现 MMIO driver API。
+3. 在 `software/app/*/main.c` 中实现最小可验证的 SoC 测试流程。
+4. 在 `software/app/*/app.mk` 中接入构建系统和数据生成脚本。
+5. 在运行脚本或仿真命令中确认 app ELF 与 SoC filelist 匹配。
+6. 让 CPU 完成：写输入 buffer、写配置、切换 buffer ownership、start、wait done、读输出、比对结果。
 
-software 阶段要做的是：
+软件不能自己发明地址。所有 base、offset、bit、cfg 编号和 buffer 公式都必须来自硬件 wrapper 与 SoC address map。
 
-1. 在 `software/soc/include/my_mxu.h` 中定义硬件/软件共同契约。
-2. 在 `software/soc/src/my_mxu.c` 中实现 MMIO 驱动。
-3. 在 `software/app/my_mxu_test/main.c` 中实现 SoC 上的 MXU 测试流程。
-4. 在 `software/app/my_mxu_test/app.mk` 中接入构建系统，并调用脚本生成 `input_data.h`。
-5. 让 CPU 完成：写输入 buffer → 写配置 → 切换端口归属 → start → wait done → 读输出 → 打印 marker。
+## 1. 总体流程、文件地图与实施顺序
 
-## 1. 软件控制 MXU 的完整流程
+本节先给出完整路线图。读者在进入具体文件前，应该先知道 CPU 控制 AXI/MMIO 加速器的通用流程、software 目录中会改哪些文件，以及新增一个模块时推荐按什么顺序推进。
 
-SoC 软件复刻了原始 MXU 单模块 testbench 的关键顺序，只是把“testbench 直接写信号”改成了“CPU 通过 MMIO 写寄存器和 buffer”。
+### 1.1 CPU 控制 AXI/MMIO 加速器的通用流程
+
+对 AXI/MMIO wrapper 型加速器，推荐软件流程如下：
 
 ```mermaid
 flowchart TD
-  bind["my_mxu_bind"] --> init["初始化驱动对象"]
-  init --> cpuOwn["buffer 端口归 CPU"]
-  cpuOwn --> loadWgt["写 weight buffer"]
-  loadWgt --> loadAct["写 activation buffer"]
-  loadAct --> fence0["fence 保证写入可见"]
-  fence0 --> writeCfg["写 15 项 cfg"]
-  writeCfg --> mxuOwn["切换 buffer 给 MXU"]
-  mxuOwn --> start["写 CTRL.START"]
-  start --> waitDone["轮询 STATUS.BUSY 或 DONE"]
-  waitDone --> cpuOut["output 切回 CPU 读"]
-  cpuOut --> dump["通过 UART 打印结果"]
-  dump --> pass["输出 MXU_PASS"]
+  bind["绑定 driver 函数表"] --> init["初始化 regs 和 buffer base"]
+  init --> clear["清 done/irq sticky"]
+  clear --> cpuOwn["buffer 端口归 CPU"]
+  cpuOwn --> writeInput["CPU 写输入 buffer"]
+  writeInput --> fence0["fence 保证写入可见"]
+  fence0 --> writeCfg["写内部 cfg"]
+  writeCfg --> accOwn["输入读端/输出写端交给加速器"]
+  accOwn --> start["写 CTRL.START"]
+  start --> waitDone["轮询 STATUS 或等待中断"]
+  waitDone --> cpuOut["输出 buffer 切回 CPU"]
+  cpuOut --> compare["读取结果并比对"]
 ```
 
-当前 `my_mxu_test/main.c` 的核心顺序是：
+这个流程对 MXU、AXU 都适用。不同模块的差别主要体现在：buffer 名字、内部 cfg 编号、测试数据布局、特殊状态机和构建变量。
 
-1. 打印 `MXU_SOC_TEST_BEGIN` 和 `MXU_MODE ...`。
-2. `my_mxu_bind(&my_mxu0)`。
-3. `my_mxu0.init(...)`。
-4. 设置 `wgt/act/out` 端口都归 CPU。
-5. 写入 `MXU_WGT_DATA` 和 `MXU_ACT_DATA`。
-6. 执行 `fence`。
-7. 写 cfg table。
-8. 设置 `wgt`、`act` 读端给 MXU，`out` 写端给 MXU。
-9. 写 `CTRL.START`。
-10. 轮询等待完成。
-11. 把 `wgt/act/out` 切回 CPU。
-12. 输出 `MXU_PASS` 和 `MXU_SOC_TEST_END`。
+### 1.2 software 目录中需要新增或修改的文件
 
-注意：当前本地可见的 `main.c` 中，`dump_output_bank_files_compatible()` 和 `compare_output()` 代码存在，但调用处是注释状态。若只是观察 `MXU_PASS`，可以不打开 dump；但如果要重新生成 `output.txt` 并让 `log2txt_mxu.py` / `compare_mxu.py` 完整跑通，UART log 中必须包含 `===MXU_OUT_BANK_BEGIN ...===` 到 `===MXU_OUT_BANK_END ...===` 的输出。因此重新跑一键 compare 前，要确认运行的 `my_mxu_test` 版本会打印完整 MXU_OUT dump。
+当前 MXU/AXU 相关软件文件如下：
 
-## 2. 当前跑通版本的软件文件地图
+| 文件 | 作用 |
+|---|---|
+| `software/soc/include/my_mxu.h` | MXU base、size、register offset、bit、cfg 编号、buffer offset、IRQn、driver struct |
+| `software/soc/src/my_mxu.c` | MXU driver 实现 |
+| `software/app/my_mxu_test/main.c` | MXU baremetal 测试 app |
+| `software/app/my_mxu_test/app.mk` | MXU app 构建入口，调用 `gen_input_data.py` |
+| `software/soc/include/my_axu.h` | AXU base、size、register offset、bit、cfg 编号、unit/function 编码、buffer offset、IRQn、driver struct |
+| `software/soc/src/my_axu.c` | AXU driver 实现 |
+| `software/app/my_axu_test/main.c` | AXU baremetal 测试 app |
+| `software/app/my_axu_test/app.mk` | AXU app 构建入口，调用 `gen_input_data_axu.py` |
+| `software/soc/include/global_buffer.h` | GlobalBuffer 软件地址定义 |
+| `software/app/mxu_idma_gbuf_test/main.c` | iDMA 在 GlobalBuffer 和 MXU WGT buffer 之间搬运的集成测试 |
 
-一、驱动头文件：
+新增模块时，建议按同样结构增加：
 
-`Soc_w_ASIC-main/software/soc/include/my_mxu.h`
+```text
+software/soc/include/my_accel.h
+software/soc/src/my_accel.c
+software/app/my_accel_test/main.c
+software/app/my_accel_test/app.mk
+```
 
-作用：
+### 1.3 新增任意模块的软件实施顺序
 
-- 定义 MXU 四个 base address。
-- 定义 cfg 寄存器 offset。
-- 定义 CTRL/STATUS/BUF_CTL/IRQ bit mask。
-- 定义 cfg address 编号。
-- 定义 buffer 参数和地址计算公式。
-- 定义驱动结构体 `struct my_mxu_drv`。
-- 声明 `my_mxu_bind()`。
+假设新增 `my_accel`，推荐按下面顺序推进：
 
-二、驱动实现：
+1. 从硬件文档拿到地址窗口、寄存器 offset、bit、buffer 布局、IRQ source。
+2. 写 `software/soc/include/my_accel.h`：只做硬件/软件契约定义，不写复杂逻辑。
+3. 写 `software/soc/src/my_accel.c`：封装 `init`、`write_cfg`、`set_ports`、`start`、`read_status`、`wait_done`、`clear_done`。
+4. 写最小 app：只读 `STATUS`，确认 CPU 访问地址通。
+5. 扩展 app：写一个 cfg/control 寄存器，读回或观察状态变化。
+6. 再加入 buffer 写入、cfg、start、done、output 比对。
+7. 在 `app.mk` 中加入 driver 源文件、include path、构建变量和数据生成脚本。
+8. 在运行脚本或仿真命令中确认 app ELF 与 SoC filelist 匹配。
+9. 最后接入完整测试数据和回归脚本。
 
-`Soc_w_ASIC-main/software/soc/src/my_mxu.c`
+不要一开始就写完整模型和复杂 golden compare。先让 CPU 访问地址通，再让控制通，再让数据通。
 
-作用：
+### 1.4 本文后续章节如何展开
 
-- 实现 init。
-- 实现 cfg 写入。
-- 实现 buffer ownership 切换。
-- 实现 start。
-- 实现 status 读取。
-- 实现 wait done。
-- 实现 clear done。
-- 绑定函数指针到 `struct my_mxu_drv`。
+后续章节会按这个实施顺序展开：先讲 include 头文件中的硬件/软件契约，再讲 buffer 地址公式、driver API、app 最小验证流程、IRQ/fence/volatile 约束、`app.mk` 与 filelist 配置，最后给出 checklist 和常见错误排查。
 
-三、测试 app：
+## 2. 第一步：在 include 头文件中定义硬件/软件共同契约
 
-`Soc_w_ASIC-main/software/app/my_mxu_test/main.c`
+第一步要改的是 `software/soc/include/my_*.h`。头文件的任务是把硬件 wrapper 暴露的 MMIO 契约翻译成 C 宏、C struct 和 driver 类型声明。
 
-作用：
+### 2.1 base address 和窗口大小
 
-- include `my_mxu.h`。
-- include 自动生成的 `input_data.h`。
-- 把脚本生成的数据写入 MXU buffer。
-- 按 mode 写配置。
-- 启动 MXU。
-- 等待完成。
-- 打印 UART marker。
+当前 MXU 软件宏：
 
-四、app 构建描述：
+| 宏 | base | size | 用途 |
+|---|---:|---:|---|
+| `MY_MXU_CFG_BASE` | `0x70000000` | `0x1000` | cfg/register 窗口 |
+| `MY_MXU_WGT_BASE` | `0x70008000` | `0x8000` | weight buffer |
+| `MY_MXU_ACT_BASE` | `0x70010000` | `0x8000` | activation buffer |
+| `MY_MXU_OUT_BASE` | `0x70018000` | `0x8000` | output buffer |
 
-`Soc_w_ASIC-main/software/app/my_mxu_test/app.mk`
+当前 AXU 软件宏：
 
-作用：
+| 宏 | base | size | 用途 |
+|---|---:|---:|---|
+| `MY_AXU_CFG_BASE` | `0x70020000` | `0x1000` | cfg/register 窗口 |
+| `MY_AXU_OPA_BASE` | `0x70028000` | `0x8000` | operand A buffer |
+| `MY_AXU_OPB_BASE` | `0x70030000` | `0x8000` | operand B buffer |
+| `MY_AXU_OUT_BASE` | `0x70038000` | `0x8000` | output buffer |
 
-- 定义 `MXU_TEST_MODE`。
-- 调用 `zzc_workspace_mxu/file_format_transform/gen_input_data.py` 生成 `input_data.h`。
-- 给 `main.c` 增加 generated include path。
-- 把 `software/soc/src/my_mxu.c` 加入编译。
+这些宏必须与 `hardware/soc/minimum_my_mxu_axu/ariane_soc_pkg.sv` 中的 base/length 一致。
 
-五、生成文件：
+### 2.2 register offset 和 64-bit MMIO struct
 
-`software/build/app/my_mxu_test/gen/input_data.h`
+MXU/AXU wrapper 采用相同的 64-bit MMIO 槽位布局：
 
-作用：
+| offset | 通用含义 | MXU 名称 | AXU 名称 |
+|---:|---|---|---|
+| `0x000` | 控制寄存器 | `CTRL` | `CTRL` |
+| `0x008` | 状态寄存器 | `STATUS` | `STATUS` |
+| `0x010` | input0 buffer control | `WGT_BUF_CTRL` | `OPA_BUF_CTRL` |
+| `0x018` | input1 buffer control | `ACT_BUF_CTRL` | `OPB_BUF_CTRL` |
+| `0x020` | output buffer control | `OUT_BUF_CTRL` | `OUT_BUF_CTRL` |
+| `0x028` | 保留 | `_reserved0` | `_reserved0` |
+| `0x030` | 内部 cfg 写入口 | `CFG_WRITE` | `CFG_WRITE` |
+| `0x038` | IRQ mask | `IRQ_MASK` | `IRQ_MASK` |
+| `0x040` | IRQ status | `IRQ_STAT` | `IRQ_STAT` |
 
-- 由 `gen_input_data.py` 自动生成。
-- 不应该手写。
-- 包含当前测试模式的 weight、activation、golden、cfg 参数。
+软件 struct 使用 `volatile uint64_t`，原因是：
 
-## 3. 硬件/软件共同契约
+1. 每个寄存器槽位是 64-bit 对齐的。
+2. MMIO 读写有副作用，不能被编译器优化掉。
+3. 每次读取 status 都必须真实访问硬件。
+4. 每次写 `CFG_WRITE` 都会触发 wrapper 内部配置动作。
 
-软件最重要的原则：与硬件保持一致。
+不要把寄存器 struct 改成 32-bit，也不要删除 `0x028` 的 reserved 槽位。
 
-### 3.1 地址窗口契约
+### 2.3 通用 bit 定义
 
-当前跑通版本在 `my_mxu.h` 中定义：
-
-- `MY_MXU_CFG_BASE = 0x70000000UL`
-- `MY_MXU_WGT_BASE = 0x70008000UL`
-- `MY_MXU_ACT_BASE = 0x70010000UL`
-- `MY_MXU_OUT_BASE = 0x70018000UL`
-
-窗口大小：
-
-- `MY_MXU_CFG_SIZE = 0x1000UL`
-- `MY_MXU_WGT_SIZE = 0x8000UL`
-- `MY_MXU_ACT_SIZE = 0x8000UL`
-- `MY_MXU_OUT_SIZE = 0x8000UL`
-
-这些值必须与：
-
-- `hardware/soc/minimum_my_mxu/ariane_soc_pkg.sv`
-- `hardware/soc/minimum_my_mxu/ariane_soc_top.sv`
-
-完全一致。
-
-### 3.2 寄存器 offset 契约
-
-当前 `my_mxu.h` 中定义：
-
-| 宏 | offset | 对应 wrapper 寄存器 |
+| 寄存器 | bit | 含义 |
 |---|---:|---|
-| `MY_MXU_REG_CTRL_OFF` | `0x000` | `CTRL` |
-| `MY_MXU_REG_STATUS_OFF` | `0x008` | `STATUS` |
-| `MY_MXU_REG_WGT_BUF_CTRL_OFF` | `0x010` | `WGT_BUF_CTL` |
-| `MY_MXU_REG_ACT_BUF_CTRL_OFF` | `0x018` | `ACT_BUF_CTL` |
-| `MY_MXU_REG_OUT_BUF_CTRL_OFF` | `0x020` | `OUT_BUF_CTL` |
-| `MY_MXU_REG_CFG_WRITE_OFF` | `0x030` | `CFG_WRITE` |
-| `MY_MXU_REG_IRQ_MASK_OFF` | `0x038` | `IRQ_MASK` |
-| `MY_MXU_REG_IRQ_STAT_OFF` | `0x040` | `IRQ_STAT` |
+| `CTRL` | 0 | `START`，写 1 触发一次启动 pulse |
+| `CTRL` | 1 | `CLR_DONE`，清 done sticky 和 irq sticky |
+| `STATUS` | 0 | `BUSY` |
+| `STATUS` | 1 | `DONE` |
+| buffer control | 0 | 读端口交给加速器 |
+| buffer control | 1 | 写端口交给加速器 |
+| `CFG_WRITE` | `[3:0]` | 内部 cfg address |
+| `CFG_WRITE` | `[15:8]` | 内部 cfg data |
 
-这些 offset 必须与 `hardware/user_ip/my_mxu/mxu_top_wrapper.sv` 中的 `REG_*` localparam 完全一致。
+AXU 额外有：
 
-### 3.3 bit mask 契约
+| 寄存器 | bit | 含义 |
+|---|---:|---|
+| `STATUS` | 2 | `CALC_DONE`，AXU 特有，表示一次计算完成，不一定等价于整个 case 流程完成 |
 
-当前约定：
+## 3. 第二步：定义 buffer 地址公式和数据布局
 
-- `MY_MXU_CTRL_START = bit0`
-- `MY_MXU_CTRL_CLR_DONE = bit1`
-- `MY_MXU_STATUS_BUSY = bit0`
-- `MY_MXU_STATUS_DONE = bit1`
-- `MY_MXU_BUF_RD_MXU = bit0`
-- `MY_MXU_BUF_WR_MXU = bit1`
+第二步仍然发生在 `software/soc/include/my_*.h` 中，但关注点从寄存器切换到 buffer 地址公式。
 
-含义：
+MXU/AXU 的三个 buffer 当前都是：
 
-- `CTRL.START`：启动 MXU，wrapper 产生 `start_i` 单周期脉冲。
-- `CTRL.CLR_DONE`：清除 done sticky 和 irq sticky。
-- `STATUS.BUSY`：MXU 正在计算。
-- `STATUS.DONE`：MXU 完成，wrapper 保存 sticky done。
-- `BUF_RD_MXU`：buffer 读端交给 MXU。
-- `BUF_WR_MXU`：buffer 写端交给 MXU。
-
-## 4. my_mxu.h 详解
-
-路径：
-
-`Soc_w_ASIC-main/software/soc/include/my_mxu.h`
-
-### 4.1 base address 宏
-
-这些宏让软件能访问硬件窗口：
-
-- `MY_MXU_CFG_BASE`
-- `MY_MXU_WGT_BASE`
-- `MY_MXU_ACT_BASE`
-- `MY_MXU_OUT_BASE`
-- `MY_MXU_WGTBUF_BASE`
-- `MY_MXU_ACTBUF_BASE`
-- `MY_MXU_OUTBUF_BASE`
-
-`MY_MXU_WGTBUF_BASE` 等是别名，便于驱动和 app 更直观地表示 buffer。
-
-### 4.2 cfg address 编号
-
-MXU 内部 cfg 共 15 项，当前软件定义如下：
-
-| cfg 编号 | 宏 | 含义 |
-|---:|---|---|
-| 0 | `MXU_CFG_WGT_TILE0_BASE_ADDR` | weight tile0 base |
-| 1 | `MXU_CFG_WGT_TILE1_BASE_ADDR` | weight tile1 base |
-| 2 | `MXU_CFG_WGT_TILE2_BASE_ADDR` | weight tile2 base |
-| 3 | `MXU_CFG_WGT_TILE3_BASE_ADDR` | weight tile3 base |
-| 4 | `MXU_CFG_ACT_TILE0_BASE_ADDR` | activation tile0 base |
-| 5 | `MXU_CFG_ACT_TILE1_BASE_ADDR` | activation tile1 base |
-| 6 | `MXU_CFG_ACT_TILE2_BASE_ADDR` | activation tile2 base |
-| 7 | `MXU_CFG_ACT_TILE3_BASE_ADDR` | activation tile3 base |
-| 8 | `MXU_CFG_OUT_TILE0_BASE_ADDR` | output tile0 base |
-| 9 | `MXU_CFG_OUT_TILE1_BASE_ADDR` | output tile1 base |
-| 10 | `MXU_CFG_OUT_TILE2_BASE_ADDR` | output tile2 base |
-| 11 | `MXU_CFG_OUT_TILE3_BASE_ADDR` | output tile3 base |
-| 12 | `MXU_CFG_ACT_BATCHSIZE_M` | batch size M |
-| 13 | `MXU_CFG_SA_DATA_FLOW_MODE` | FF/BP 模式 |
-| 14 | `MXU_CFG_SA_DATA_TYPE_MODE` | posit/int 模式 |
-
-模式编码：
-
-- `MXU_FLOW_FF = 0`
-- `MXU_FLOW_BP = 1`
-- `MXU_TYPE_POSIT = 0`
-- `MXU_TYPE_INT = 1`
-
-对应三种测试：
-
-| 模式 | flow | type |
-|---|---:|---:|
-| `int_ff` | 0 | 1 |
-| `posit_ff` | 0 | 0 |
-| `posit_bp` | 1 | 0 |
-
-### 4.3 buffer 地址计算公式
-
-当前 `my_mxu.h` 中定义：
-
-```c
-#define mxu_buf_word_offset(bank, row, half64) \
-    ((((uint32_t)(bank) & 0x7u) << 12) | \
-     (((uint32_t)(row) & 0xFFu) << 4) | \
-     (((uint32_t)(half64) & 0x1u) << 3))
+```text
+8 bank * 256 row * 128 bit = 32768 byte = 0x8000
 ```
 
-含义：
+软件按两个 64-bit half word 访问每个 bank-row：
+
+```text
+offset = (bank[2:0] << 12) | (row[7:0] << 4) | (half64[0] << 3)
+```
+
+也就是：
+
+| 维度 | 间隔 |
+|---|---:|
+| bank | `0x1000` |
+| row | `0x10` |
+| half64 | `0x8` |
+
+MXU 使用 `mxu_buf_word_offset(bank, row, half64)`，AXU 使用 `axu_buf_word_offset(bank, row, half64)`。公式相同，但前缀分开，避免不同模块的语义混用。
+
+新增模块时必须同时确认：
+
+1. 硬件 buffer 的 bank 数、row 数、row 宽度。
+2. 软件 offset 公式是否覆盖完整 buffer 空间。
+3. `*_SIZE` 宏是否等于硬件窗口大小。
+4. 数据生成脚本是否按同一个 bank/row/half64 规则打包。
+
+## 4. 第三步：在 src 中实现 MMIO driver API
+
+第三步要改的是 `software/soc/src/my_*.c`。driver 的目标不是写业务测试，而是把裸 MMIO 操作封装成稳定 API，让 app 按固定顺序调用。
+
+### 4.1 MXU driver 示例
+
+MXU 驱动围绕 `struct my_mxu_drv` 展开，核心成员包括：
+
+- `regs`：指向 `MY_MXU_CFG_BASE`。
+- `wgtbuf`：指向 `MY_MXU_WGT_BASE`。
+- `actbuf`：指向 `MY_MXU_ACT_BASE`。
+- `outbuf`：指向 `MY_MXU_OUT_BASE`。
+
+MXU driver 需要封装：
+
+- `init`
+- `mxu_write_cfg`
+- `mxu_config_common`
+- `mxu_set_wgt_ports`
+- `mxu_set_act_ports`
+- `mxu_set_out_ports`
+- `mxu_start`
+- `mxu_read_status`
+- `mxu_wait_done`
+- `mxu_clear_done`
+
+MXU 内部 cfg 编号包括：
+
+| cfg addr | 含义 |
+|---:|---|
+| 0-3 | weight tile base |
+| 4-7 | activation tile base |
+| 8-11 | output tile base |
+| 12 | activation batch size |
+| 13 | systolic array dataflow mode：`FF=0`，`BP=1` |
+| 14 | data type mode：`POSIT=0`，`INT=1` |
+
+### 4.2 AXU driver 示例
+
+AXU 驱动结构与 MXU 类似，但 buffer 和 cfg 语义不同：
+
+- `regs`：指向 `MY_AXU_CFG_BASE`。
+- `opabuf`：指向 `MY_AXU_OPA_BASE`。
+- `opbbuf`：指向 `MY_AXU_OPB_BASE`。
+- `outbuf`：指向 `MY_AXU_OUT_BASE`。
+
+AXU driver 需要封装：
+
+- `init`
+- `axu_write_cfg`
+- `axu_set_unit`
+- `axu_set_func`
+- `axu_set_batch_size`
+- `axu_set_op_a_base`
+- `axu_set_op_b_base`
+- `axu_set_vec_out_base`
+- `axu_set_reduce_out_base`
+- `axu_set_seed_high_base`
+- `axu_set_seed_low_base`
+- `axu_load_seed`
+- `axu_set_opa_ports`
+- `axu_set_opb_ports`
+- `axu_set_out_ports`
+- `axu_start`
+- `axu_read_status`
+- `axu_wait_done`
+- `axu_clear_done`
+
+AXU 内部 cfg 编号包括：
+
+| cfg addr | 含义 |
+|---:|---|
+| 0 | function select |
+| 1 | op_a base row |
+| 2 | op_b base row |
+| 3 | vector output base row |
+| 4 | reduce output base row |
+| 5 | batch size |
+| 6 | unit select |
+| 7 | SFU seed high base row |
+| 8 | SFU seed low base row |
+| 9 | SFU seed load trigger |
 
-- `bank`：0 到 7，共 8 个 bank。
-- `row`：0 到 255，共 256 行。
-- `half64`：0 或 1。
-- 一个 row 是 128 bit，即 16 字节。
-- CPU 每次访问 64 bit，即 8 字节。
-- `half64=0` 表示低 64 bit。
-- `half64=1` 表示高 64 bit。
+AXU unit/function 编码：
 
-地址展开：
+| unit | 编码 | 典型 function |
+|---|---:|---|
+| VPU | 0 | add、sub、mul、max、min、reduce_max、reduce_sum |
+| SFU | 1 | cordic、rng、int2posit |
+| NLI | 2 | load_mult_lut、load_y_bound_lut、compute |
+| Scheduler | 3 | run |
 
-- bank 选择放在 bit `[14:12]`。
-- row 选择放在 bit `[11:4]`。
-- half64 选择放在 bit `[3]`。
+### 4.3 新模块 driver 最小 API 模板
 
-这和窗口大小 `0x8000` 匹配：
+新增 `my_accel` 时，不建议 app 直接散落裸指针访问。至少先提供这些 API：
 
-- 每个 bank：256 row × 16 byte = 4096 byte = `0x1000`。
-- 8 个 bank：8 × `0x1000` = `0x8000`。
+```text
+init(regs, input buffers, output buffer)
+write_cfg(cfg_addr, cfg_data)
+set_input_ports(rd_to_acc, wr_to_acc)
+set_output_ports(rd_to_acc, wr_to_acc)
+start()
+read_status()
+wait_done(timeout)
+clear_done()
+```
 
-### 4.4 volatile 的必要性
+这样 app 可以专注测试流程，而不是到处重复 MMIO 位操作。
 
-`struct my_mxu_regs` 中每个寄存器都是：
+## 5. 第四步：在 app 中实现最小可验证测试流程
 
-- `volatile uint64_t`
+第四步要改的是 `software/app/my_*_test/main.c`。app 的目标是证明 CPU 能按正确顺序控制硬件，而不是把所有 corner case 一次性塞进去。
 
-原因：
+### 5.1 推荐从最小 app 开始
 
-- MMIO 不是普通内存。
-- 编译器不能优化掉读写。
-- 每次读 `status` 都必须真的发起总线访问。
-- 每次写 `cfg_write` 都必须真的写到硬件，因为写操作本身会触发 `cfg_set_i`。
+新增模块时，app 应该分层推进：
 
-如果漏掉 `volatile`，可能出现：
+1. 只读 `STATUS`，确认地址通。
+2. 写 `CTRL.CLR_DONE` 或一个 cfg/control 寄存器，确认控制通。
+3. 写一小段 input buffer，确认 buffer 地址公式通。
+4. 写最小 cfg，切 buffer ownership，写 `CTRL.START`。
+5. 轮询 `STATUS.BUSY/DONE` 或等待中断。
+6. 输出切回 CPU，读 output buffer。
+7. 先和 app 内部写死 expected 比对，再接入完整 `input_data.h` 和 golden。
 
-- `wait_done` 读不到最新状态。
-- cfg 写入被优化或重排。
-- start 写入没有按预期发生。
+### 5.2 MXU app 流程
 
-### 4.5 驱动结构体
+MXU 测试 app 的典型流程：
 
-当前驱动使用：
+1. `my_mxu_bind(&my_mxu0)`。
+2. `my_mxu0.init(...)`。
+3. `mxu_set_wgt_ports/act_ports/out_ports(..., 0, 0)`，让 CPU 拥有 buffer。
+4. CPU 写 `MXU_WGT_DATA` 和 `MXU_ACT_DATA`。
+5. 执行 `fence`。
+6. 写 cfg：weight tile base、activation tile base、output tile base、batch、flow mode、data type mode。
+7. 切端口：wgt/act 读端给 MXU，out 写端给 MXU。
+8. `mxu_start()`。
+9. `mxu_wait_done()`。
+10. 输出切回 CPU，读取 output buffer 并比对 golden。
 
-- `struct my_mxu_regs`
-- `struct my_mxu_drv`
-- 全局对象 `my_mxu0`
-- 绑定函数 `my_mxu_bind()`
+MXU app 的构建变量是 `MXU_TEST_MODE`，当前默认值为 `posit_bp`，支持 `int_ff`、`posit_ff`、`posit_bp`。
 
-`struct my_mxu_drv` 中保存：
+### 5.3 AXU app 流程
 
-- `regs`：cfg 寄存器窗口。
-- `wgtbuf`：weight buffer base。
-- `actbuf`：activation buffer base。
-- `outbuf`：output buffer base。
-- 一组函数指针：init、write_cfg、set_ports、start、read_status、wait_done、clear_done。
+AXU app 的整体流程与 MXU 类似，但 case 更多、特殊流程更多。
 
-这种写法的好处是 app 代码更像在调用驱动 API，而不是到处手写 MMIO 地址。
+常用 case 包括：
 
-## 5. my_mxu.c 详解
+```text
+vpu_add
+vpu_sub
+vpu_mul
+vpu_max
+vpu_min
+vpu_reduce_max
+vpu_reduce_sum
+sfu_int2posit
+sfu_rng
+nli_mish
+nli_tanh
+scheduler
+```
 
-路径：
+AXU 有几个容易忽略的特殊点：
 
-`Soc_w_ASIC-main/software/soc/src/my_mxu.c`
+1. `sfu_rng` 需要先执行 seed load，再执行 rng 计算。
+2. `nli_mish` 和 `nli_tanh` 需要先加载 LUT，再执行 compute。
+3. reduce 和 scheduler 类 case 通常只比较部分 bank，例如 bank0。
+4. `STATUS[2] = CALC_DONE` 是 AXU 特有状态，不能简单替代 `STATUS[1] = DONE`。
 
-### 5.1 init
+AXU app 的构建变量是 `AXU_TEST_CASE`。如果指定单 case，`app.mk` 会增加 `-DAXU_TEST_CASE_<case>`。
 
-`my_mxu_op_init()` 做几件事：
+## 6. 第五步：处理中断编号、fence 和访问顺序约束
 
-1. 保存 cfg 寄存器 base。
-2. 保存三个 buffer base。
-3. 关闭 irq mask。
-4. 清 irq status。
-5. 写 `CTRL.CLR_DONE` 清 done。
+第五步不是新增某一个文件，而是确认 CPU 与硬件交互的运行时约束。这一步会影响 driver 和 app 的可靠性。
 
-这样每次 app 开始时，MXU 状态比较干净。
+### 6.1 中断编号的软件镜像
 
-### 5.2 写 cfg
+硬件中断从 `ariane_peripherals.sv` 的 `irq_sources[]` 进入 PLIC。软件侧当前使用 `IRQn = irq_sources index + 1`。
 
-`my_mxu_op_write_cfg()`：
+| 模块 | 硬件连接 | 软件 IRQn |
+|---|---:|---:|
+| AXU | `irq_sources[1]` | 2 |
+| MXU | `irq_sources[2]` | 3 |
+| iDMA desc64 | `irq_sources[7]` | 8 |
 
-- 将 `cfg_addr` 放入 bit `[3:0]`。
-- 将 `cfg_data` 放入 bit `[15:8]`。
-- 写到 `regs->cfg_write`。
+当前 MXU/AXU 普通测试主要使用轮询；`mxu_idma_gbuf_test` 使用 DMA 中断。即使暂时不用中断，也应该在头文件里写清楚 IRQ 编号，避免后续接入 PLIC 时混乱。
 
-wrapper 看到 `CFG_WRITE` 被写，会拉高 `cfg_set_i` 一个周期。
+### 6.2 volatile、fence 和访问顺序
 
-`my_mxu_op_config_common()` 只封装了两个常用 cfg：
+CPU 对 MMIO 和 buffer 的访问顺序不能完全依赖普通 C 语义。建议遵守：
 
-- `MXU_CFG_SA_DATA_FLOW_MODE`
-- `MXU_CFG_SA_DATA_TYPE_MODE`
+1. MMIO 寄存器 struct 使用 `volatile`。
+2. 写完输入 buffer 后，在切 ownership 或 start 前执行 fence。
+3. 写 cfg 后，再切 buffer ownership。
+4. 切 ownership 后，再写 `CTRL.START`。
+5. 等 done 后，先把 output buffer 切回 CPU，再读结果。
 
-其余 tile base 和 batch size 在 `main.c` 中通过 `write_cfg_table()` 写入。
+如果缺少 fence 或顺序错误，常见现象是：仿真偶发失败、done 了但输出仍是旧值、部分 bank 不稳定。
 
-### 5.3 buffer ownership 切换
+## 7. 第六步：在 app.mk 和运行脚本中接入构建变量、数据生成与 SoC filelist
 
-三个函数分别控制三个 buffer：
+第六步同时处理构建入口和运行入口。`app.mk` 决定软件怎么编译，运行脚本或仿真命令决定这个软件跑在哪个 SoC filelist 上。这两件事必须放在一起检查。
 
-- `my_mxu_op_set_wgtbuf_ports()`
-- `my_mxu_op_set_actbuf_ports()`
-- `my_mxu_op_set_outbuf_ports()`
+### 7.1 在 app.mk 中接入 driver 和数据生成
 
-参数：
+`app.mk` 至少要完成这些工作：
 
-- `rd_to_acc`：读端是否给 MXU。
-- `wr_to_acc`：写端是否给 MXU。
+1. 把 app 的 `main.c` 加入源码列表。
+2. 把对应 driver 源文件加入源码列表，例如 `my_mxu.c` 或 `my_axu.c`。
+3. 如果需要测试数据，调用 Python 脚本生成 `input_data.h`。
+4. 把生成目录加入 include path。
+5. 定义构建变量，例如 `MXU_TEST_MODE` 或 `AXU_TEST_CASE`。
+6. 对 AXU 这类单 case 编译的 app，生成 `-DAXU_TEST_CASE_<case>`。
 
-它们会组合成：
-
-- `MY_MXU_BUF_RD_MXU`
-- `MY_MXU_BUF_WR_MXU`
-
-然后写入对应 control 寄存器。
-
-典型设置：
-
-| 阶段 | wgt | act | out |
-|---|---|---|---|
-| CPU 写输入 | `(0,0)` | `(0,0)` | `(0,0)` |
-| MXU 计算 | `(1,0)` | `(1,0)` | `(0,1)` |
-| CPU 读输出 | `(0,0)` | `(0,0)` | `(0,0)` |
-
-### 5.4 start 和 wait done
-
-`my_mxu_op_start()`：
-
-- 写 `regs->ctrl = MY_MXU_CTRL_START`。
-- wrapper 产生 `start_pulse`。
-
-`my_mxu_op_wait_done()` 当前实现是轮询 busy：
-
-- 如果 `STATUS.BUSY` 变 0，返回成功。
-- 超过 timeout 返回 `-1`。
-
-注意：
-
-- `STATUS.DONE` 也存在，`main.c` 在 wait 后会再检查 DONE bit。
-- timeout 很重要，不能让 SoC 测试无限卡住。
-
-### 5.5 clear done
-
-`my_mxu_op_clear_done()`：
-
-- 写 `irq_status = 1` 清 irq sticky。
-- 写 `CTRL.CLR_DONE` 清 done sticky。
-
-如果后续要在一个程序里连续跑多个 MXU case，每个 case 之间应清 done。
-
-## 6. my_mxu_test/main.c 详解
-
-路径：
-
-`Soc_w_ASIC-main/software/app/my_mxu_test/main.c`
-
-### 6.1 include 关系
-
-文件开头 include：
-
-- `stdint.h`
-- `stdio.h`
-- `my_mxu.h`
-- `input_data.h`
-
-`input_data.h` 是自动生成的。如果编译时没有生成，`main.c` 里有 fallback 数据，但真实三模式测试应使用生成文件。
-
-### 6.2 input_data.h 提供什么
-
-`input_data.h` 提供：
-
-- `MXU_TEST_MODE_NAME`
-- `MXU_INPUT_BANK_COUNT`
-- `MXU_WGT_ROW_START`
-- `MXU_WGT_ROW_COUNT`
-- `MXU_ACT_ROW_START`
-- `MXU_ACT_ROW_COUNT`
-- `MXU_OUT_ROW_START`
-- `MXU_OUT_ROW_COUNT`
-- `MXU_CFG_ACT_BATCHSIZE_VALUE`
-- `MXU_CFG_DATA_FLOW_MODE_VALUE`
-- `MXU_CFG_DATA_TYPE_MODE_VALUE`
-- `MXU_CFG_WGT_TILE_BASE_VALUES[4]`
-- `MXU_CFG_ACT_TILE_BASE_VALUES[4]`
-- `MXU_CFG_OUT_TILE_BASE_VALUES[4]`
-- `MXU_WGT_DATA[row][bank][2]`
-- `MXU_ACT_DATA[row][bank][2]`
-- `MXU_GOLDEN_DATA[row][bank][2]`
-
-其中 `[2]` 的约定：
-
-- `[0] = lo64`
-- `[1] = hi64`
-
-### 6.3 写输入 buffer
-
-`write_input_buffers()` 遍历：
-
-- row
-- bank
-- half64
-
-写入方式：
-
-- `half64=0` 写 `MXU_*_DATA[r][b][0]`。
-- `half64=1` 写 `MXU_*_DATA[r][b][1]`。
-
-写完后执行：
-
-- `fence ow, ow`
-- `fence rw, rw`
-
-目的是减少 store buffer、总线可见性和乱序导致的调试不确定性。
-
-### 6.4 写 cfg table
-
-`write_cfg_table()` 写：
-
-1. 4 个 weight tile base。
-2. 4 个 activation tile base。
-3. 4 个 output tile base。
-4. `MXU_CFG_ACT_BATCHSIZE_M`。
-5. `MXU_CFG_SA_DATA_FLOW_MODE`。
-6. `MXU_CFG_SA_DATA_TYPE_MODE`。
-
-这些值由 `input_data.h` 提供，最终来自 `gen_input_data.py` 的 mode 配置。
-
-### 6.5 UART marker
-
-当前 app 稳定打印：
-
-- `MXU_SOC_TEST_BEGIN`
-- `MXU_MODE <mode>`
-- `MXU_PASS`
-- `MXU_SOC_TEST_END`
-
-如果打开 output dump，还会打印：
-
-- `===MXU_OUT_BEGIN bank_count=... row_start=... row_count=...===`
-- `===MXU_OUT_BANK_BEGIN bank=... rows=...===`
-- `row=... <8个16bit token>`
-- `===MXU_OUT_BANK_END bank=...===`
-- `===MXU_OUT_END===`
-
-这些 marker 必须和 `log2txt_mxu.py` 的解析规则一致。只改一边会导致脚本找不到输出。
-
-## 7. app.mk 详解
-
-路径：
-
-`Soc_w_ASIC-main/software/app/my_mxu_test/app.mk`
-
-当前关键变量：
-
-- `MXU_TEST_MODE ?= posit_bp`
-- `MXU_WS := $(ROOT_DIR)/../zzc_workspace_mxu`
-- `MXU_GENDIR := $(BUILD_DIR)/app/my_mxu_test/gen`
-- `MXU_GENHDR := $(MXU_GENDIR)/input_data.h`
-- `MXU_GEN_SCRIPT := $(MXU_WS)/file_format_transform/gen_input_data.py`
-
-生成规则：
-
-- 目标：`$(MXU_GENHDR)`
-- 命令：`python3 gen_input_data.py --mode $(MXU_TEST_MODE) --workspace $(MXU_WS) --out $@`
-
-编译依赖：
-
-- `main.c.o` 依赖 `input_data.h`。
-- `main.c.o` 添加 `-I$(MXU_GENDIR)`。
-
-源文件：
-
-- `software/app/my_mxu_test/main.c`
-- `software/soc/src/my_mxu.c`
-
-使用方式：
+典型构建命令：
 
 ```bash
-cd Soc_w_ASIC-main/software
-make my_mxu_test MXU_TEST_MODE=int_ff
-make my_mxu_test MXU_TEST_MODE=posit_ff
 make my_mxu_test MXU_TEST_MODE=posit_bp
+make my_axu_test AXU_TEST_CASE=vpu_add
+make mxu_idma_gbuf_test
 ```
 
-实际一键脚本 `zzc_mxu_shell.sh` 会自动执行上述 make，不需要手动运行。
+### 7.2 确认 app ELF 与 SoC filelist 匹配
 
-## 8. 软件阶段推荐实施顺序
+软件 app 本身不决定 SoC 里有哪些外设。运行仿真时，app 和 filelist 必须匹配：
 
-如果从零复现，建议按以下顺序：
+| app | 推荐 SoC/filelist |
+|---|---|
+| `my_mxu_test` | `filelist_minimum_my_mxu_axu.f` 或明确仍在使用旧 `minimum_my_mxu` 时用旧 filelist |
+| `my_axu_test` | `filelist_minimum_my_mxu_axu.f` |
+| `mxu_idma_gbuf_test` | `filelist_minimum_my_mxu_axu.f` |
 
-1. 新增 `software/soc/include/my_mxu.h`，先写 base、offset、bit mask。
-2. 新增 `software/soc/src/my_mxu.c`，先实现 init、read_status、start。
-3. 新增 `software/app/my_mxu_test/main.c` 的最小版本，只打印 marker 并读 STATUS。
-4. 新增 `software/app/my_mxu_test/app.mk`，让 `make my_mxu_test` 能生成 ELF。
-5. 加入 buffer 写入函数。
-6. 加入 cfg 写入函数。
-7. 加入 ownership 切换。
-8. 加入 start/wait done。
-9. 加入 UART output dump。
-10. 再接入 `input_data.h` 生成和三种 mode。
+如果 AXU app 用了只包含 MXU 的旧 filelist，CPU 访问 `0x7002_0000` 之后的 AXU 地址不会得到正确外设响应。
 
-不要一开始就把三种测试数据和所有 compare 全塞进来。先做到 CPU 能访问 `STATUS`，再逐步增加功能。
+经验规则：
 
-## 9. 软件阶段 checklist
+- app ELF 决定 CPU 执行什么程序。
+- SoC filelist 决定仿真里实例化了哪些硬件。
+- 软件地址宏再正确，如果 filelist 不包含对应硬件，访问仍然不会成功。
 
-完成 software 阶段后，应满足：
+## 8. 第七步：按照 software checklist 复查
 
-- [ ] `software/soc/include/my_mxu.h` 存在。
-- [ ] `my_mxu.h` 中 base 与 `ariane_soc_pkg.sv` 完全一致。
-- [ ] `my_mxu.h` 中 offset 与 `mxu_top_wrapper.sv` 完全一致。
-- [ ] `my_mxu.h` 中 cfg address 0 到 14 与 MXU 控制逻辑一致。
-- [ ] `mxu_buf_word_offset(bank,row,half64)` 与 buffer 硬件组织一致。
-- [ ] `software/soc/src/my_mxu.c` 存在。
-- [ ] `my_mxu.c` 中寄存器访问使用 volatile。
-- [ ] `my_mxu_wait_done` 有 timeout。
-- [ ] `software/app/my_mxu_test/main.c` 存在。
-- [ ] `main.c` include `input_data.h`。
-- [ ] `main.c` 打印稳定 marker。
-- [ ] `software/app/my_mxu_test/app.mk` 存在。
-- [ ] `app.mk` 调用 `gen_input_data.py`。
-- [ ] `app.mk` 把 `my_mxu.c` 加入源文件。
-- [ ] `make my_mxu_test MXU_TEST_MODE=int_ff` 能生成 ELF。
+完成 include、driver、app、构建和 filelist 后，按下面 checklist 复查：
 
-## 10. 常见错误排查
+- [ ] 头文件 base address 与 `ariane_soc_pkg.sv` 一致。
+- [ ] register offset 与 wrapper localparam 一致。
+- [ ] struct 使用 `volatile uint64_t` 并保留 reserved 槽位。
+- [ ] `CFG_WRITE` 的 address/data 位宽与 wrapper 一致。
+- [ ] buffer offset 公式与硬件 bank/row/word 布局一致。
+- [ ] ownership bit 含义与 wrapper 一致。
+- [ ] IRQn 与 `irq_sources index + 1` 一致。
+- [ ] driver 中 init、write_cfg、set_ports、start、wait、clear done API 清晰。
+- [ ] app 从最小验证开始，不直接跳到复杂 golden compare。
+- [ ] app 中写 buffer、fence、写 cfg、切 ownership、start、wait done、读 output 的顺序正确。
+- [ ] `app.mk` 把 driver 源文件加入编译。
+- [ ] 数据生成目录已经加入 include path。
+- [ ] app 与仿真 filelist 使用同一个 SoC 变体。
 
-一、编译找不到 `input_data.h`
+## 9. 常见错误
 
-检查：
+### 9.1 头文件契约错误：status 永远读 0
 
-- `app.mk` 中 `MXU_GENHDR` 路径是否正确。
-- `main.c.o` 是否依赖 `$(MXU_GENHDR)`。
-- `RISCV_CCFLAGS` 或 app CFLAGS 是否加入 `-I$(MXU_GENDIR)`。
-- `gen_input_data.py` 是否存在。
+检查 base address、filelist、`addr_map`、`ariane_peripherals` 连接、寄存器 offset。
 
-二、链接报 `my_mxu_* undefined`
+### 9.2 driver/start 流程错误：start 后 timeout
 
-检查：
+检查 `CTRL.START` offset、cfg 是否写入、输入读端是否切给加速器、输出写端是否切给加速器、核心 done 是否接回 wrapper。
 
-- `my_mxu_test_SRCS` 是否包含 `$(SOC_DIR)/src/my_mxu.c`。
-- 函数声明和定义名称是否一致。
-- `my_mxu_bind()` 是否在 `my_mxu.c` 中实现。
+### 9.3 buffer ownership 或 fence 错误：输出全 0 或 poison 值
 
-三、软件一启动就 trap
+检查输出 buffer 的写端是否在运行时给了加速器，done 后读端是否切回 CPU，以及输出 base row 是否和 compare 读取 row 一致。
 
-常见原因：
+### 9.4 AXU case 宏错误：编译或运行 case 不对
 
-- 访问了未映射地址。
-- 软件 base 和硬件 base 不一致。
-- 仿真没有使用 `filelist_minimum_my_mxu.f`。
-- `ariane_soc_top.sv` 中没有把 MXU 加入 `addr_map`。
+检查 `AXU_TEST_CASE` 是否传入、`-DAXU_TEST_CASE_<case>` 是否生效、case 名是否在脚本支持列表中。
 
-四、STATUS 一直为 0
+### 9.5 IRQ 编号错误：中断收不到或收错源
 
-检查：
+检查硬件 `irq_sources[i]` 和软件 `IRQn = i + 1` 的转换关系。不要把 `irq_sources[1]` 误写成软件 IRQn 1。
 
-- `MY_MXU_CFG_BASE` 是否正确。
-- `STATUS` offset 是否为 `0x008`。
-- wrapper 中读 `REG_STATUS` 是否返回 busy/done。
-- cfg AXI slave 是否接入 `mxu_top_wrapper`。
+### 9.6 app 与 filelist 不匹配：软件地址正确但硬件不存在
 
-五、wait done 超时
+检查运行脚本中的 `FILELIST` 是否包含当前 app 访问的外设。AXU app 必须使用包含 AXU 的 SoC 变体。
 
-检查：
+## 10. 本阶段结论
 
-- `write_cfg_table()` 是否写了所有 15 项 cfg。
-- `CTRL.START` 是否写入。
-- wrapper 是否产生 `start_pulse`。
-- 输入 buffer 是否写入。
-- ownership 是否切换为 `wgt=(1,0)`、`act=(1,0)`、`out=(0,1)`。
+software 阶段的核心是把硬件 wrapper 暴露出的 MMIO 契约精确翻译成 C 头文件、driver API、test app 和构建/运行配置。MXU、AXU 的驱动形态不同，但基本模式一致：
 
-六、DONE 有但输出不对
+```text
+base/offset/bit 定义 -> volatile regs -> driver API -> test app -> app.mk -> SoC filelist -> 仿真脚本
+```
 
-检查：
-
-- `out` 写端计算时是否给 MXU。
-- CPU 读取前 `out` 是否切回 CPU。
-- row/bank/half64 地址公式是否正确。
-- `input_data.h` 中 `[0]=lo64`、`[1]=hi64` 是否被正确写入。
-
-七、只有 `posit_bp` 失败
-
-优先检查：
-
-- `MXU_CFG_DATA_FLOW_MODE_VALUE` 是否为 1。
-- `MXU_CFG_DATA_TYPE_MODE_VALUE` 是否为 0。
-- `gen_input_data.py` 是否为 `posit_bp` 读取了正确 golden 目录。
-
-八、main.c 显示 PASS，但脚本 compare 失败
-
-可能原因：
-
-- 当前 main.c 的内部 compare 被注释，PASS 只表示软件完成流程。
-- `log2txt_mxu.py` 提取的 output 与 golden 格式不一致。
-- output dump 没打开或 marker 格式变了。
-
-九、脚本找不到 MXU_OUT
-
-当前跑通版本的 `posit_ff/uart0.log` 可能只包含开始、mode、PASS、END，不一定包含完整 output dump。若要让 `log2txt_mxu.py` 从 UART 提取输出，需要确认 `main.c` 中 `dump_output_bank_files_compatible(&my_mxu0)` 被打开，并且 marker 与脚本一致。
-
-## 11. 与测试数据和脚本文档的关系
-
-software 阶段完成后，下一步读：
-
-`如何准备测试数据和测试脚本？.md`
-
-重点理解：
-
-- `gen_input_data.py` 如何把原始测试数据和 golden 转成 `input_data.h`。
-- `MXU_TEST_MODE` 如何选择 `int_ff`、`posit_ff`、`posit_bp`。
-- `zzc_mxu_shell.sh` 如何编译软件、运行仿真、提取输出并 compare。
-- `compare_report.txt` 为什么是最终验收依据。
+只要硬件和软件共享同一份地址、寄存器、buffer、IRQ 和 filelist 语义，后续新增任意 AXI/MMIO 自定义模块都可以按同样方法落地。
