@@ -26,6 +26,7 @@ module axu_top_wrapper #(
     AXI_BUS.Slave      op_b_buf,
     AXI_BUS.Slave      out_buf,
 
+
     output logic       irq_o
 );
 

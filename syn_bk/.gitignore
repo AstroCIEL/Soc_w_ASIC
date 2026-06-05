@@ -1,0 +1,9 @@
+build/
+build*/
+*.log
+alib-52
+default.svf
+*.svf
+*.pvl
+*.syn
+*.mr

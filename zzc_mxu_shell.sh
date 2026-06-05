@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TEST_MODE=${TEST_MODE:-posit_bp}                                       #posit_ff, posit_bp, int_ff
-RUN_STAGE=${1:-sim_post_syn}                                         # sim, sim_post_syn
+TEST_MODE=${TEST_MODE:-int_ff}                                       #posit_ff, posit_bp, int_ff
+RUN_STAGE=${1:-sim_pre_syn}                                         # sim, sim_post_syn
 FILELIST=${FILELIST:-filelist_minimum_my_mxu_axu.f}
 APP=${APP:-../software/build/bin/my_mxu_test}
 
 usage() {
-    echo "Usage: $0 [sim|sim_post_syn]"
+    echo "Usage: $0 [sim|sim_pre_syn|sim_post_syn]"
     echo ""
     echo "Environment variables:"
     echo "  TEST_MODE  MXU test mode, default: int_ff"
@@ -30,7 +30,13 @@ run_sim() {
     cd ..
     cp ./sim/uart0.log ./sim/uart_logs/test_mxu_${TEST_MODE}_uart0.log
 }
-
+run_sim_pre_syn() {
+    cd ./sim_pre_syn
+    make run \
+        app="$APP"
+    cd ..
+    cp ./sim_pre_syn/uart0.log ./sim_pre_syn/uart_logs/test_mxu_${TEST_MODE}_uart0.log
+}
 run_sim_post_syn() {
     cd ./sim_post_syn
     # 如果 netlist 已经编译过，可以不执行 make compile-gate；注意不要 make clean，否则需要重新编译。
@@ -49,6 +55,11 @@ case "$RUN_STAGE" in
         build_software
         run_sim_post_syn
         ;;
+    sim_pre_syn)
+        build_software
+        run_sim_pre_syn
+        ;;
+
     -h|--help|help)
         usage
         ;;

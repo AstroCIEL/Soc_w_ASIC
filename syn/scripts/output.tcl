@@ -16,14 +16,20 @@
 # ---------------------------------------------------------------------------
 proc output_post_compile {top_module elab_name output_dir active_scenarios} {
     current_design $top_module
-    change_names -rules verilog -hier
+    apply_netlist_namespace "pre-output"
+
+    if {[info exists ::NETLIST_CHANGE_NAMES_ENABLE] && $::NETLIST_CHANGE_NAMES_ENABLE} {
+        puts "== \[namespace\] change_names -rules verilog -hier"
+        change_names -rules verilog -hier
+    } else {
+        puts "== \[namespace\] change_names disabled"
+    }
 
     # Structural outputs (scenario-independent)
     write -f verilog -hierarchy -output ${output_dir}/${elab_name}_netlist.v
     write_floorplan -all ${output_dir}/${elab_name}.fp
     write_def -output ${output_dir}/${elab_name}.def
     saif_map -type ptpx -write_map ${output_dir}/${elab_name}.mapped.SAIF.namemap
-
 
     write_parasitics -output ${output_dir}/${elab_name}.spef
 
