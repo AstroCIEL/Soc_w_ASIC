@@ -1,0 +1,13 @@
+build
+*.dasm
+
+*.log
+ucli.key
+novas.*
+verdiLog
+
+*.vcd
+*.fst
+*.fsdb
+
+netlist/*_netlist.v

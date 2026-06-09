@@ -10,7 +10,51 @@
 # 1. Design identity
 # ===========================================================================
 
-set TOP_MODULE axu_top_wrapper
+# Select synthesis target and netlist namespace policy.
+# SYN_TARGET is normally passed by Makefile and may be one of:
+#   mxu    -> TOP_MODULE=mxu_top, namespace prefix mxu__
+#   axu    -> TOP_MODULE=axu_top, namespace prefix axu__
+#   top    -> TOP_MODULE=ariane_soc_top, namespace disabled by default
+#   custom -> TOP_MODULE must be provided by TOP_MODULE_OVERRIDE
+if {![info exists SYN_TARGET] || $SYN_TARGET eq ""} {
+    set SYN_TARGET axu
+}
+
+if {[info exists TOP_MODULE_OVERRIDE] && $TOP_MODULE_OVERRIDE ne ""} {
+    set TOP_MODULE $TOP_MODULE_OVERRIDE
+} elseif {$SYN_TARGET eq "mxu"} {
+    set TOP_MODULE mxu_top
+} elseif {$SYN_TARGET eq "axu"} {
+    set TOP_MODULE axu_top
+} elseif {$SYN_TARGET eq "top"} {
+    set TOP_MODULE ariane_soc_top
+} elseif {$SYN_TARGET eq "custom"} {
+    error "SYN_TARGET=custom requires TOP_MODULE=<module_name>."
+} else {
+    error "Unknown SYN_TARGET '$SYN_TARGET'. Use mxu, axu, top, or custom."
+}
+
+if {[info exists NETLIST_NAMESPACE_PREFIX_OVERRIDE] && $NETLIST_NAMESPACE_PREFIX_OVERRIDE ne ""} {
+    set NETLIST_NAMESPACE_PREFIX $NETLIST_NAMESPACE_PREFIX_OVERRIDE
+} elseif {$SYN_TARGET eq "mxu"} {
+    set NETLIST_NAMESPACE_PREFIX mxu__
+} elseif {$SYN_TARGET eq "axu"} {
+    set NETLIST_NAMESPACE_PREFIX axu__
+} else {
+    set NETLIST_NAMESPACE_PREFIX ""
+}
+
+if {![info exists NETLIST_UNIQUIFY_ENABLE] || $NETLIST_UNIQUIFY_ENABLE eq ""} {
+    set NETLIST_UNIQUIFY_ENABLE auto
+}
+
+if {![info exists NETLIST_CHANGE_NAMES_ENABLE] || $NETLIST_CHANGE_NAMES_ENABLE eq "auto" || $NETLIST_CHANGE_NAMES_ENABLE eq ""} {
+    if {$SYN_TARGET eq "mxu" || $SYN_TARGET eq "axu"} {
+        set NETLIST_CHANGE_NAMES_ENABLE 1
+    } else {
+        set NETLIST_CHANGE_NAMES_ENABLE 0
+    }
+}
 
 # SRAM macro reference names — marked dont_touch after elaborate
 # 增加mxu的sram宏名称rf2p_256_128
@@ -97,7 +141,7 @@ set MAX_PATHS 30   ;# timing paths per report_timing call
 # 5. Checkpoints
 #    Set ENABLE_CHECKPOINTS 1 to write DDC snapshots after each phase.
 #    INCR_CHECKPOINT (passed by Makefile) names the phase to resume from.
-#    Works with both flat and hier modes.
+#    Works with the flat synthesis flow.
 #
 #    Checkpoint phases (in order):
 #      post_constraints — after MCMM setup + TLU+; before compile
@@ -106,8 +150,6 @@ set MAX_PATHS 30   ;# timing paths per report_timing call
 #    To resume from a checkpoint:
 #      make flat INCR_CHECKPOINT=post_constraints → compile_ultra -incremental + report
 #      make flat INCR_CHECKPOINT=post_compile     → re-run reports only
-#      make hier INCR_CHECKPOINT=post_constraints → compile + report
-#      make hier INCR_CHECKPOINT=post_compile     → re-run reports only
 # ===========================================================================
 
 set ENABLE_CHECKPOINTS 1

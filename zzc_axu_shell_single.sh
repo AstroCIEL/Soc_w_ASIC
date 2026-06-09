@@ -2,17 +2,18 @@
 set -euo pipefail
 
 # 运行单个 AXU 测试用例
-# 用法: ./zzc_axu_shell_single.sh [case_name] [sim|sim_post_syn]
+# 用法: ./zzc_axu_shell_single.sh [case_name] [sim|sim_pre_syn|sim_post_syn]
 # 示例: ./zzc_axu_shell_single.sh vpu_add sim
+# 示例: ./zzc_axu_shell_single.sh vpu_add sim_pre_syn
 # 示例: ./zzc_axu_shell_single.sh vpu_add sim_post_syn
 
 CASE_NAME=${1:-vpu_add}
-RUN_STAGE=${2:-sim_post_syn}                                         # sim, sim_post_syn
+RUN_STAGE=${2:-sim_pre_syn}                                         # sim, run_sim_pre_syn sim_post_syn
 FILELIST=${FILELIST:-filelist_minimum_my_mxu_axu.f}
 APP=${APP:-../software/build/bin/my_axu_test}
 
 usage() {
-    echo "Usage: $0 [case_name] [sim|sim_post_syn]"
+    echo "Usage: $0 [case_name] [sim|sim_pre_syn|sim_post_syn]"
     echo ""
     echo "Arguments:"
     echo "  case_name  AXU test case, default: vpu_add"
@@ -39,7 +40,13 @@ run_sim() {
     cd ..
     cp ./sim/uart0.log ./sim/uart_logs/test_axu_${CASE_NAME}_uart0.log
 }
-
+run_sim_pre_syn() {
+    cd ./sim_pre_syn
+    make run \
+        APP="$APP" 
+    cd ..
+    cp ./sim_pre_syn/uart0.log ./sim_pre_syn/uart_logs/test_axu_${CASE_NAME}_uart0.log
+}
 run_sim_post_syn() {
     cd ./sim_post_syn
     make run-gate \
@@ -65,6 +72,10 @@ case "$RUN_STAGE" in
     sim)
         build_software
         run_sim
+        ;;
+    sim_pre_syn)
+        build_software
+        run_sim_pre_syn
         ;;
     sim_post_syn)
         build_software

@@ -33,6 +33,16 @@ if {![info exists BUILD_DIR] || $BUILD_DIR eq ""} {
     error "BUILD_DIR is not set."
 }
 
+# ---------------------------------------------------------------------------
+# Target and top module validation
+# ---------------------------------------------------------------------------
+if {![info exists SYN_TARGET] || $SYN_TARGET eq ""} {
+    error "SYN_TARGET is not set."
+}
+if {[lsearch -exact {mxu axu top custom} $SYN_TARGET] < 0} {
+    error "SYN_TARGET must be one of mxu, axu, top, custom; got: $SYN_TARGET"
+}
+
 if {![info exists TOP_MODULE] || $TOP_MODULE eq ""} {
     error "TOP_MODULE is not set."
 }
@@ -42,25 +52,50 @@ if {![info exists SRAM_MACROS]} {
 }
 
 # ---------------------------------------------------------------------------
-# SYN_MODE must be "flat" or "hier"
+# SYN_MODE is retained for compatibility, but only flat is supported.
 # ---------------------------------------------------------------------------
 if {![info exists SYN_MODE]} {
     error "SYN_MODE is not set."
 }
-if {[lsearch -exact {flat hier} $SYN_MODE] < 0} {
-    error "SYN_MODE must be 'flat' or 'hier', got: $SYN_MODE"
+if {$SYN_MODE ne "flat"} {
+    error "Only SYN_MODE=flat is supported; got: $SYN_MODE"
 }
 
 # ---------------------------------------------------------------------------
-# INCR_CHECKPOINT validation 
+# INCR_CHECKPOINT validation
 # ---------------------------------------------------------------------------
 if {![info exists INCR_CHECKPOINT] || $INCR_CHECKPOINT eq ""} {
     error "INCR_CHECKPOINT is not set."
 }
 
-set VALID_CHECKPOINTS {NONE post_constraints post_assemble post_compile}
+set VALID_CHECKPOINTS {NONE post_constraints post_compile}
 if {[lsearch -exact $VALID_CHECKPOINTS $INCR_CHECKPOINT] < 0} {
     error "Unknown INCR_CHECKPOINT '$INCR_CHECKPOINT'. Valid values: $VALID_CHECKPOINTS"
+}
+
+# ---------------------------------------------------------------------------
+# Namespace controls
+# ---------------------------------------------------------------------------
+if {![info exists NETLIST_UNIQUIFY_ENABLE] || $NETLIST_UNIQUIFY_ENABLE eq ""} {
+    error "NETLIST_UNIQUIFY_ENABLE is not set."
+}
+if {[lsearch -exact {auto 0 1} $NETLIST_UNIQUIFY_ENABLE] < 0} {
+    error "NETLIST_UNIQUIFY_ENABLE must be auto, 0, or 1; got: $NETLIST_UNIQUIFY_ENABLE"
+}
+
+if {![info exists NETLIST_CHANGE_NAMES_ENABLE] || $NETLIST_CHANGE_NAMES_ENABLE eq ""} {
+    error "NETLIST_CHANGE_NAMES_ENABLE is not set."
+}
+if {[lsearch -exact {0 1} $NETLIST_CHANGE_NAMES_ENABLE] < 0} {
+    error "NETLIST_CHANGE_NAMES_ENABLE must resolve to 0 or 1; got: $NETLIST_CHANGE_NAMES_ENABLE"
+}
+
+if {$NETLIST_UNIQUIFY_ENABLE eq "1" && (![info exists NETLIST_NAMESPACE_PREFIX] || $NETLIST_NAMESPACE_PREFIX eq "")} {
+    error "NETLIST_NAMESPACE_PREFIX must be non-empty when NETLIST_UNIQUIFY_ENABLE=1."
+}
+
+if {$NETLIST_UNIQUIFY_ENABLE eq "auto" && [info exists NETLIST_NAMESPACE_PREFIX] && $NETLIST_NAMESPACE_PREFIX ne ""} {
+    puts "   Namespace uniquify auto-enabled by prefix: $NETLIST_NAMESPACE_PREFIX"
 }
 
 if {![info exists ENABLE_CHECKPOINTS]} {
@@ -122,7 +157,11 @@ puts "   SYN_MODE          : $SYN_MODE"
 if {$INCR_CHECKPOINT ne "NONE"} {
 puts "   INCR_CHECKPOINT   : $INCR_CHECKPOINT"
 }
+puts "   SYN_TARGET        : $SYN_TARGET"
 puts "   TOP_MODULE        : $TOP_MODULE"
+puts "   NAMESPACE_PREFIX  : $NETLIST_NAMESPACE_PREFIX"
+puts "   UNIQUIFY_ENABLE   : $NETLIST_UNIQUIFY_ENABLE"
+puts "   CHANGE_NAMES      : $NETLIST_CHANGE_NAMES_ENABLE"
 puts "   ACTIVE_SCENARIOS  : $ACTIVE_SCENARIOS"
 puts "   ENABLE_CHECKPOINTS: $ENABLE_CHECKPOINTS"
 puts "   COMPILE_OPTIONS   : $COMPILE_OPTIONS"

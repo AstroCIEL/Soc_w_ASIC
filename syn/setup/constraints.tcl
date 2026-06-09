@@ -75,7 +75,12 @@ set_max_transition 0.3 [current_design]
 # ---------------------------------------------------------------------------
 # False / multicycle paths
 # ---------------------------------------------------------------------------
-set_false_path -from [get_ports rst_ni]
+# 这里是mxu_top模块综合时，采用的是 rstn_i
+set_false_path -from [get_ports rstn_i]
+
+# 这里顶层用的是 rst_ni
+# set_false_path -from [get_ports rst_ni]
+
 # set_false_path -from [get_ports jtag_trst_ni]
 # set_false_path -from [get_ports debug_enable_i]
 

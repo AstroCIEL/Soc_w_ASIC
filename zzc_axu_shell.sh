@@ -3,19 +3,19 @@ set -euo pipefail
 
 # AXU 全测试用例自动化脚本
 # 循环运行所有测试用例，每次调用 zzc_axu_shell_single.sh 编译并运行一个测试用例
-# 用法: ./zzc_axu_shell.sh [sim|sim_post_syn]
+# 用法: ./zzc_axu_shell.sh [sim|sim_pre_syn|sim_post_syn]
 
-RUN_STAGE=${1:-sim_post_syn}                                         # sim, sim_post_syn
+RUN_STAGE=${1:-sim_pre_syn}                                         # sim, sim_pre_syn, sim_post_syn
 
 usage() {
-    echo "Usage: $0 [sim|sim_post_syn]"
+    echo "Usage: $0 [sim|sim_pre_syn|sim_post_syn]"
     echo ""
     echo "Arguments:"
     echo "  stage  simulation stage, default: sim"
 }
 
 case "$RUN_STAGE" in
-    sim|sim_post_syn)
+    sim|sim_pre_syn|sim_post_syn)
         ;;
     -h|--help|help)
         usage
@@ -52,6 +52,8 @@ FAILED_CASES=()
 
 if [ "$RUN_STAGE" = "sim" ]; then
     UART_LOG_DIR="./sim/uart_logs"
+elif [ "$RUN_STAGE" = "sim_pre_syn" ]; then
+    UART_LOG_DIR="./sim_pre_syn/uart_logs"
 else
     UART_LOG_DIR="./sim_post_syn/uart_logs"
 fi

@@ -10,4 +10,4 @@ gcc-install
 /tools/src
 *.log
 syn/build
-
+sim_pre_syn/netlist/*_netlist.v

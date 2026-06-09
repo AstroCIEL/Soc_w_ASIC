@@ -1,14 +1,11 @@
 ###############################################################################
 # syn/scripts/synth.tcl
-# Unified DC NXT synthesis driver.
+# Flat DC NXT synthesis driver.
 #
-# SYN_MODE (string):
-#   "flat" — Flat synthesis.
-#              INCR_CHECKPOINT=NONE → full compile from RTL
-#              INCR_CHECKPOINT=<phase> → resume from that checkpoint DDC
-#   "hier" — Hierarchical block-level synthesis.
-#              HIER_COMPILE_BLOCKS non-empty → recompile those blocks + assemble top
-#              HIER_COMPILE_BLOCKS empty     → assemble top from cached block DDCs only
+# INCR_CHECKPOINT:
+#   NONE             — full compile from RTL
+#   post_constraints — resume after constraints, then compile + report
+#   post_compile     — restore compiled DDC and regenerate outputs/reports
 ###############################################################################
 
 # ===========================================================================
@@ -31,9 +28,13 @@ proc capture_var {name args} {
 capture_var PDK_ROOT                                           ;# required
 capture_var SYN_ROOT                                           ;# required
 capture_var BUILD_DIR                                          ;# required
-capture_var SYN_MODE              flat                         ;# "flat" or "hier"
-capture_var INCR_CHECKPOINT       NONE                         ;# flat: NONE=full, or phase name
-capture_var HIER_COMPILE_BLOCKS   {}                           ;# hier: blocks to recompile
+capture_var SYN_MODE              flat                         ;# retained for compatibility; must be flat
+capture_var SYN_TARGET            axu                          ;# mxu, axu, top, custom
+capture_var TOP_MODULE_OVERRIDE   ""                           ;# optional override
+capture_var NETLIST_NAMESPACE_PREFIX_OVERRIDE ""               ;# optional override
+capture_var NETLIST_UNIQUIFY_ENABLE auto                       ;# auto, 0, 1
+capture_var NETLIST_CHANGE_NAMES_ENABLE auto                   ;# auto, 0, 1
+capture_var INCR_CHECKPOINT       NONE                         ;# NONE, post_constraints, post_compile
 
 set env(PDK_ROOT) $PDK_ROOT   ;# keep env in sync for child scripts
 
@@ -42,7 +43,6 @@ set SETUP_DIR   "${SYN_ROOT}/setup"
 set SCRIPTS_DIR "${SYN_ROOT}/scripts"
 set REPORT_DIR  "${BUILD_DIR}/reports"
 set OUTPUT_DIR  "${BUILD_DIR}/outputs"
-set BLOCKS_DIR  "${BUILD_DIR}/blocks"
 
 # ===========================================================================
 # Step 0: Project configuration + environment check
@@ -61,14 +61,6 @@ file delete -force $SVF_FILE
 puts "== \[svf\] writing Formality guidance: $SVF_FILE"
 set_svf $SVF_FILE
 
-
-# Load block definitions and helper procs for hier mode
-if {$SYN_MODE eq "hier"} {
-    source ${SETUP_DIR}/blocks.tcl
-    source ${SCRIPTS_DIR}/hier.tcl
-    file mkdir ${BLOCKS_DIR}
-}
-
 # ===========================================================================
 # Step 1: Load generic scripts (defines procs only, no side effects yet)
 # ===========================================================================
@@ -79,17 +71,11 @@ source ${SCRIPTS_DIR}/output.tcl
 puts "=================================================================="
 puts "  SYN_ROOT   : $SYN_ROOT"
 puts "  BUILD_DIR  : $BUILD_DIR"
+puts "  SYN_TARGET : $SYN_TARGET"
 puts "  TOP_MODULE : $TOP_MODULE"
 puts "  SYN_MODE   : $SYN_MODE"
 if {$INCR_CHECKPOINT ne "NONE"} {
     puts "  CHECKPOINT : $INCR_CHECKPOINT"
-}
-if {$SYN_MODE eq "hier"} {
-    if {$HIER_COMPILE_BLOCKS eq ""} {
-        puts "  ACTION     : assemble top from cached block DDCs"
-    } else {
-        puts "  BLOCKS     : $HIER_COMPILE_BLOCKS"
-    }
 }
 puts "=================================================================="
 
@@ -118,36 +104,19 @@ timer_mark "Step 4: Physical library setup"
 
 # ===========================================================================
 # Incremental resume: determine which steps to skip.
-# Works with both flat and hier modes.
-#
-#   INCR_CHECKPOINT       | skip_elab | skip_constraints | skip_assemble | skip_compile
-#   ----------------------+-----------+------------------+---------------+-------------
-#   NONE (full)           |    no     |       no         |      no       |     no
-#   post_constraints      |    yes    |      yes         |      no       |     no
-#   post_assemble (hier)  |    yes    |      yes         |     yes       |     no
-#   post_compile          |    yes    |      yes         |     yes       |    yes
-#
 # ===========================================================================
 
 if {$INCR_CHECKPOINT eq "NONE"} {
     set _skip_elab        0
     set _skip_constraints 0
-    set _skip_assemble    0
     set _skip_compile     0
 } elseif {$INCR_CHECKPOINT eq "post_constraints"} {
     set _skip_elab        1
     set _skip_constraints 1
-    set _skip_assemble    0
-    set _skip_compile     0
-} elseif {$INCR_CHECKPOINT eq "post_assemble"} {
-    set _skip_elab        1
-    set _skip_constraints 1
-    set _skip_assemble    1
     set _skip_compile     0
 } elseif {$INCR_CHECKPOINT eq "post_compile"} {
     set _skip_elab        1
     set _skip_constraints 1
-    set _skip_assemble    1
     set _skip_compile     1
 }
 
@@ -158,7 +127,7 @@ if {$INCR_CHECKPOINT eq "NONE"} {
 if {$_skip_elab} {
     set _ddc [checkpoint_ddc $INCR_CHECKPOINT $OUTPUT_DIR $TOP_MODULE]
     if {![file exists $_ddc]} {
-        error "Checkpoint DDC not found: $_ddc\nRun full flow first (make flat / make hier)."
+        error "Checkpoint DDC not found: $_ddc\nRun full flow first (make flat SYN_TARGET=$SYN_TARGET)."
     }
     puts "== \[step 5\] reading checkpoint: $_ddc"
     read_ddc $_ddc
@@ -176,7 +145,7 @@ timer_mark "Step 5: Restore checkpoint"
 if {!$_skip_elab} {
     set _input_tcl ${BUILD_DIR}/input.tcl
     if {![file exists $_input_tcl]} {
-        error "build/input.tcl not found. Run 'make gen_filelist' first."
+        error "build input.tcl not found: $_input_tcl. Run 'make gen_filelist' first."
     }
     source $_input_tcl
 
@@ -223,65 +192,25 @@ timer_mark "Step 7: MCMM constraints"
 if {!$_skip_compile} {
     set_host_options -max_cores $COMPILE_MAX_CORES
 
-    if {$SYN_MODE eq "flat"} {
-        # ==============================================================
-        # FLAT: single compile_ultra pass on entire design
-        # ==============================================================
-        set _compile_cmd "compile_ultra"
-        foreach opt $COMPILE_OPTIONS {
-            append _compile_cmd " $opt"
-        }
-        # Append -incremental when resuming from post_constraints checkpoint
-        if {$INCR_CHECKPOINT eq "post_constraints"} {
-            append _compile_cmd " -incremental"
-        }
-
-        puts "== \[flat\] $_compile_cmd"
-        eval $_compile_cmd
-
-        save_checkpoint post_compile $ENABLE_CHECKPOINTS $OUTPUT_DIR $TOP_MODULE
-
-    } else {
-        # ==============================================================
-        # HIER: block-level compile + assemble top
-        # ==============================================================
-        if {!$_skip_assemble} {
-            hier_blocks_report
-
-            set _compile_list [hier_build_compile_list $HIER_COMPILE_BLOCKS]
-
-            if {[llength $_compile_list] > 0} {
-                puts "== \[hier\] Compile order: $_compile_list"
-                foreach hp $_compile_list {
-                    # For parent blocks: read cached child DDCs first
-                    if {[hier_block_has_children $hp]} {
-                        foreach child [hier_block_children $hp] {
-                            if {[hier_block_compiled $child]} {
-                                _read_hier_block $child
-                            }
-                        }
-                    }
-                    _compile_hier_block $hp
-                }
-            } else {
-                puts "== \[hier\] All blocks have cached DDCs, assemble-only"
-            }
-
-            # Assemble top: batch remove + read DDCs + link once
-            puts "== \[hier\] Assembling top ..."
-            _assemble_hier_roots
-            _check_unmapped_cells
-
-            save_checkpoint post_assemble $ENABLE_CHECKPOINTS $OUTPUT_DIR $TOP_MODULE
-        } else {
-            puts "== \[hier\] skipping assemble (resuming from $INCR_CHECKPOINT)"
-        }
-
-        _compile_top_shell
-
-        save_checkpoint post_compile $ENABLE_CHECKPOINTS $OUTPUT_DIR $TOP_MODULE
+    if {[netlist_namespace_enabled]} {
+        global uniquify_naming_style
+        set uniquify_naming_style "${NETLIST_NAMESPACE_PREFIX}%s_%d"
+        puts "== \[namespace\] pre-compile style = $uniquify_naming_style"
     }
 
+    set _compile_cmd "compile_ultra"
+    foreach opt $COMPILE_OPTIONS {
+        append _compile_cmd " $opt"
+    }
+    if {$INCR_CHECKPOINT eq "post_constraints"} {
+        append _compile_cmd " -incremental"
+    }
+
+    puts "== \[flat\] $_compile_cmd"
+    eval $_compile_cmd
+
+    apply_netlist_namespace "post-compile"
+    save_checkpoint post_compile $ENABLE_CHECKPOINTS $OUTPUT_DIR $TOP_MODULE
 } else {
     puts "== \[incr\] skipping compile (resuming from $INCR_CHECKPOINT)"
 }
@@ -293,15 +222,11 @@ timer_mark "Step 8: Compile"
 # ===========================================================================
 output_post_compile $TOP_MODULE $ELAB_NAME $OUTPUT_DIR $ACTIVE_SCENARIOS
 
-
 # ===========================================================================
-#  Close SVF file
+# Close SVF file
 # ===========================================================================
 puts "== \[svf\] closing Formality guidance: $SVF_FILE"
 set_svf -off
-
-
-
 
 timer_mark "Step 9: Post-compile outputs"
 
@@ -313,12 +238,11 @@ output_reports $REPORT_DIR $ACTIVE_SCENARIOS $MAX_PATHS
 timer_mark "Step 10: Reports"
 
 puts "=================================================================="
-puts "  Synthesis complete.  (SYN_MODE=$SYN_MODE)"
+puts "  Synthesis complete."
+puts "  Target  : $SYN_TARGET"
+puts "  Top     : $TOP_MODULE"
 puts "  Outputs : $OUTPUT_DIR"
 puts "  Reports : $REPORT_DIR"
-if {$SYN_MODE eq "hier"} {
-    puts "  Blocks  : $BLOCKS_DIR"
-}
 puts "=================================================================="
 
 timer_report

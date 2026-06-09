@@ -57,3 +57,34 @@ proc save_checkpoint {phase enable output_dir top_module} {
     puts "== \[checkpoint\] saving $phase -> $path"
     write -f ddc -hierarchy -output $path
 }
+
+# ===========================================================================
+# Netlist namespace helpers
+# ===========================================================================
+
+proc netlist_namespace_enabled {} {
+    if {![info exists ::NETLIST_UNIQUIFY_ENABLE]} { return 0 }
+    if {$::NETLIST_UNIQUIFY_ENABLE eq "0"} { return 0 }
+    if {$::NETLIST_UNIQUIFY_ENABLE eq "1"} { return 1 }
+    if {$::NETLIST_UNIQUIFY_ENABLE eq "auto"} {
+        return [expr {[info exists ::NETLIST_NAMESPACE_PREFIX] && $::NETLIST_NAMESPACE_PREFIX ne ""}]
+    }
+    error "NETLIST_UNIQUIFY_ENABLE must be 0, 1, or auto; got '$::NETLIST_UNIQUIFY_ENABLE'."
+}
+
+proc apply_netlist_namespace {stage} {
+    global uniquify_naming_style
+
+    if {![netlist_namespace_enabled]} {
+        puts "== \[namespace\] disabled at $stage"
+        return
+    }
+    if {![info exists ::NETLIST_NAMESPACE_PREFIX] || $::NETLIST_NAMESPACE_PREFIX eq ""} {
+        error "NETLIST_NAMESPACE_PREFIX must be non-empty when namespace uniquify is enabled."
+    }
+
+    set uniquify_naming_style "${::NETLIST_NAMESPACE_PREFIX}%s_%d"
+    puts "== \[namespace\] $stage: uniquify_naming_style = $uniquify_naming_style"
+    uniquify -force
+    link
+}
