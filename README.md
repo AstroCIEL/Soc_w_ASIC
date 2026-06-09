@@ -1,36 +1,59 @@
 # ARA SoC 项目
 
-ARA SoC 是一个基于 RISC-V 的片上系统，集成了 CVA6 (Ariane) 64位应用处理器核心和 ARA 向量处理单元 (VPU)，支持 RISC-V 向量扩展 (RVV)。本项目提供从 RTL 到软件、仿真、综合的完整设计流程。
+ARA SoC 是一个基于 RISC-V 的片上系统，集成了 CVA6 (Ariane) 64 位应用处理器核心和 ARA 向量处理单元 (VPU)，支持 RISC-V 向量扩展 (RVV)。本项目提供从 RTL 到软件、仿真、综合、FPGA 的完整设计流程。
 
 ## 项目概述
 
-- **核心架构**: CVA6 标量核 + ARA 向量处理单元
+- **核心架构**: CVA6 标量核 + ARA 向量处理单元（可选）
 - **向量配置**: 默认 2 个 lanes，VLEN=2048 bits
 - **工具链**: LLVM/Clang 17.0.6 + LLD 链接器
 - **总线架构**: AXI4 互联
 - **验证平台**: EDA01
 
-## 四种 SoC 配置（并列切换）
+## SoC 配置（并列切换）
 
-本项目在文件组织上将四种网表并列区分，通过仿真 `sim/filelist_*.f` 选择：
+各 SoC 变体在 `hardware/soc/<variant>/` 下独立维护顶层 RTL，通过仿真 `sim/filelist_*.f` 或综合 `SOC_CONFIG` 选择。`sim/Makefile` 默认使用 **`filelist_minimum_my_mxu_axu.f`**。
 
 ### 1. Minimum 配置 (`hardware/soc/minimum/`)
-- 仅 CVA6 标量核心（无 ARA VPU，无片上 iDMA，**无** `0x7000_0000` ASIC）
+
+- 仅 CVA6 标量核心（无 ARA VPU，无片上 iDMA，**无** `0x7000_0000` 自定义加速器）
 - 用于基础功能验证和纯标量应用
-- 仓库内另含 **仅 MMIO** 的参考 RTL/驱动（`hardware/user_ip/asic_accel/`、`asic_accel.h`），**默认未接入** 任一网表；若需使用需自行在外设与 filelist 中实例化。
+- 仿真：`sim/filelist_minimum.f`
 
-### 2. Minimum + ASIC（片内 DMA）(`hardware/soc/minimum_asic_dma/`)
-- 在 minimum 功能集之上 **固定集成** `asic_dma_accel`（配置 AXI slave + DMA AXI master），RTL 与 `minimum/` **分目录维护**，不再用宏在 minimum 内开关。
-- 仿真使用 `sim/filelist_minimum_asic_dma.f`（编入 `hardware/soc/filelist_minimum_asic_dma.f`）；软件 `make asic_dma_accel_test`；配置口 `0x7000_0000`（4KB），交叉开关上另有一路 **AXI master** 供片内 DMA 访问 DRAM。
+### 2. Maximum 配置 (`hardware/soc/maximum/`)
 
-### 3. Minimum + VMMA（VecMatMul + 内部 DMA）(`hardware/soc/minimum_vmma_dma/`)
-- 第四套变体：在 minimum 之上集成 **VMMA** 仿真模型 `vmma_top`（`hardware/user_ip/vmma/vmma_sim.sv`：AXI 配置从口 + AXI 主口访存，内部完成 \(Y = W \times X\) 的 INT16 小矩阵与 DMA 写回）。
-- 仿真使用 **`sim/filelist_minimum_vmma_dma.f`**；软件 **`make vmma_test`**；MMIO 窗口仍为 **`0x7000_0000`（4KB）**（`soc.h` 中 `VMMA_ACCEL_BASE`，与 `asic_dma` 变体 **互斥**：需选用对应 filelist，不可混用同一仿真镜像）。
-- 软件注意：**`W_STRIDE` 须为 8 的倍数**（权重行按 64bit AXI beat 读取）；**写穿 D-cache + 预取** 下 DMA 写回的输出缓冲勿与输入紧邻布置，参见 `DOC.md` / `ASIC_INTEGRATION.md` 中「一致性 / 缓冲布局」说明。
-
-### 4. Maximum 配置 (`hardware/soc/maximum/`)
 - 完整配置：CVA6 + ARA VPU + 片上 iDMA
 - 用于向量计算加速应用
+- 仿真：`sim/filelist.f`（引用 `hardware/soc/filelist_maximum.f`）
+
+### 3. Minimum + VMMA (`hardware/soc/minimum_vmma_dma/`)
+
+- 在 minimum 之上集成 **VMMA** 仿真模型 `vmma_top`（`hardware/user_ip/vmma/vmma_sim.sv`：AXI 配置从口 + AXI 主口访存，内部完成 \(Y = W \times X\) 的 INT16 小矩阵与 DMA 写回）
+- 仿真：`sim/filelist_minimum_vmma_dma.f`；软件：`make vmma_test`
+- MMIO 窗口：**`0x7000_0000`（4KB）**（`soc.h` 中 `VMMA_ACCEL_BASE`）
+- 软件注意：**`W_STRIDE` 须为 8 的倍数**；写穿 D-cache + 预取下 DMA 写回缓冲勿与输入紧邻布置，参见 `doc/DOC.md` / `doc/ASIC_INTEGRATION.md`
+
+### 4. Minimum + MXU (`hardware/soc/minimum_my_mxu/`)
+
+- 在 minimum 之上集成自定义 **MXU** 矩阵加速模块（`hardware/user_ip/my_mxu/`）
+- MMIO：`0x7000_0000` 起，含配置寄存器与 weight / activation / output 三块 on-chip buffer（各 32KB）
+- 仿真：`sim/filelist_minimum_my_mxu.f`；软件：`make my_mxu_test`
+- 驱动：`software/soc/include/my_mxu.h`
+
+### 5. Minimum + MXU + AXU (`hardware/soc/minimum_my_mxu_axu/`) — 当前默认仿真配置
+
+- 在 minimum 之上同时集成 **MXU** 与 **AXU**（`hardware/user_ip/my_axu/`），并增加 **global_buffer**、片上 **iDMA**
+- MMIO 布局：
+  - MXU：`0x7000_0000` – `0x7001_7FFF`
+  - AXU：`0x7002_0000` – `0x7003_7FFF`
+  - Global Buffer：`0x7004_0000`
+  - iDMA：`0x6000_0000`
+- 仿真：`sim/filelist_minimum_my_mxu_axu.f`（`sim/Makefile` 默认）
+- 软件：`make my_mxu_test`、`make my_axu_test`、`make mxu_idma_gbuf_test`
+- 驱动：`my_mxu.h`、`my_axu.h`、`global_buffer.h`
+- 综合默认 `SOC_CONFIG=minimum_my_mxu_axu`，详见 [README_SYN.md](README_SYN.md)
+
+> **已移除的配置**：早期 `minimum_asic_dma`（`asic_dma_accel` 片内 DMA 演示）及其仿真 filelist / 测试应用已从仓库清理；`hardware/user_ip/asic_dma_accel/` 仅保留参考 RTL，不再接入任一网表。
 
 ## 快速开始
 
@@ -60,12 +83,14 @@ make all
 # 或编译特定应用
 make hello_world
 make fmatmul
-make dotproduct            # 建议在maxmimum即带ara_vpu配置下仿真用
-make asic_dma_accel_test   # 配合 sim/filelist_minimum_asic_dma.f 仿真用
-make vmma_test             # 配合 sim/filelist_minimum_vmma_dma.f 仿真用
+make dotproduct            # 建议在 maximum（带 ARA VPU）配置下仿真
+make vmma_test             # 配合 sim/filelist_minimum_vmma_dma.f
+make my_mxu_test           # 配合 sim/filelist_minimum_my_mxu.f 或 filelist_minimum_my_mxu_axu.f
+make my_axu_test           # 配合 sim/filelist_minimum_my_mxu_axu.f
+make mxu_idma_gbuf_test    # 配合 sim/filelist_minimum_my_mxu_axu.f（MXU + iDMA + global buffer）
 
 # 编译所有 app 用于 FPGA（自动添加 -DTARGET_FPGA，使用 40MHz 时钟，115200 波特率）
-# 如不指定，默认是sim（使用 500MHz 时钟，6250000 波特率）
+# 如不指定，默认是 sim（使用 500MHz 时钟，6250000 波特率）
 make target=fpga
 
 # 清理构建
@@ -81,7 +106,7 @@ make clean
 ```bash
 cd sim
 
-# 编译仿真环境
+# 编译仿真环境（默认 minimum_my_mxu_axu 配置）
 make vcs
 
 # 运行默认应用 (hello_world)
@@ -97,32 +122,29 @@ make vcs-wave app=../software/build/bin/dma_desc64_test
 make verdi
 ```
 
-#### Minimum 配置运行步骤（不启用 ARA VPU）
+#### 各 SoC 配置切换
 
-`sim/Makefile` 默认使用 maximum filelist。切到 minimum 时，在 `sim/` 目录下使用**完整仿真 filelist**（含 TB 与 IP），不要单独使用 `hardware/soc/filelist_minimum.f`：
+`sim/Makefile` 通过 `FILELIST` 选择网表。切换变体时建议 **`make clean && make vcs FILELIST=…`**，且 **`vcs-run` 必须使用同一 `FILELIST`**。
+
+**Minimum（纯净标量）**：
 
 ```bash
-# 1) 先编译一个标量应用（推荐）
 make -C software hello_world
-
-# 2) 编译 minimum SoC 仿真（工作目录为 sim/）
-make -C sim vcs FILELIST=filelist_minimum.f
-
-# 3) 运行 minimum SoC
+make -C sim clean && make -C sim vcs FILELIST=filelist_minimum.f
 make -C sim vcs-run FILELIST=filelist_minimum.f \
   app=../software/build/bin/hello_world
 ```
 
-**Minimum + ASIC（片内 DMA）— 第三套网表**（RTL：`hardware/soc/minimum_asic_dma/`）：
+**Maximum（CVA6 + ARA VPU + iDMA）**：
 
 ```bash
-make -C software asic_dma_accel_test
-make -C sim clean && make -C sim vcs FILELIST=filelist_minimum_asic_dma.f
-make -C sim vcs-run FILELIST=filelist_minimum_asic_dma.f \
-  app=../software/build/bin/asic_dma_accel_test
+make -C software fmatmul
+make -C sim clean && make -C sim vcs FILELIST=filelist.f
+make -C sim vcs-run FILELIST=filelist.f \
+  app=../software/build/bin/fmatmul
 ```
 
-**Minimum + VMMA（第四套网表）**（RTL：`hardware/soc/minimum_vmma_dma/`）：
+**Minimum + VMMA**：
 
 ```bash
 make -C software vmma_test
@@ -131,19 +153,34 @@ make -C sim vcs-run FILELIST=filelist_minimum_vmma_dma.f \
   app=../software/build/bin/vmma_test
 ```
 
-`asic_dma` 与 `vmma` 两套变体均使用 `0x7000_0000` 作为加速器配置基址，但 **RTL 实例不同**；必须通过 **正确的 `FILELIST`** 选择其一。详见根目录 `DOC.md`、`ASIC_INTEGRATION.md`。
+**Minimum + MXU**：
 
-#### Minimum 系列仿真 filelist 对照
+```bash
+make -C software my_mxu_test
+make -C sim clean && make -C sim vcs FILELIST=filelist_minimum_my_mxu.f
+make -C sim vcs-run FILELIST=filelist_minimum_my_mxu.f \
+  app=../software/build/bin/my_mxu_test
+```
 
-| 仿真 filelist（在 `sim/` 下） | 说明 |
-|------------------------------|------|
-| `filelist_minimum.f` | 纯净 minimum（`hardware/soc/minimum/`），**无** `0x7000_0000` 加速器 |
-| `filelist_minimum_asic_dma.f` | 第三套网表（`hardware/soc/minimum_asic_dma/`），`asic_dma_accel`（slave + master DMA） |
-| `filelist_minimum_vmma_dma.f` | 第四套网表（`hardware/soc/minimum_vmma_dma/`），`vmma_top`（VecMatMul + 内部 DMA） |
+**Minimum + MXU + AXU（默认）**：
 
-构建与运行 `asic_dma` 测试：`make -C software asic_dma_accel_test`，再使用 `filelist_minimum_asic_dma.f`。RTL：`hardware/user_ip/asic_dma_accel/`；驱动：`asic_dma_accel.h`。
+```bash
+make -C software my_axu_test
+make -C sim vcs   # 默认 FILELIST=filelist_minimum_my_mxu_axu.f
+make -C sim vcs-run app=../software/build/bin/my_axu_test
+```
 
-构建与运行 VMMA 测试：`make -C software vmma_test`，再使用 **`filelist_minimum_vmma_dma.f`**。RTL：`hardware/user_ip/vmma/vmma_sim.sv`；驱动：`vmma.h` / `vmma.c`；PLIC 源与 `IRQn_VVMA_ACCEL`（见 `soc.h`）可按需扩展中断路径；当前 `vmma_test` 以轮询 `busy` 为主。
+#### 仿真 filelist 对照
+
+| 仿真 filelist（在 `sim/` 下） | SoC RTL 目录 | 说明 |
+|------------------------------|--------------|------|
+| `filelist_minimum.f` | `hardware/soc/minimum/` | 纯净 minimum，无自定义加速器 |
+| `filelist.f` | `hardware/soc/maximum/` | CVA6 + ARA VPU + 片上 iDMA |
+| `filelist_minimum_vmma_dma.f` | `hardware/soc/minimum_vmma_dma/` | VMMA（VecMatMul + 内部 DMA） |
+| `filelist_minimum_my_mxu.f` | `hardware/soc/minimum_my_mxu/` | 自定义 MXU 加速模块 |
+| `filelist_minimum_my_mxu_axu.f` | `hardware/soc/minimum_my_mxu_axu/` | MXU + AXU + global buffer + iDMA（**默认**） |
+
+`vmma` 与 `my_mxu` / `my_mxu_axu` 在 `0x7000_0000` 一带的 MMIO 布局**互斥**，必须通过正确的 `FILELIST` 选择对应 RTL。详见 `doc/DOC.md`、`doc/ASIC_INTEGRATION.md`。
 
 推荐在 minimum 场景优先使用：
 
@@ -154,8 +191,8 @@ make -C sim vcs-run FILELIST=filelist_minimum_vmma_dma.f \
 
 不建议在 minimum 场景作为首轮验证的应用：
 
-- 依赖向量能力的 `fmatmul` / `dotproduct` / `fdotproduct`
-- 依赖 **片上 iDMA**（maximum）的 `dma_desc64_test` / `dma_reg64_1d_test`（与 `asic_dma_accel_test` / `vmma_test` 不同；后两者走各自 **minimum_*** filelist）
+- 依赖向量能力的 `fmatmul` / `dotproduct` / `fdotproduct`（需 maximum）
+- 依赖 **maximum 片上 iDMA** 的 `dma_desc64_test` / `dma_reg64_1d_test`（minimum_my_mxu_axu 上有独立 iDMA，可用 `mxu_idma_gbuf_test` 验证）
 
 #### Verilator 仿真（开源免费）
 
@@ -177,15 +214,23 @@ make verilator-wave app=../software/build/bin/fmatmul
 
 ### 综合
 
+综合流程详见 [README_SYN.md](README_SYN.md)。简要命令：
+
 ```bash
 cd syn
 
-# 运行 Design Compiler 综合
-make syn
+# 检查 filelist 完整性
+make check SOC_CONFIG=minimum_my_mxu_axu
 
-# 检查文件列表完整性
-make check
+# 综合 MXU / AXU / 顶层 SoC
+make flat SYN_TARGET=mxu
+make flat SYN_TARGET=axu
+make flat SYN_TARGET=top SOC_CONFIG=minimum_my_mxu_axu
 ```
+
+### FPGA
+
+FPGA 流程位于 `fpga/`，当前 `fpga/filelist.f` 使用 **minimum** 配置（不含 MXU/AXU）。软件编译时指定 `make target=fpga`。
 
 ## 典型工作流
 
@@ -193,16 +238,17 @@ make check
 
 ```bash
 # 1. 编译软件
-make -C ../software fmatmul
+make -C software fmatmul
 
-# 2. 编译并运行仿真，生成波形
-make vcs-wave app=../software/build/bin/fmatmul
+# 2. 编译并运行 maximum 仿真，生成波形
+make -C sim clean && make -C sim vcs FILELIST=filelist.f
+make -C sim vcs-wave FILELIST=filelist.f app=../software/build/bin/fmatmul
 
 # 3. 查看波形（另一个终端）
-make verdi
+make -C sim verdi
 
 # 4. 调试完成后清理
-make clean
+make -C sim clean
 ```
 
 ### Minimum bring-up 工作流
@@ -211,8 +257,8 @@ make clean
 # 1. 编译基础标量程序
 make -C software hello_world trap_test clint_test default_slave
 
-# 2. 编译 minimum 配置仿真（在 sim/ 下使用 filelist_minimum.f）
-make -C sim vcs FILELIST=filelist_minimum.f
+# 2. 编译 minimum 配置仿真
+make -C sim clean && make -C sim vcs FILELIST=filelist_minimum.f
 
 # 3. 依次运行并检查串口输出
 make -C sim vcs-run FILELIST=filelist_minimum.f \
@@ -221,13 +267,22 @@ make -C sim vcs-run FILELIST=filelist_minimum.f \
   app=../software/build/bin/trap_test
 ```
 
+### MXU + AXU 加速器验证
+
+```bash
+make -C software my_mxu_test my_axu_test
+make -C sim vcs   # 默认 minimum_my_mxu_axu
+make -C sim vcs-run app=../software/build/bin/my_mxu_test
+make -C sim vcs-run app=../software/build/bin/my_axu_test
+```
+
 ### 批量回归测试
 
 ```bash
 # 编译所有软件测试
-make -C ../software all
+make -C software all
 
-# 运行所有测试
+# 运行所有测试（需与当前 FILELIST 匹配的应用）
 for app in ../software/build/bin/*; do
     echo "Testing: $app"
     make verilator-run app=$app
@@ -239,43 +294,49 @@ done
 ```
 ara_soc/
 ├── hardware/         # RTL 硬件设计
-│   ├── ip/           # IP 核（CVA6、ARA、AXI、DMA等）
-│   ├── soc/          # SoC 集成（minimum / minimum_asic_dma / minimum_vmma_dma / maximum）
-│   ├── tech/         # 工艺库和存储器wrapper
-│   └── user_ip/      # 用户自定义IP
+│   ├── ip/           # IP 核（CVA6、ARA、AXI、DMA 等）
+│   ├── soc/          # SoC 集成（minimum / maximum / minimum_vmma_dma /
+│   │                 #   minimum_my_mxu / minimum_my_mxu_axu）
+│   ├── tech/         # 工艺库和存储器 wrapper（sim / syn / fpga）
+│   └── user_ip/      # 用户自定义 IP（my_mxu、my_axu、vmma、sram_buffer 等）
 ├── software/         # 软件 BSP
 │   ├── app/          # 应用程序
-│   ├── sdk/          # SDK运行时库
-│   ├── soc/          # SoC外设驱动
+│   ├── sdk/          # SDK 运行时库
+│   ├── soc/          # SoC 外设驱动
 │   └── scripts/      # 构建脚本
 ├── sim/              # 仿真环境（VCS + Verilator）
+├── sim_pre_syn/      # 综合后网表仿真（MXU/AXU netlist shim）
 ├── tb/               # 测试台文件
-├── syn/              # 综合脚本
+├── syn/              # Design Compiler 综合脚本
+├── fpga/             # Vivado FPGA 流程
+├── doc/              # 技术文档
 └── config/           # 配置文件
 ```
 
 ## 应用列表
 
-| 应用 | 说明 | 特性 |
-|------|------|------|
-| `hello_world` | 基础功能测试 | UART输出 |
-| `fmatmul` | 浮点矩阵乘法 | RVV向量指令 |
-| `dotproduct` | 向量点积 | 整数/浮点向量 |
-| `fdotproduct` | 浮点向量点积 | RVV向量指令 |
-| `dma_desc64_test` | DMA描述符测试 | 中断、链式传输 |
-| `dma_reg64_1d_test` | DMA寄存器1D测试 | 1D内存拷贝 |
-| `vmma_test` | VMMA（VecMatMul+DMA）回归 | 需 `filelist_minimum_vmma_dma.f`；INT16 小矩阵 |
-| `asic_dma_accel_test` | 片内 DMA ASIC 测试 | 需 `filelist_minimum_asic_dma.f` |
-| `clint_test` | 定时器测试 | CLINT中断 |
-| `default_slave` | 默认从设备测试 | PLIC中断 |
-| `trap_test` | 异常测试 | 异常处理 |
+| 应用 | 说明 | 适用 SoC 配置 |
+|------|------|---------------|
+| `hello_world` | 基础功能测试，UART 输出 | 全部 |
+| `trap_test` | 异常处理测试 | minimum 系列 |
+| `clint_test` | 定时器 / CLINT 中断 | minimum 系列 |
+| `default_slave` | 默认从设备 / PLIC 中断 | minimum 系列 |
+| `fmatmul` | 浮点矩阵乘法（RVV） | maximum |
+| `dotproduct` | 向量点积 | maximum |
+| `fdotproduct` | 浮点向量点积（RVV） | maximum |
+| `dma_desc64_test` | DMA 描述符测试 | maximum |
+| `dma_reg64_1d_test` | DMA 寄存器 1D 测试 | maximum |
+| `vmma_test` | VMMA（VecMatMul + DMA）回归 | `filelist_minimum_vmma_dma.f` |
+| `my_mxu_test` | MXU 矩阵加速回归 | `filelist_minimum_my_mxu.f` 或 `filelist_minimum_my_mxu_axu.f` |
+| `my_axu_test` | AXU 向量 / SFU / NLI / SCH 回归 | `filelist_minimum_my_mxu_axu.f` |
+| `mxu_idma_gbuf_test` | MXU + iDMA + global buffer 联调 | `filelist_minimum_my_mxu_axu.f` |
 
 ## 配置参数
 
-在 `config/default.mk` 中可配置硬件参数：
+在 `config/default.mk` 或 `software/Makefile` 中可配置硬件参数：
 
 ```makefile
-nr_lanes ?= 2      # 向量处理器lane数量
+nr_lanes ?= 2      # 向量处理器 lane 数量
 vlen     ?= 2048   # 向量寄存器位宽（VLEN）
 ```
 
@@ -284,14 +345,16 @@ vlen     ?= 2048   # 向量寄存器位宽（VLEN）
 ### 查看 UART 输出
 
 仿真运行时，UART 输出会同时输出到：
+
 - 仿真终端
 - `sim/uart0.log` 文件
 
 ### 查看指令追踪
 
 仿真后会生成：
-- `sim/trace_hart_0.log` - 完整指令追踪
-- `sim/trace_hart_0_commit.log` - 提交指令追踪
+
+- `sim/trace_hart_0.log` — 完整指令追踪
+- `sim/trace_hart_0_commit.log` — 提交指令追踪
 
 ### 使用函数追踪
 
@@ -324,13 +387,13 @@ make verilate
 
 ### VMMA / 外设 DMA 读回全 0 或错误
 
-CVA6 默认 **写穿 D-cache**，且无 **Zicbom** 一类软件维护指令时，**硬件预取**可能在加速器写回 DRAM **之前**把输出缓冲所在 cache line 装成旧数据；此后 CPU **命中 D$** 读到的不是 DRAM 真值。缓解办法：**输出缓冲与输入（W/X）在地址上拉开距离**（例如 `vmma_test` 通过链接选项把 `.vmma_dma_out` 放到高地址）、**启动加速器前**对 CPU 写入的源数据执行 `fence ow, ow` 排空写缓冲；长期需在 SoC 层做一致性或非缓存 PMA。详见 `DOC.md` §1.5、`ASIC_INTEGRATION.md` §7。
+CVA6 默认 **写穿 D-cache**，且无 **Zicbom** 一类软件维护指令时，**硬件预取**可能在加速器写回 DRAM **之前**把输出缓冲所在 cache line 装成旧数据；此后 CPU **命中 D$** 读到的不是 DRAM 真值。缓解办法：**输出缓冲与输入（W/X）在地址上拉开距离**、**启动加速器前**对 CPU 写入的源数据执行 `fence ow, ow` 排空写缓冲；长期需在 SoC 层做一致性或非缓存 PMA。详见 `doc/DOC.md`、`doc/ASIC_INTEGRATION.md`。
 
 ## 扩展开发
 
-### 添加自定义 ASIC
+### 添加自定义加速器
 
-要为 SoC 添加自定义 ASIC：
+要为 SoC 添加自定义加速器，推荐像 `minimum_my_mxu` / `minimum_my_mxu_axu` 一样 **复制并维护独立顶层目录**：
 
 1. **在 `hardware/user_ip/` 下创建新目录**
    ```
@@ -339,19 +402,22 @@ CVA6 默认 **写穿 D-cache**，且无 **Zicbom** 一类软件维护指令时�
    └── filelist_sim.f
    ```
 
-2. **在 AXI 总线上添加新设备**
-   - 在 `ariane_soc_pkg.sv` 中添加新的 AXI 从设备
-   - 在 `ariane_soc_top.sv` 中实例化并连接到 AXI Crossbar
+2. **新建 SoC 变体目录**（如 `hardware/soc/minimum_my_accel/`）
+   - 修改 `ariane_soc_pkg.sv`：添加 AXI 从设备枚举与基地址
+   - 修改 `ariane_peripherals.sv`：实例化并连接加速器
+   - 添加 `hardware/soc/filelist_minimum_my_accel.f` 与 `sim/filelist_minimum_my_accel.f`
 
 3. **添加软件驱动**
    - 在 `software/soc/src/` 创建驱动
    - 在 `software/app/` 创建测试应用
 
-详细步骤请参考 DOC.md 文档。
+详细步骤请参考 `doc/DOC.md`、`doc/ASIC_INTEGRATION.md`，以及 `doc/如何修改hardware文件夹下的内容？.md`。
 
 ## 参考文档
 
-- [DOC.md](DOC.md) - 详细技术文档（硬件架构、软件模块、仿真逻辑）
-- `sim/README.md` - 仿真环境详细说明
-- `software/README.md` - 软件 BSP 详细说明
-
+- [doc/DOC.md](doc/DOC.md) — 详细技术文档（硬件架构、软件模块、仿真逻辑）
+- [doc/ASIC_INTEGRATION.md](doc/ASIC_INTEGRATION.md) — 自定义加速器集成指南
+- [doc/DEBUG.md](doc/DEBUG.md) — 调试说明
+- [README_SYN.md](README_SYN.md) — Design Compiler 综合流程
+- [sim/README.md](sim/README.md) — 仿真环境详细说明
+- [software/README.md](software/README.md) — 软件 BSP 详细说明
