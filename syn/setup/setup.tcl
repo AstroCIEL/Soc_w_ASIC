@@ -10,7 +10,7 @@
 # 1. Design identity
 # ===========================================================================
 
-set TOP_MODULE ariane_soc_top
+set TOP_MODULE axu_top_wrapper
 
 # SRAM macro reference names — marked dont_touch after elaborate
 # 增加mxu的sram宏名称rf2p_256_128

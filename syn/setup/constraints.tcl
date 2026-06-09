@@ -16,24 +16,24 @@ create_clock -name ${CLK_NAME} -period ${CLK_PERIOD} [get_ports clk_i]
 # ---------------------------------------------------------------------------
 # RTC clock  (32.768 kHz → period ≈ 30517 ns)
 # ---------------------------------------------------------------------------
-set RTC_PERIOD 30517.578
-set RTC_NAME   RTC_CLK
+# set RTC_PERIOD 30517.578
+# set RTC_NAME   RTC_CLK
 
-create_clock -name ${RTC_NAME} -period ${RTC_PERIOD} [get_ports rtc_i]
-set_clock_groups -asynchronous \
-    -group [get_clocks ${CLK_NAME}] \
-    -group [get_clocks ${RTC_NAME}]
+# create_clock -name ${RTC_NAME} -period ${RTC_PERIOD} [get_ports rtc_i]
+# set_clock_groups -asynchronous \
+#     -group [get_clocks ${CLK_NAME}] \
+#     -group [get_clocks ${RTC_NAME}]
 
 # ---------------------------------------------------------------------------
 # JTAG TCK  (≤ 10 MHz → period = 100 ns)
 # ---------------------------------------------------------------------------
-set TCK_PERIOD 100.0
-set TCK_NAME   JTAG_TCK
+# set TCK_PERIOD 100.0
+# set TCK_NAME   JTAG_TCK
 
-create_clock -name ${TCK_NAME} -period ${TCK_PERIOD} [get_ports jtag_tck_i]
-set_clock_groups -asynchronous \
-    -group [get_clocks ${CLK_NAME}] \
-    -group [get_clocks ${TCK_NAME}]
+# create_clock -name ${TCK_NAME} -period ${TCK_PERIOD} [get_ports jtag_tck_i]
+# set_clock_groups -asynchronous \
+#     -group [get_clocks ${CLK_NAME}] \
+#     -group [get_clocks ${TCK_NAME}]
 
 # ---------------------------------------------------------------------------
 # Clock quality (SYS_CLK only)
@@ -56,10 +56,10 @@ set ALL_OUTS [all_outputs]
 set_input_delay  -clock ${CLK_NAME} [expr ${CLK_PERIOD} * 0.3] ${SYNC_INS}
 set_output_delay -clock ${CLK_NAME} [expr ${CLK_PERIOD} * 0.3] ${ALL_OUTS}
 
-set_input_delay  -clock ${TCK_NAME} [expr ${TCK_PERIOD} * 0.3] \
-    [get_ports {jtag_tms_i jtag_tdi_i jtag_trst_ni}]
-set_output_delay -clock ${TCK_NAME} [expr ${TCK_PERIOD} * 0.3] \
-    [get_ports {jtag_tdo_o jtag_tdo_driven_o}]
+# set_input_delay  -clock ${TCK_NAME} [expr ${TCK_PERIOD} * 0.3] \
+#     [get_ports {jtag_tms_i jtag_tdi_i jtag_trst_ni}]
+# set_output_delay -clock ${TCK_NAME} [expr ${TCK_PERIOD} * 0.3] \
+#     [get_ports {jtag_tdo_o jtag_tdo_driven_o}]
 
 # ---------------------------------------------------------------------------
 # Output loads
@@ -76,8 +76,8 @@ set_max_transition 0.3 [current_design]
 # False / multicycle paths
 # ---------------------------------------------------------------------------
 set_false_path -from [get_ports rst_ni]
-set_false_path -from [get_ports jtag_trst_ni]
-set_false_path -from [get_ports debug_enable_i]
+# set_false_path -from [get_ports jtag_trst_ni]
+# set_false_path -from [get_ports debug_enable_i]
 
 # ---------------------------------------------------------------------------
 # SRAM macro static pin constraints

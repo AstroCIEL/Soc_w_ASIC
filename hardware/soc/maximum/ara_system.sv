@@ -19,7 +19,7 @@ module ara_system import axi_pkg::*; import ara_pkg::*; #(
     // Support for segment memory operations
     parameter seg_support_e                     SegSupport         = SegSupportEnable,
     // Ariane configuration
-    parameter config_pkg::cva6_cfg_t            CVA6Cfg            = cva6_config_pkg::cva6_cfg,
+    parameter config_pkg::cva6_cfg_t            CVA6Cfg            = config_pkg::cva6_cfg_empty,
     // CVA6-related parameters
     parameter type                              exception_t        = logic,
     parameter type                              accelerator_req_t  = logic,

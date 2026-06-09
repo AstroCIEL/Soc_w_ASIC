@@ -11,7 +11,7 @@ BUILD_DIR  := $(SYN_ROOT)/build
 SOC_CONFIG ?= minimum_my_mxu_axu
 
 
-PDK_ROOT   ?= $(HOME)/workspace/work2026_2/work_for_tapeout_2026_v2/tsmc22
+PDK_ROOT   ?= $(HOME)/Work/tsmc22
 export PDK_ROOT
 
 # Checkpoint to resume from (NONE = full compile from RTL)
