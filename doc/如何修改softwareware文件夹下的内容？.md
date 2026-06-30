@@ -69,6 +69,10 @@ flowchart TD
 | `software/app/my_axu_test/app.mk` | AXU app 构建入口，调用 `gen_input_data_axu.py` |
 | `software/soc/include/global_buffer.h` | GlobalBuffer 软件地址定义 |
 | `software/app/mxu_idma_gbuf_test/main.c` | iDMA 在 GlobalBuffer 和 MXU WGT buffer 之间搬运的集成测试 |
+| `software/soc/include/dcim.h` | DCIM base、region、cfg/ctrl slot、mode/topo、buffer 公式、`struct dcim_drv` |
+| `software/soc/src/dcim.c` | DCIM driver 实现 |
+| `software/app/dcim_test/main.c` | DCIM baremetal smoke / kick 流程测试 |
+| `software/app/dcim_test/app.mk` | DCIM app 构建入口（`DCIM_TEST_TOPO`、`DCIM_WAIT_CYCLES`） |
 
 新增模块时，建议按同样结构增加：
 
@@ -434,6 +438,7 @@ make mxu_idma_gbuf_test
 | `my_mxu_test` | `filelist_minimum_my_mxu_axu.f` 或明确仍在使用旧 `minimum_my_mxu` 时用旧 filelist |
 | `my_axu_test` | `filelist_minimum_my_mxu_axu.f` |
 | `mxu_idma_gbuf_test` | `filelist_minimum_my_mxu_axu.f` |
+| `dcim_test` | **`filelist_minimum_dcim.f`** |
 
 如果 AXU app 用了只包含 MXU 的旧 filelist，CPU 访问 `0x7002_0000` 之后的 AXU 地址不会得到正确外设响应。
 
@@ -487,7 +492,64 @@ make mxu_idma_gbuf_test
 
 检查运行脚本中的 `FILELIST` 是否包含当前 app 访问的外设。AXU app 必须使用包含 AXU 的 SoC 变体。
 
-## 10. 本阶段结论
+## 11. DCIM wrap 软件设置（`minimum_dcim`）
+
+DCIM 与 MXU/AXU 不同：SoC 只暴露 **一个** AXI 从窗口 `@ 0xE000_0000`，`adapt_decode` 在窗口内用 `axi_addr[19:17]` 再分出 ctrl/cfg/act/out/wei。软件仍按 doc 同一套流程落地，但头文件要描述 **region** 而不是多个 xbar enum。
+
+### 11.1 地址与 filelist 契约
+
+| 宏 | base | size | 用途 |
+|---|---:|---:|---|
+| `DCIM_CTRL_BASE` | `0xE000_0000` | region `0x20000` | START / CLR / LOAD / SWAP |
+| `DCIM_CFG_BASE` | `0xE002_0000` | region `0x20000` | cfg 槽位（64-bit MMIO struct） |
+| `DCIM_ACT_BASE` | `0xE004_0000` | bank `0x800` × 4 | activation buffer |
+| `DCIM_OUT_BASE` | `0xE006_0000` | bank `0x2000` × 4 | output buffer |
+| `DCIM_WEI_BASE` | `0xE008_0000` | bank `0x8000` × 4 | weight buffer |
+
+SoC 总窗口 `DCIM_LENGTH = 0xA0000`，必须与 `hardware/soc/minimum_dcim/ariane_soc_pkg.sv` 一致。
+
+| app | 必须使用的仿真 filelist |
+|---|---|
+| `dcim_test` | `sim/filelist_minimum_dcim.f` |
+
+一键脚本：`./dcim_shell.sh`（默认 `DCIM_TEST_TOPO=3` 单路 topo）。
+
+### 11.2 cfg / ownership / ctrl
+
+| cfg slot `[6:3]<<3` | 含义 |
+|---:|---|
+| `0x00` | `cfg_ena` |
+| `0x08` | `cfg_topo`（0=4 路，2=2 路，3=1 路） |
+| `0x10` | `cfg_mode`（见 `dcim.h` 中 `DCIM_MODE_*`） |
+| `0x18` | `cfg_acc` |
+| `0x28` / `0x30` | `act_length` / `out_length` |
+| `0x38`–`0x48` | `act_sel` / `out_sel` / `wei_sel`（1=CPU，0=加速器） |
+
+`CTRL.START` 写后硬件会自动把三个 `*_sel` 切到加速器；done 后软件需再写回 CPU 才能读 output。
+
+当前 RTL **无 MMIO STATUS、无 PLIC 中断**：driver 的 `wait_done()` 为软件延时环；可通过 `make dcim_test DCIM_WAIT_CYCLES=…` 调整。
+
+### 11.3 推荐软件流程（`dcim_test`）
+
+1. `dcim_bind(&dcim0)` → `init(cfg, act, out, wei)`。
+2. `set_buffer_owner(CPU, CPU, CPU)` → 写 act/wei（及后续 out golden）。
+3. **`DCIM_FENCE_OW`**（写穿 D-cache，同 VMMA/MXU）。
+4. `configure(topo, mode, acc, act_len, out_len, loop)`。
+5. `start()` → `wait_done(timeout)`。
+6. `set_buffer_owner(CPU, CPU, CPU)` → **`DCIM_FENCE_RW`** → 读 out 比对。
+7. UART 打印 **`DCIM_PASS`** / **`DCIM_FAIL`**。
+
+### 11.4 app.mk 构建变量
+
+```makefile
+# software/app/dcim_test/app.mk
+DCIM_TEST_TOPO ?= 3          # 传给 -DDCIM_TEST_TOPO
+# make dcim_test DCIM_WAIT_CYCLES=10000000
+```
+
+driver 源文件必须编入 app：`$(SOC_DIR)/src/dcim.c`。
+
+## 12. 本阶段结论
 
 software 阶段的核心是把硬件 wrapper 暴露出的 MMIO 契约精确翻译成 C 头文件、driver API、test app 和构建/运行配置。MXU、AXU 的驱动形态不同，但基本模式一致：
 

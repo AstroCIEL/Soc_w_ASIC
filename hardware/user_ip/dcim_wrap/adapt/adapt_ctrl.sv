@@ -114,7 +114,7 @@ module adapt_ctrl #(
 		end
 	end
 
-	counter_cfg #(.UBD_MAX(ACT_DEPTH)) u_counter_cfg(
+	dcim_counter_cfg #(.UBD_MAX(ACT_DEPTH)) u_counter_cfg(
 		.clk(clk),
 		.rstn(rstn),
 		.clr(ctrl_clr),

@@ -1,4 +1,4 @@
-module memory#(
+module dcim_memory#(
 	parameter	DP = 128,	// SRAM DEPTH
 	parameter	CYCLE = 8, 	// CH_IN * CH_OUT * WD1 = CYCLE * WIDTH
 	parameter	CH_IN = 16,
@@ -155,7 +155,7 @@ module load_fsm#(
 		end
 	end
 
-	counter#(.UBD(CYCLE)) u_load_counter(
+	dcim_counter#(.UBD(CYCLE)) u_load_counter(
 		.clk(clk), .rstn(rstn), .clr(clr), .ena((state==ST_LOAD)),
 		.cnt_done(load_cnt_done),
 		.cnt(w_load_cnt)

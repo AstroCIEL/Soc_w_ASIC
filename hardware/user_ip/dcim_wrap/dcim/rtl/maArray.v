@@ -36,7 +36,7 @@ module maArray#(
 		)
 	);
 
-	counter_cfg#(.UBD_MAX(4)) u_counter_cfg(
+	dcim_counter_cfg#(.UBD_MAX(4)) u_counter_cfg(
 		.clk(clk), .rstn(rstn), .clr(clr), .ena(up_valid & up_ready),
 		.ubd(w_ubd),
 		.cnt(w_cnt),
@@ -134,7 +134,7 @@ module maSubcolumn#(
 	// Input Multiply
 	generate
 		for(ch=0; ch<CH_IN; ch=ch+1) begin:MultiplierChannels
-			multiplier#(.WD_IN(WD1))
+			dcim_multiplier#(.WD_IN(WD1))
 				u_multiplier(
 					.a(data1[ch*WD1+: WD1]),
 					.b(data2[ch*WD1+: WD1]),

@@ -26,11 +26,6 @@ module model_mem #(
 		end
 	end
 
-	initial begin
-		for(int d=0; d<DEPTH; d++) begin
-			mem[d] = '0;
-		end
-	end
 endmodule
 
 `endif

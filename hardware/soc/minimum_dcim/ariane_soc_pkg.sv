@@ -51,8 +51,8 @@ package ariane_soc;
 
   localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB
 
-  // Add DCIM Length
-  localparam logic[63:0] DCIMLength		= 64'h8000;		// 32K Byte
+  // MMIO window: ctrl + cfg + act/out/wei regions (adapt_decode uses axi_addr[19:17])
+  localparam logic[63:0] DCIMLength		= 64'hA0000;	// 640 KiB
 
   typedef enum logic [63:0] {
     DebugBase    = 64'h0000_0000,

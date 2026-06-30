@@ -19,7 +19,7 @@ export ROOT := $(abspath $(ROOT_DIR)/..)
 
 # ── Shared paths ──────────────────────────────────────────────────────────────
 FILELIST        := filelist_minimum_my_mxu_axu.f
-VERIL_FILELIST  := filelist_verilator.f
+VERIL_FILELIST  ?= filelist_verilator.f
 TB_DIR   := ../tb
 DPI_DIR  := $(TB_DIR)/dpi
 # DPI sources for simulation
@@ -46,7 +46,8 @@ VCS   := $(VCS_HOME)/bin/vcs
 VERDI := $(VERDI_HOME)/bin/verdi
 
 # GCC 11 for C++17 support (required for DPI compilation)
-GCC_HOME := /data/home/rh_xu30/Work/ara_soc_vpu/tools/gcc-install
+# Use project-root tools/ symlink -> llvm_toolchain/gcc-install
+GCC_HOME := $(ROOT)/tools/gcc-install
 CXX      := $(GCC_HOME)/bin/g++
 CC       := $(GCC_HOME)/bin/gcc
 
@@ -150,7 +151,7 @@ VERIL_WAVE_FLAGS := $(VERIL_RUN_FLAGS) +trace+waveform.fst
 
 verilate: $(VERIL_BIN)
 
-$(VERIL_BIN): $(FILELIST)
+$(VERIL_BIN): $(VERIL_FILELIST)
 	mkdir -p $(VERIL_BUILD)
 	cd $(ROOT_DIR) && $(VERILATOR) $(VERIL_FLAGS)
 	$(MAKE) -j 24 -C $(VERIL_BUILD) -f V$(VERIL_TOP).mk \

@@ -254,7 +254,7 @@ module accumulate_controller#(
 	wire [ACC_CNT_WD-1: 0] w_cnt;
 	wire w_cnt_done;
 
-	counter_cfg#(.UBD_MAX(ACC)) u_counter_cfg(
+	dcim_counter_cfg#(.UBD_MAX(ACC)) u_counter_cfg(
 		.clk(clk), .rstn(rstn), .clr(clr), .ena(up_valid&up_ready),
 		.ubd(acc),
 		.cnt(w_cnt),

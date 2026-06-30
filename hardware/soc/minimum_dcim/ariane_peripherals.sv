@@ -467,13 +467,47 @@ module ariane_peripherals #(
         .irq_o     ( irq_sources[1] )
     );
 
-	dcim_wrap #(
-		.AXI_DATA_WIDTH	( AxiDataWidth	),
-		.AXI_ADDR_WIDTH	( AxiAddrWidth	)
-	) i_dcim_wrap (
-		.clk_i     ( clk_i          ),
-        .rst       ( ~rst_ni        ),
-		.axi_bus   ( dcim			)
-	);
+    // ---------------
+    // 8. DCIM wrap @ DCIMBase
+    // ---------------
+    logic                     dcim_req;
+    logic                     dcim_we;
+    logic [AxiAddrWidth-1:0]  dcim_addr;
+    logic [AxiDataWidth/8-1:0] dcim_be;
+    logic [AxiDataWidth-1:0]  dcim_wdata;
+    logic [AxiDataWidth-1:0]  dcim_rdata;
+
+    axi2mem #(
+        .AXI_ID_WIDTH   ( AxiIdWidth   ),
+        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
+        .AXI_DATA_WIDTH ( AxiDataWidth ),
+        .AXI_USER_WIDTH ( AxiUserWidth )
+    ) i_axi2dcim (
+        .clk_i  ( clk_i         ),
+        .rst_ni ( rst_ni        ),
+        .slave  ( dcim          ),
+        .req_o  ( dcim_req      ),
+        .we_o   ( dcim_we       ),
+        .addr_o ( dcim_addr     ),
+        .be_o   ( dcim_be       ),
+        .user_o (               ),
+        .data_o ( dcim_wdata    ),
+        .user_i ( '0            ),
+        .data_i ( dcim_rdata    )
+    );
+
+    dcim_wrap #(
+        .AXI_DATA_WIDTH ( AxiDataWidth ),
+        .AXI_ADDR_WIDTH ( AxiAddrWidth )
+    ) i_dcim_wrap (
+        .clk      ( clk_i       ),
+        .rstn     ( rst_ni      ),
+        .axi_req  ( dcim_req    ),
+        .axi_we   ( dcim_we     ),
+        .axi_addr ( dcim_addr   ),
+        .axi_be   ( dcim_be     ),
+        .axi_wdata( dcim_wdata  ),
+        .axi_rdata( dcim_rdata  )
+    );
 
 endmodule

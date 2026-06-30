@@ -212,7 +212,7 @@ module mergeArrayController(
 		)
 	);
 
-	counter_cfg#(.UBD_MAX(4)) u_counter_cfg(
+	dcim_counter_cfg#(.UBD_MAX(4)) u_counter_cfg(
 		.clk(clk), .rstn(rstn), .clr(clr), .ena(up_valid&up_ready),
 		.ubd(w_ubd),
 		.cnt(w_cnt),

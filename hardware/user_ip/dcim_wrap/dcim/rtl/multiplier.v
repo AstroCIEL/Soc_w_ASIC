@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-module multiplier#(
+module dcim_multiplier#(
 	parameter WD_IN = 4,
 	parameter WD_OUT = 2*WD_IN
 )(

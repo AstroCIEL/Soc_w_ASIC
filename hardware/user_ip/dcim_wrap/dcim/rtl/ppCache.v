@@ -168,7 +168,7 @@ module ppCacheController#(
 		end
 	end
 
-	counter#(.UBD(CYCLE)) u_counter(
+	dcim_counter#(.UBD(CYCLE)) u_counter(
 		.clk(clk),
 		.rstn(rstn),
 		.clr(clr),

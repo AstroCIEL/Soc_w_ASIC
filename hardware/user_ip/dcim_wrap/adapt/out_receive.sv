@@ -24,7 +24,7 @@ module out_receive #(
 		int_req_out	= ena && dcim_valid_out && dcim_ready_out;
 	end
 
-	counter_cfg #(.UBD_MAX(OUT_DEPTH)) u_counter_cfg(
+	dcim_counter_cfg #(.UBD_MAX(OUT_DEPTH)) u_counter_cfg(
 		.clk(clk),
 		.rstn(rstn),
 		.clr(clr),

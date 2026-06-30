@@ -50,7 +50,7 @@ module dcim_core #(
 	logic [CH_IN*CH_OUT*WD1-1: 0] mid_data_wei;
 	logic w_ready_cal;
 
-	memory#(
+	dcim_memory#(
 		.DP(SRAM_DP),
 		.CH_IN(CH_IN), .CH_OUT(CH_OUT),
 		.WD1(WD1), .CYCLE(CYCLE),

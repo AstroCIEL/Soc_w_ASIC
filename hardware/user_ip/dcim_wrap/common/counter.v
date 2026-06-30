@@ -2,7 +2,7 @@
 `define COUNTER
 
 `timescale 1ns / 1ps
-module counter#(
+module dcim_counter#(
 	parameter UBD = 4,
 	parameter UBD_WD = $clog2(UBD+1),
 	parameter CNT_WD = $clog2(UBD)
@@ -43,7 +43,7 @@ module counter#(
 endmodule
 
 
-module counter_cfg#(
+module dcim_counter_cfg#(
 	parameter UBD_MAX = 4,
 	parameter UBD_WD = $clog2(UBD_MAX+1),
 	parameter CNT_WD = $clog2(UBD_MAX)

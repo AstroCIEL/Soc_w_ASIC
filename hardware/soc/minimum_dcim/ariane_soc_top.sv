@@ -549,6 +549,7 @@ module ariane_soc_top import axi_pkg::*; #(
     .timer          ( master[ariane_soc::Timer]    ),
     .ctrl           ( master[ariane_soc::Ctrl]     ),
     .default_slave  ( master[ariane_soc::DefaultSlave] ),
+    .dcim           ( master[ariane_soc::DCIM]     ),
     .irq_o          ( irqs                         ),
     .exit_o         ( ctrl_exit                    ),
     .event_trigger_o( ctrl_event_trigger           ),
