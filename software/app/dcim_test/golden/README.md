@@ -24,6 +24,7 @@ Current constraints for this generator:
 - `--wei-rows 8` (matches RTL load_wei CYCLE=8 behavior)
 - `--acc` in `[0, 4]`
 - `--act-rows` must be divisible by `C` where `C=1/2/4` for `TYPE=*_4/*_8/*_16`
+- `--act-row-order` controls multi-row ACT consumption order for golden compute (`normal`/`reverse`/`last_first`)
 
 ## End-to-end validation flow
 

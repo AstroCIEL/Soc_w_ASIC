@@ -20,6 +20,10 @@
 #define DCIM_POST_LOAD_CYCLES 32ULL
 #endif
 
+#ifndef DCIM_VERIFY_RW
+#define DCIM_VERIFY_RW 1
+#endif
+
 #if !defined(DCIM_GOLDEN_CFG_TOPO) || !defined(DCIM_GOLDEN_CFG_MODE) || \
     !defined(DCIM_GOLDEN_CFG_ACC) || !defined(DCIM_GOLDEN_CFG_ACT_LEN) || \
     !defined(DCIM_GOLDEN_CFG_OUT_LEN) || !defined(DCIM_GOLDEN_CFG_LOOP)
@@ -51,6 +55,37 @@ static int write_input_buffers(struct dcim_drv *d)
         d->write_act64(d, 0, i, DCIM_ACT_WORDS[i]);
     }
     DCIM_FENCE_OW;
+    return 0;
+}
+
+static int verify_input_buffers(struct dcim_drv *d)
+{
+    for (uint32_t i = 0; i < DCIM_WEI_WORD_COUNT; ++i) {
+        uint64_t got = d->read_wei64(d, 0, i);
+        uint64_t exp = DCIM_WEI_WORDS[i];
+        if (got != exp) {
+            printf("DCIM_IN_MISMATCH WEI idx=%u got=0x%08x%08x exp=0x%08x%08x\n",
+                   i,
+                   (unsigned int)(got >> 32),
+                   (unsigned int)(got & 0xFFFFFFFFu),
+                   (unsigned int)(exp >> 32),
+                   (unsigned int)(exp & 0xFFFFFFFFu));
+            return -1;
+        }
+    }
+    for (uint32_t i = 0; i < DCIM_ACT_WORD_COUNT; ++i) {
+        uint64_t got = d->read_act64(d, 0, i);
+        uint64_t exp = DCIM_ACT_WORDS[i];
+        if (got != exp) {
+            printf("DCIM_IN_MISMATCH ACT idx=%u got=0x%08x%08x exp=0x%08x%08x\n",
+                   i,
+                   (unsigned int)(got >> 32),
+                   (unsigned int)(got & 0xFFFFFFFFu),
+                   (unsigned int)(exp >> 32),
+                   (unsigned int)(exp & 0xFFFFFFFFu));
+            return -1;
+        }
+    }
     return 0;
 }
 
@@ -100,6 +135,13 @@ int main(void)
         printf("DCIM_FAIL\n");
         return 1;
     }
+#if DCIM_VERIFY_RW
+    rc = verify_input_buffers(&dcim0);
+    if (rc != 0) {
+        printf("DCIM_FAIL\n");
+        return 1;
+    }
+#endif
 
     dcim0.configure(&dcim0,
                     DCIM_TEST_TOPO,

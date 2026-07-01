@@ -211,6 +211,12 @@ def main() -> None:
     p.add_argument("--r", type=int, default=4)
     p.add_argument("--act-rows", type=int, default=16)
     p.add_argument("--wei-rows", type=int, default=8)
+    p.add_argument(
+        "--act-row-order",
+        choices=["normal", "reverse", "last_first"],
+        default="normal",
+        help="ACT row order used by golden compute path",
+    )
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--topo", type=int, default=3)
     args = p.parse_args()
@@ -309,6 +315,10 @@ def main() -> None:
     act_mat = transfer_act_lines(
         act_mem_lines, wd1=args.wd1, c=c, cols=args.ch_in, signed=signed
     )
+    if args.act_row_order == "reverse":
+        act_mat = list(reversed(act_mat))
+    elif args.act_row_order == "last_first" and len(act_mat) > 1:
+        act_mat = [act_mat[-1]] + act_mat[:-1]
     calculated = matmul(act_mat, weight_mat)
     calculated = accumulate_rows(calculated, args.acc)
 

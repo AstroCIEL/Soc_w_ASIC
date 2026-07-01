@@ -107,7 +107,7 @@ module adapt_ctrl #(
 		.clk(clk),
 		.rstn(rstn),
 		.clr(ctrl_clr),
-		.ena(ena && w_valid_cal && w_ready_cal),
+		.ena(ena && act_read_req && w_up_ready),
 		.ubd(cfg_act_length),
 		.cnt(w_cnt),
 		.cnt_done(w_cnt_done)
