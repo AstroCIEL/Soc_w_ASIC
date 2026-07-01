@@ -16,6 +16,10 @@
 #endif
 #endif
 
+#ifndef DCIM_POST_LOAD_CYCLES
+#define DCIM_POST_LOAD_CYCLES 32ULL
+#endif
+
 #if !defined(DCIM_GOLDEN_CFG_TOPO) || !defined(DCIM_GOLDEN_CFG_MODE) || \
     !defined(DCIM_GOLDEN_CFG_ACC) || !defined(DCIM_GOLDEN_CFG_ACT_LEN) || \
     !defined(DCIM_GOLDEN_CFG_OUT_LEN) || !defined(DCIM_GOLDEN_CFG_LOOP)
@@ -52,14 +56,21 @@ static int write_input_buffers(struct dcim_drv *d)
 
 static int compare_output_buffers(struct dcim_drv *d)
 {
+    uint32_t mismatch = 0;
     for (uint32_t i = 0; i < DCIM_OUT_WORD_COUNT; ++i) {
         uint64_t got = d->read_out64(d, 0, i);
         uint64_t exp = DCIM_OUT_GOLDEN_WORDS[i];
         if (got != exp) {
-            return -1;
+            ++mismatch;
+            printf("DCIM_MISMATCH idx=%u got=0x%08x%08x exp=0x%08x%08x\n",
+                   i,
+                   (unsigned int)(got >> 32),
+                   (unsigned int)(got & 0xFFFFFFFFu),
+                   (unsigned int)(exp >> 32),
+                   (unsigned int)(exp & 0xFFFFFFFFu));
         }
     }
-    return 0;
+    return (mismatch == 0) ? 0 : -1;
 }
 
 int main(void)
@@ -99,6 +110,8 @@ int main(void)
                     0u);
 
     dcim0.load_wei(&dcim0);
+    /* Match standalone TB sequencing: give load_wei time to move WEI SRAM -> cache. */
+    dcim0.wait_done(&dcim0, DCIM_POST_LOAD_CYCLES);
     dcim0.start(&dcim0);
     /* This stimulus does not wait for a done IRQ/status.
      * Use a fixed post-start delay before reading OUT buffer. */

@@ -217,8 +217,16 @@ def main() -> None:
 
     if args.ch_in != 64 or args.ch_out != 64 or args.wd1 != 4:
         raise ValueError("Current script supports ch_in=64, ch_out=64, wd1=4")
+    if args.r != 4:
+        raise ValueError("Current RTL path fixes R=4 for output width; please use --r 4")
     if args.wei_rows != 8:
-        raise ValueError("Current DCIM cache mapping expects wei_rows=8")
+        raise ValueError(
+            "Current RTL load_wei path always loads 8 WEI rows (CYCLE=8); please use --wei-rows 8"
+        )
+    if args.act_rows <= 0:
+        raise ValueError("--act-rows must be > 0")
+    if args.acc < 0 or args.acc > 4:
+        raise ValueError("--acc must be in [0, 4] for current ACC=4 hardware")
 
     mode_map = {
         "UINT4": 0,
@@ -283,6 +291,11 @@ def main() -> None:
         c = 4
     else:
         raise ValueError(f"Unsupported TYPE={args.type}")
+    if args.act_rows % c != 0:
+        raise ValueError(
+            f"--act-rows {args.act_rows} is incompatible with TYPE={args.type.upper()} "
+            f"(requires multiple of {c})"
+        )
 
     wd2 = 2 * args.wd1 + int(math.log2(args.ch_in))
     wd3 = wd2 + int(math.log2(args.r))
@@ -312,7 +325,10 @@ def main() -> None:
         elif len(bits) > 1024:
             raise ValueError(f"Output row bitwidth {len(bits)} exceeds 1024")
         out_mem_lines.append(" ".join(bits[i:i + 32] for i in range(0, 1024, 32)))
-        for i in range(16):
+        # MMIO read word0 returns int_rdata[63:0] (LSB chunk first).
+        # Emit out words in reverse 64-bit chunk order so CPU compare order
+        # matches dcim_out_word_offset(..., word_off) ascending reads.
+        for i in range(15, -1, -1):
             chunk = bits[i * 64:(i + 1) * 64]
             out_words.append(int(chunk, 2))
 
