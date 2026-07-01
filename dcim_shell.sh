@@ -5,10 +5,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FILELIST="${FILELIST:-filelist_minimum_dcim.f}"
 APP="${APP:-dcim_test}"
 TOPO="${DCIM_TEST_TOPO:-3}"
-IO_TRACE="${DCIM_CPU_IO_TRACE:-0}"
 
 echo "[dcim] build software app=${APP} DCIM_TEST_TOPO=${TOPO}"
-make -C "${ROOT}/software" "${APP}" DCIM_TEST_TOPO="${TOPO}" DCIM_CPU_IO_TRACE="${IO_TRACE}"
+make -C "${ROOT}/software" "${APP}" DCIM_TEST_TOPO="${TOPO}"
 
 echo "[dcim] build simv FILELIST=${FILELIST}"
 make -C "${ROOT}/sim" clean vcs FILELIST="${FILELIST}"

@@ -50,15 +50,6 @@ module adapt_ctrl #(
 	localparam	STATE_RUN	= 1'b1;
 	logic state, n_state;
 
-	function automatic logic channel_active(input logic [1:0] topo, input int idx);
-		case (topo)
-			TOPO1: channel_active = 1'b1;
-			TOPO2: channel_active = (idx < 2);
-			TOPO3: channel_active = (idx == 0);
-			default: channel_active = 1'b0;
-		endcase
-	endfunction
-
 	always_comb begin
 		ctrl_start		= (ext_addr[4: 3] == 2'b00) && ext_req && ext_we;
 		ctrl_clr		= (ext_addr[4: 3] == 2'b01) && ext_req && ext_we;
@@ -70,17 +61,15 @@ module adapt_ctrl #(
 
 		for (int i=0; i<4; i++) begin
 			int_we_act[i] = 1'b0;
-			int_req_act[i] = act_issue && channel_active(cfg_topo, i);
-			dcim_valid_cal[i] = w_valid_cal && channel_active(cfg_topo, i);
+			int_req_act[i] = act_issue;
+			dcim_valid_cal[i] = w_valid_cal;
 		end
 
 		act_read_req = int_req_act[0] | int_req_act[1] | int_req_act[2] | int_req_act[3];
 
 		w_ready_cal = 1'b1;
 		for (int i=0; i<4; i++) begin
-			if (channel_active(cfg_topo, i)) begin
-				w_ready_cal &= dcim_ready_cal[i];
-			end
+			w_ready_cal &= dcim_ready_cal[i];
 		end
 	end
 
