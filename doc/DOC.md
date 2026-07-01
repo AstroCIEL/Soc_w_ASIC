@@ -747,7 +747,22 @@ make -C software dcim_test
 cd sim && make clean && make vcs FILELIST=filelist_minimum_dcim.f
 make vcs-run FILELIST=filelist_minimum_dcim.f app=../software/build/bin/dcim_test
 # 或：./dcim_shell.sh
+# 启用 golden 流程：DCIM_RUN_GOLDEN=1 ./dcim_shell.sh
 ```
+
+**DCIM golden 流程（CPU IO -> mem -> checker）：**
+
+`dcim_test` 在 UART 中输出 `DCIM_IO` 事务，可在
+`software/app/dcim_test/golden/` 目录串成 golden 校验：
+
+```bash
+cd software/app/dcim_test/golden
+python3 extract_io.py ../../../../sim/uart0.log --out dcim_io_trace.csv
+python3 io_to_mem.py --csv dcim_io_trace.csv
+python3 check.py
+```
+
+一键方式（推荐）：在仓库根目录执行 `DCIM_RUN_GOLDEN=1 ./dcim_shell.sh`。
 
 建议：
 

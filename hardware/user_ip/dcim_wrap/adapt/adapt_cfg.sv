@@ -2,10 +2,12 @@ module adapt_cfg #(
 	parameter	EXT_DATA_WIDTH	= 64,
 	parameter	ACT_DEPTH		= 64,
 	parameter	OUT_DEPTH		= 64,
+	parameter	WEI_DEPTH		= 128,
 
 	localparam	EXT_ADDR_WIDTH	= 7,
 	localparam	ACT_LENG_WIDTH	= $clog2(ACT_DEPTH+1),
-	localparam	OUT_LENG_WIDTH	= $clog2(OUT_DEPTH+1)
+	localparam	OUT_LENG_WIDTH	= $clog2(OUT_DEPTH+1),
+	localparam	WEI_ADDR_WIDTH	= $clog2(WEI_DEPTH)
 )(
 	input	logic						clk,
 	input	logic						rstn,
@@ -17,6 +19,7 @@ module adapt_cfg #(
 	output	logic [EXT_DATA_WIDTH-1: 0]	ext_rdata,
 
 	input	logic						ctrl_start,
+	input	logic						ctrl_dcim_load,
 
 	output	logic						cfg_ena,
 	output	logic [1: 0]				cfg_topo,
@@ -28,6 +31,7 @@ module adapt_cfg #(
 	output	logic						cfg_act_sel,
 	output	logic						cfg_out_sel,
 	output	logic						cfg_wei_sel,
+	output  logic [WEI_ADDR_WIDTH-1: 0]	cfg_addr_load,
 
 	output	logic [2: 0]				cfg_ema,
 	output	logic [1: 0]				cfg_emaw,
@@ -53,6 +57,7 @@ module adapt_cfg #(
 			cfg_emas		<= 1'b0;
 			cfg_wablm		<= 2'b01;
 			cfg_rawlm		<= 2'b00;
+			cfg_addr_load	<= '0;
 		end else if (ext_req && ext_we) begin
 			case (ext_addr[6:3])
 				4'h0: 	cfg_ena			<= ext_wdata[0];
@@ -70,11 +75,14 @@ module adapt_cfg #(
 				4'hC:	cfg_emas		<= ext_wdata[0];
 				4'hD:	cfg_wablm		<= ext_wdata[1: 0];
 				4'hE:	cfg_rawlm		<= ext_wdata[1: 0];
+				4'hF:	cfg_addr_load	<= ext_wdata[WEI_ADDR_WIDTH-1: 0];
 				default: ; // 保持不变
 			endcase
 		end else if(ctrl_start) begin	// 收到启动脉冲后自动将buffer读写权限变为内部
 			cfg_act_sel <= 1'b0;
 			cfg_out_sel <= 1'b0;
+			cfg_wei_sel <= 1'b0;
+		end else if(ctrl_dcim_load) begin // 收到载入脉冲后自动将WEI读写权限变为内部
 			cfg_wei_sel <= 1'b0;
 		end
 	end
@@ -99,6 +107,7 @@ module adapt_cfg #(
 			4'hC:	ext_rdata_combo[0]					= cfg_emas;
 			4'hD:	ext_rdata_combo[1: 0]				= cfg_wablm;
 			4'hE:	ext_rdata_combo[1: 0]				= cfg_rawlm;
+			4'hF:   ext_rdata_combo[WEI_ADDR_WIDTH-1: 0]= cfg_addr_load;
 			default: ext_rdata_combo                  	= '0;
 		endcase
 	end

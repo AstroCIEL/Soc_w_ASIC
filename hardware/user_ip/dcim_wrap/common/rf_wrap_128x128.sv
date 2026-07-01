@@ -46,10 +46,17 @@ module rf_wrap_128x128 #(
 				end
 
 				if (ena && req) begin
-					for (int w = 0; w < W_RATIO; w++) begin
-						// 极简判断：因为总线保证 be 有效，只要该宏对应的 be 不全为 0 就拉高请求
-						if (|be[w * MACRO_WIDTH +: MACRO_WIDTH]) begin
+					if (~we) begin
+						/* Read path: do not gate request by be. */
+						for (int w = 0; w < W_RATIO; w++) begin
 							macro_req[w][addr[ADDR_WIDTH-1: MACRO_ADDRW]] = 1'b1;
+						end
+					end else begin
+						/* Write path: keep be-based macro select. */
+						for (int w = 0; w < W_RATIO; w++) begin
+							if (|be[w * MACRO_WIDTH +: MACRO_WIDTH]) begin
+								macro_req[w][addr[ADDR_WIDTH-1: MACRO_ADDRW]] = 1'b1;
+							end
 						end
 					end
 				end
@@ -61,9 +68,17 @@ module rf_wrap_128x128 #(
 				end
 
 				if (ena && req) begin
-					for (int w = 0; w < W_RATIO; w++) begin
-						if (|be[w * MACRO_WIDTH +: MACRO_WIDTH]) begin
+					if (~we) begin
+						/* Read path: do not gate request by be. */
+						for (int w = 0; w < W_RATIO; w++) begin
 							macro_req[w][0] = 1'b1;
+						end
+					end else begin
+						/* Write path: keep be-based macro select. */
+						for (int w = 0; w < W_RATIO; w++) begin
+							if (|be[w * MACRO_WIDTH +: MACRO_WIDTH]) begin
+								macro_req[w][0] = 1'b1;
+							end
 						end
 					end
 				end

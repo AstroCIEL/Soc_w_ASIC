@@ -31,7 +31,8 @@ module dcim_wrap #(
 	localparam	SRAM_WD				= CH_IN * CH_OUT * WD1 / CYCLE,
 	localparam	EXT_ADDR_WIDTH_WEI	= $clog2(SRAM_DP * SRAM_WD / AXI_DATA_WIDTH),
 	localparam	ADDR_WD				= $clog2(SRAM_DP),
-	localparam	ACC_UBD_WD			= $clog2(ACC + 1)
+	localparam	ACC_UBD_WD			= $clog2(ACC + 1),
+	localparam	AXI_WORD_SHIFT		= $clog2(AXI_DATA_WIDTH/8)
 )(
 	input	logic							clk,
 	input	logic							rstn,
@@ -72,6 +73,7 @@ module dcim_wrap #(
 	logic						cfg_emas;
 	logic [1: 0]				cfg_wablm;
 	logic [1: 0]				cfg_rawlm;
+	logic [WEI_ADDR_WIDTH-1: 0]	cfg_addr_load;
 
 	// Adapt Ctrl Signals
 	logic						ctrl_clr;
@@ -124,6 +126,7 @@ module dcim_wrap #(
 		.rstn           (rstn),
 
 		.axi_req        (axi_req),
+		.axi_we			(axi_we),
 		.axi_addr       (axi_addr),
 		.axi_rdata      (axi_rdata),
 
@@ -155,12 +158,14 @@ module dcim_wrap #(
 		.ext_rdata      (ext_rdata_cfg),
 
 		.ctrl_start     (ctrl_start),
+		.ctrl_dcim_load (ctrl_dcim_load),
 
 		.cfg_ena        (cfg_ena),
 		.cfg_topo       (cfg_topo),
 		.cfg_mode       (cfg_mode),
 		.cfg_acc        (cfg_acc),
 		.cfg_loop       (cfg_loop),
+		.cfg_addr_load  (cfg_addr_load),
 		.cfg_act_length (cfg_act_length),
 		.cfg_out_length (cfg_out_length),
 		.cfg_act_sel    (cfg_act_sel),
@@ -226,7 +231,9 @@ module dcim_wrap #(
 
 				.ext_req      (ext_req_act[i]),
 				.ext_we       (axi_we),
-				.ext_addr     (axi_addr[EXT_ACT_ADDR_WIDTH-1: 0]),
+				// AXI is byte addressed; mem_map EXT addr is AXI-word addressed.
+				// Strip byte offset bits and pass bank-local word address.
+				.ext_addr     (axi_addr[AXI_WORD_SHIFT+EXT_ACT_ADDR_WIDTH-1: AXI_WORD_SHIFT]),
 				.ext_wdata    (axi_wdata),
 				.ext_rdata    (ext_rdata_act[i]),
 				.ext_byte_ena (axi_be),
@@ -258,7 +265,7 @@ module dcim_wrap #(
 
 				.ext_req      (ext_req_out[i]),
 				.ext_we       (axi_we),
-				.ext_addr     (axi_addr[EXT_OUT_ADDR_WIDTH-1: 0]),
+				.ext_addr     (axi_addr[AXI_WORD_SHIFT+EXT_OUT_ADDR_WIDTH-1: AXI_WORD_SHIFT]),
 				.ext_wdata    (axi_wdata),
 				.ext_rdata    (ext_rdata_out[i]),
 				.ext_byte_ena (axi_be),
@@ -312,12 +319,12 @@ module dcim_wrap #(
 				.acc              (cfg_acc[ACC_UBD_WD-1: 0]),
 				.load_wei         (ctrl_dcim_load),
 				.swap_wei         (ctrl_dcim_swap),
-				.addr_load        ({{(ADDR_WD-ACT_ADDR_WIDTH){1'b0}}, int_addr_act}),
+				.addr_load        (cfg_addr_load),
 				.cfg_sel_wei      (cfg_wei_sel),
 
 				.ext_req_wei      (ext_req_wei[i]),
 				.ext_we_wei       (axi_we),
-				.ext_addr_wei     (axi_addr[EXT_ADDR_WIDTH_WEI-1: 0]),
+				.ext_addr_wei     (axi_addr[AXI_WORD_SHIFT+EXT_ADDR_WIDTH_WEI-1: AXI_WORD_SHIFT]),
 				.ext_byte_ena_wei (axi_be),
 				.ext_wdata_wei    (axi_wdata),
 				.ext_rdata_wei    (ext_rdata_wei[i]),

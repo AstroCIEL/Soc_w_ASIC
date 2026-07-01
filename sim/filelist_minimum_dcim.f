@@ -1,4 +1,5 @@
 +define+SIM
++define+ARM_UD_MODEL
 
 // Technology
 -f ${ROOT}/hardware/tech/filelist_sim.f

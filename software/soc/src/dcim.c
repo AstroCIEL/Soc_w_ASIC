@@ -11,10 +11,11 @@
 #if DCIM_CPU_IO_TRACE
 static inline void dcim_trace_mmio(const char *op, uintptr_t addr, uint64_t data)
 {
-    printf("DCIM_IO %s addr=0x%08lx data=0x%016llx\n",
+    printf("DCIM_IO %s addr=0x%08x data=0x%08x%08x\n",
            op,
-           (unsigned long)addr,
-           (unsigned long long)data);
+           (unsigned int)addr,
+           (unsigned int)(data >> 32),
+           (unsigned int)(data & 0xFFFFFFFFu));
 }
 #endif
 

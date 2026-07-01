@@ -5,6 +5,34 @@ same math/parsing idea as your reference script.
 
 It does **not** create an independent Verilator-only flow.
 
+## New standalone golden generator
+
+Generate `act.hex`, `wei.hex`, `out.hex` and `input_data.h` (for `dcim_test`) with:
+
+```bash
+python3 gen_dcim_golden_data.py --outdir ../../../../software/build/app/dcim_test/gen
+```
+
+`dcim_test` now includes generated `input_data.h` and performs on-chip compare:
+
+1. CPU writes `wei/act` to DCIM buffers.
+2. CPU kicks `load_wei` + `start`.
+3. CPU reads OUT buffer and compares against generated `out.hex` data.
+4. UART prints only `DCIM_PASS` or `DCIM_FAIL`.
+
+## One-command flow (legacy extraction/checker)
+
+From repository root:
+
+```bash
+DCIM_RUN_GOLDEN=1 ./dcim_shell.sh
+```
+
+This runs:
+1. `dcim_test` software build
+2. VCS compile/run on `filelist_minimum_dcim.f`
+3. `extract_io.py` -> `io_to_mem.py` -> `check.py`
+
 ## Inputs
 
 Place the following files in this directory before running:

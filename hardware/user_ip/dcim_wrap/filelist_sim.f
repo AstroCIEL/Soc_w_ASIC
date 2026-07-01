@@ -35,4 +35,5 @@ ${ROOT}/hardware/user_ip/dcim_wrap/dcim/rtl/postProcess.v
 ${ROOT}/hardware/user_ip/dcim_wrap/dcim/rtl/ppCache.v
 
 // RegisterFile Verilog model
-${ROOT}/hardware/user_ip/dcim_wrap/macro/verilog/rf128x128.v
+${ROOT}/hardware/user_ip/dcim_wrap/macro/rf128x128/verilog/rf128x128.v
+${ROOT}/hardware/user_ip/dcim_wrap/macro/rf64x128/verilog/rf64x128.v

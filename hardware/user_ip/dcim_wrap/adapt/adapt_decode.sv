@@ -6,6 +6,7 @@ module adapt_decode #(
 	input	logic						rstn,
 
 	input	logic						axi_req,
+	input	logic						axi_we,
 	input	logic [AXI_ADDR_WIDTH-1: 0]	axi_addr,
 	output	logic [AXI_DATA_WIDTH-1: 0]	axi_rdata,
 
@@ -46,61 +47,61 @@ module adapt_decode #(
 		ext_req_wei[3]	= (region_sel == 3'b100) && (axi_addr[16: 15] == 2'b11) && axi_req;
 	end
 
-	logic req_ctrl_q;
-	logic req_cfg_q;
-	logic req_act_q[4];
-	logic req_out_q[4];
-	logic req_wei_q[4];
+	logic req_ctrl_rd_q;
+	logic req_cfg_rd_q;
+	logic req_act_rd_q[4];
+	logic req_out_rd_q[4];
+	logic req_wei_rd_q[4];
 
 	always_ff @(posedge clk or negedge rstn) begin
 		if (~rstn) begin
-			req_cfg_q    <= 1'b0;
-			req_ctrl_q   <= 1'b0;
+			req_cfg_rd_q    <= 1'b0;
+			req_ctrl_rd_q   <= 1'b0;
 			for (int i=0; i<4; i++) begin
-				req_act_q[i] <= 1'b0;
-				req_out_q[i] <= 1'b0;
-				req_wei_q[i] <= 1'b0;
+				req_act_rd_q[i] <= 1'b0;
+				req_out_rd_q[i] <= 1'b0;
+				req_wei_rd_q[i] <= 1'b0;
 			end
 		end else begin
-			req_cfg_q    <= ext_req_cfg;
-			req_ctrl_q   <= ext_req_ctrl;
+			req_cfg_rd_q    <= ext_req_cfg && (~axi_we);
+			req_ctrl_rd_q   <= ext_req_ctrl && (~axi_we);
 			for (int i=0; i<4; i++) begin
-				req_act_q[i] <= ext_req_act[i];
-				req_out_q[i] <= ext_req_out[i];
-				req_wei_q[i] <= ext_req_wei[i];
+				req_act_rd_q[i] <= ext_req_act[i] && (~axi_we);
+				req_out_rd_q[i] <= ext_req_out[i] && (~axi_we);
+				req_wei_rd_q[i] <= ext_req_wei[i] && (~axi_we);
 			end
 		end
 	end
 
 	always_comb begin
 		axi_rdata = '0;
-		if (req_ctrl_q) begin
+		if (req_ctrl_rd_q) begin
 			axi_rdata = ext_rdata_ctrl;
-		end else if (req_cfg_q) begin
+		end else if (req_cfg_rd_q) begin
 			axi_rdata = ext_rdata_cfg;
-		end else if (req_wei_q[0]) begin
+		end else if (req_wei_rd_q[0]) begin
 			axi_rdata = ext_rdata_wei[0];
-		end else if (req_wei_q[1]) begin
+		end else if (req_wei_rd_q[1]) begin
 			axi_rdata = ext_rdata_wei[1];
-		end else if (req_wei_q[2]) begin
+		end else if (req_wei_rd_q[2]) begin
 			axi_rdata = ext_rdata_wei[2];
-		end else if (req_wei_q[3]) begin
+		end else if (req_wei_rd_q[3]) begin
 			axi_rdata = ext_rdata_wei[3];
-		end else if (req_act_q[0]) begin
+		end else if (req_act_rd_q[0]) begin
 			axi_rdata = ext_rdata_act[0];
-		end else if (req_act_q[1]) begin
+		end else if (req_act_rd_q[1]) begin
 			axi_rdata = ext_rdata_act[1];
-		end else if (req_act_q[2]) begin
+		end else if (req_act_rd_q[2]) begin
 			axi_rdata = ext_rdata_act[2];
-		end else if (req_act_q[3]) begin
+		end else if (req_act_rd_q[3]) begin
 			axi_rdata = ext_rdata_act[3];
-		end else if (req_out_q[0]) begin
+		end else if (req_out_rd_q[0]) begin
 			axi_rdata = ext_rdata_out[0];
-		end else if (req_out_q[1]) begin
+		end else if (req_out_rd_q[1]) begin
 			axi_rdata = ext_rdata_out[1];
-		end else if (req_out_q[2]) begin
+		end else if (req_out_rd_q[2]) begin
 			axi_rdata = ext_rdata_out[2];
-		end else if (req_out_q[3]) begin
+		end else if (req_out_rd_q[3]) begin
 			axi_rdata = ext_rdata_out[3];
 		end
 	end
