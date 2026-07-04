@@ -100,7 +100,6 @@ module dcim_wrap #(
 	logic [OUT_ADDR_WIDTH-1: 0]	int_addr_out[4];
 	logic [OUT_DATA_WIDTH-1: 0]	int_be_out[4];
 	logic [OUT_DATA_WIDTH-1: 0]	int_wdata_out[4];
-	logic [OUT_DATA_WIDTH-1: 0]	int_rdata_out[4];
 
 	// ACT Data Muxed.
 	logic [ACT_DATA_WIDTH-1: 0]	int_rdata_act_muxed[4];
@@ -218,8 +217,8 @@ module dcim_wrap #(
 
 	genvar i;
 	generate
-		for (i=0; i<4; i++) begin : GenArray
-			mem_wrap #(
+		for (i=0; i<4; i++) begin : GenActBufferArray
+			mem_wrap_rf64x128 #(
 				.EXT_DATA_WIDTH(AXI_DATA_WIDTH),
 				.INT_DATA_WIDTH(ACT_DATA_WIDTH),
 				.DEPTH        (ACT_DEPTH)
@@ -252,8 +251,26 @@ module dcim_wrap #(
 				.cfg_wablm    (cfg_wablm),
 				.cfg_rawlm    (cfg_rawlm)
 			);
+		end
+		
+		for (i=0; i<4; i++) begin : GenOutBufferArray
+			out_receive #(
+				.OUT_DATA_WIDTH(OUT_DATA_WIDTH),
+				.OUT_DEPTH     (OUT_DEPTH)
+			) u_out_receive (
+				.clk            (clk),
+				.rstn           (rstn),
+				.clr            (ctrl_clr),
+				.ena            (cfg_ena),
+				.cfg_out_length (cfg_out_length),
+				.dcim_valid_out (dcim_valid_out[i]),
+				.dcim_ready_out (dcim_ready_out[i]),
+				.int_req_out    (int_req_out[i]),
+				.int_we_out     (int_we_out[i]),
+				.int_addr_out   (int_addr_out[i])
+			);
 
-			mem_wrap #(
+			mem_wrap_rf64x128 #(
 				.EXT_DATA_WIDTH(AXI_DATA_WIDTH),
 				.INT_DATA_WIDTH(OUT_DATA_WIDTH),
 				.DEPTH        (OUT_DEPTH)
@@ -274,7 +291,7 @@ module dcim_wrap #(
 				.int_we       (int_we_out[i]),
 				.int_addr     (int_addr_out[i]),
 				.int_wdata    (int_wdata_out[i]),
-				.int_rdata    (int_rdata_out[i]),
+				.int_rdata    (),
 				.int_bit_ena  (int_be_out[i]),
 
 				.cfg_sel      (cfg_out_sel),
@@ -284,23 +301,9 @@ module dcim_wrap #(
 				.cfg_wablm    (cfg_wablm),
 				.cfg_rawlm    (cfg_rawlm)
 			);
+		end
 
-			out_receive #(
-				.OUT_DATA_WIDTH(OUT_DATA_WIDTH),
-				.OUT_DEPTH     (OUT_DEPTH)
-			) u_out_receive (
-				.clk            (clk),
-				.rstn           (rstn),
-				.clr            (ctrl_clr),
-				.ena            (cfg_ena),
-				.cfg_out_length (cfg_out_length),
-				.dcim_valid_out (dcim_valid_out[i]),
-				.dcim_ready_out (dcim_ready_out[i]),
-				.int_req_out    (int_req_out[i]),
-				.int_we_out     (int_we_out[i]),
-				.int_addr_out   (int_addr_out[i])
-			);
-
+		for (i=0; i<4; i++) begin : GenDCIMArray
 			dcim #(
 				.WD1           (WD1),
 				.CH_IN         (CH_IN),

@@ -1,4 +1,4 @@
-`ifdef SIM
+`ifdef MODEL_MEM
 
 module model_mem #(
 	parameter	DATA_WIDTH = 128,

@@ -12,4 +12,4 @@ ${ROOT}/hardware/soc/minimum_dcim/ariane_peripherals.sv
 ${ROOT}/hardware/soc/minimum_dcim/ariane_soc_top.sv
 
 // Add User IP
--f ${ROOT}/hardware/user_ip/dcim_wrap/filelist_sim.f
+-F ${ROOT}/hardware/user_ip/dcim_wrap/filelist/filelist_top.f

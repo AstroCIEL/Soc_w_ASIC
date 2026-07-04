@@ -44,7 +44,6 @@ module adapt_ctrl #(
 	logic						w_valid_cal;
 	logic						w_ready_cal;
 	logic						act_issue;
-	logic						act_read_req;
 
 	localparam	STATE_IDLE 	= 1'b0;
 	localparam	STATE_RUN	= 1'b1;
@@ -61,16 +60,33 @@ module adapt_ctrl #(
 
 		for (int i=0; i<4; i++) begin
 			int_we_act[i] = 1'b0;
-			int_req_act[i] = act_issue;
 			dcim_valid_cal[i] = w_valid_cal;
 		end
 
-		act_read_req = int_req_act[0] | int_req_act[1] | int_req_act[2] | int_req_act[3];
-
-		w_ready_cal = 1'b1;
-		for (int i=0; i<4; i++) begin
-			w_ready_cal &= dcim_ready_cal[i];
+		if (cfg_topo == TOPO1) begin
+			int_req_act[0] = act_issue;
+			int_req_act[1] = act_issue;
+			int_req_act[2] = act_issue;
+			int_req_act[3] = act_issue;
+		end else if (cfg_topo == TOPO2) begin
+			int_req_act[0] = act_issue;
+			int_req_act[1] = act_issue;
+			int_req_act[2] = 1'b0;
+			int_req_act[3] = 1'b0;
+		end else if (cfg_topo == TOPO3) begin
+			int_req_act[0] = act_issue;
+			int_req_act[1] = 1'b0;
+			int_req_act[2] = 1'b0;
+			int_req_act[3] = 1'b0;
+		end else begin
+			int_req_act[0] = 1'b0;
+			int_req_act[1] = 1'b0;
+			int_req_act[2] = 1'b0;
+			int_req_act[3] = 1'b0;
 		end
+
+		w_ready_cal = dcim_ready_cal[0] & dcim_ready_cal[1] & dcim_ready_cal[2] & dcim_ready_cal[3];
+
 	end
 
 	always_comb begin
@@ -107,7 +123,7 @@ module adapt_ctrl #(
 		.clk(clk),
 		.rstn(rstn),
 		.clr(ctrl_clr),
-		.ena(ena && act_read_req && w_up_ready),
+		.ena(ena && act_issue && w_up_ready),
 		.ubd(cfg_act_length),
 		.cnt(w_cnt),
 		.cnt_done(w_cnt_done)
@@ -118,7 +134,7 @@ module adapt_ctrl #(
 		.rstn(rstn),
 		.clr(ctrl_clr),
 		.ena(ena),
-		.up_valid(act_read_req),
+		.up_valid(act_issue),
 		.up_ready(w_up_ready),
 		.dn_valid(w_valid_cal),
 		.dn_ready(w_ready_cal)

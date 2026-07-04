@@ -44,7 +44,7 @@ module dcim_memory#(
 	wire fsm_req, fsm_we;
 	wire [ADDR_WD-1: 0] fsm_addr;
 
-	mem_wrap #(
+	mem_wrap_rf128x128 #(
 		.EXT_DATA_WIDTH(EXT_DATA_WIDTH),
 		.INT_DATA_WIDTH(WD),
 		.DEPTH(DP)

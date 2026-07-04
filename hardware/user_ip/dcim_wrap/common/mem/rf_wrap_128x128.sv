@@ -129,7 +129,7 @@ module rf_wrap_128x128 #(
 		for(w_idx=0; w_idx<W_RATIO; w_idx++) begin:GenWidth
 			for(d_idx=0; d_idx<D_RATIO; d_idx++) begin:GenDepth
 
-			`ifdef SIM
+			`ifdef MODEL_MEM
 
 				model_mem #(
 					.DEPTH(MACRO_DEPTH),
