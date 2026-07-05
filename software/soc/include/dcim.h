@@ -88,6 +88,8 @@
 
 #define DCIM_FENCE_OW  __asm__ volatile ("fence ow, ow" ::: "memory")
 #define DCIM_FENCE_RW  __asm__ volatile ("fence rw, rw" ::: "memory")
+/* Order prior MMIO stores before subsequent MMIO loads. */
+#define DCIM_FENCE_WO_RI __asm__ volatile ("fence ow, ir" ::: "memory")
 
 #define dcim_act_bank_base(bank) \
     ((uintptr_t)(DCIM_ACT_BASE + ((uint32_t)(bank) * DCIM_ACT_BANK_STRIDE)))

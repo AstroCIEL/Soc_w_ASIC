@@ -24,48 +24,47 @@ static int write_input_buffers(struct dcim_drv *d)
 {
     for (uint32_t bank = 0; bank < DCIM_MACRO_COUNT; ++bank) {
         for (uint32_t i = 0; i < DCIM_WEI_WORD_COUNT; ++i) {
-            d->write_wei64(d, bank, i, DCIM_WEI_WORDS[bank][i]);
+            uint64_t val = DCIM_WEI_WORDS[bank][i];
+            d->write_wei64(d, bank, i, val);
+#if DCIM_VERIFY_RW
+            DCIM_FENCE_WO_RI;
+            {
+                uint64_t got = d->read_wei64(d, bank, i);
+                if (got != val) {
+                    printf("DCIM_IN_MISMATCH WEI bank=%u idx=%u got=0x%08x%08x exp=0x%08x%08x\n",
+                           bank,
+                           i,
+                           (unsigned int)(got >> 32),
+                           (unsigned int)(got & 0xFFFFFFFFu),
+                           (unsigned int)(val >> 32),
+                           (unsigned int)(val & 0xFFFFFFFFu));
+                    return -1;
+                }
+            }
+#endif
         }
         for (uint32_t i = 0; i < DCIM_ACT_WORD_COUNT; ++i) {
-            d->write_act64(d, bank, i, DCIM_ACT_WORDS[bank][i]);
+            uint64_t val = DCIM_ACT_WORDS[bank][i];
+            d->write_act64(d, bank, i, val);
+#if DCIM_VERIFY_RW
+            DCIM_FENCE_WO_RI;
+            {
+                uint64_t got = d->read_act64(d, bank, i);
+                if (got != val) {
+                    printf("DCIM_IN_MISMATCH ACT bank=%u idx=%u got=0x%08x%08x exp=0x%08x%08x\n",
+                           bank,
+                           i,
+                           (unsigned int)(got >> 32),
+                           (unsigned int)(got & 0xFFFFFFFFu),
+                           (unsigned int)(val >> 32),
+                           (unsigned int)(val & 0xFFFFFFFFu));
+                    return -1;
+                }
+            }
+#endif
         }
     }
     DCIM_FENCE_OW;
-    return 0;
-}
-
-static int verify_input_buffers(struct dcim_drv *d)
-{
-    for (uint32_t bank = 0; bank < DCIM_MACRO_COUNT; ++bank) {
-        for (uint32_t i = 0; i < DCIM_WEI_WORD_COUNT; ++i) {
-            uint64_t got = d->read_wei64(d, bank, i);
-            uint64_t exp = DCIM_WEI_WORDS[bank][i];
-            if (got != exp) {
-                printf("DCIM_IN_MISMATCH WEI bank=%u idx=%u got=0x%08x%08x exp=0x%08x%08x\n",
-                       bank,
-                       i,
-                       (unsigned int)(got >> 32),
-                       (unsigned int)(got & 0xFFFFFFFFu),
-                       (unsigned int)(exp >> 32),
-                       (unsigned int)(exp & 0xFFFFFFFFu));
-                return -1;
-            }
-        }
-        for (uint32_t i = 0; i < DCIM_ACT_WORD_COUNT; ++i) {
-            uint64_t got = d->read_act64(d, bank, i);
-            uint64_t exp = DCIM_ACT_WORDS[bank][i];
-            if (got != exp) {
-                printf("DCIM_IN_MISMATCH ACT bank=%u idx=%u got=0x%08x%08x exp=0x%08x%08x\n",
-                       bank,
-                       i,
-                       (unsigned int)(got >> 32),
-                       (unsigned int)(got & 0xFFFFFFFFu),
-                       (unsigned int)(exp >> 32),
-                       (unsigned int)(exp & 0xFFFFFFFFu));
-                return -1;
-            }
-        }
-    }
     return 0;
 }
 
@@ -108,14 +107,6 @@ int main(void)
         printf("DCIM_FAIL\n");
         return 1;
     }
-
-#if DCIM_VERIFY_RW
-    rc = verify_input_buffers(&dcim0);
-    if (rc != 0) {
-        printf("DCIM_FAIL\n");
-        return 1;
-    }
-#endif
 
     dcim0.configure(&dcim0,
                     DCIM_TEST_TOPO,
