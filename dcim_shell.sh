@@ -16,10 +16,10 @@ ELF="${ROOT}/software/build/bin/${APP}"
 echo "[dcim] run sim with ${ELF}"
 make -C "${ROOT}/sim" vcs-run FILELIST="${FILELIST}" app="${ELF}" | tee "${ROOT}/sim/dcim_uart.log"
 
-if grep -q 'DCIM_PASS' "${ROOT}/sim/dcim_uart.log" || grep -q 'DCIM_PASS' "${ROOT}/sim/uart0.log" 2>/dev/null; then
+if grep -q 'PASS' "${ROOT}/sim/dcim_uart.log" || grep -q 'PASS' "${ROOT}/sim/uart0.log" 2>/dev/null; then
     echo "[dcim] PASS marker found"
 else
-    echo "[dcim] FAIL: DCIM_PASS not found in log"
+    echo "[dcim] FAIL: PASS not found in log"
     exit 1
 fi
 

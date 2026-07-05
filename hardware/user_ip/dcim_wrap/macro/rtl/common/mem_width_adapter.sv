@@ -52,16 +52,16 @@ module mem_width_adapter #(
 	end
 
 	always_comb begin
-		ext_rdata = int_rdata[off_addr_ff << EXT_SHIFT +: EXT_DATA_WIDTH];
+		ext_rdata = int_rdata[off_addr_ff*EXT_DATA_WIDTH +: EXT_DATA_WIDTH];
 
 		int_wdata   = '0;
 		int_bit_ena = '0;
 
 		if (ena && req) begin
-			int_wdata[off_addr << EXT_SHIFT +: EXT_DATA_WIDTH] = ext_wdata;
+			int_wdata[off_addr*EXT_DATA_WIDTH +: EXT_DATA_WIDTH] = ext_wdata;
 
 			for (int i = 0; i < EXT_DATA_WIDTH / 8; i++) begin
-				int_bit_ena[(off_addr << EXT_SHIFT) + i * 8 +: 8] = {8{ext_byte_ena[i]}};
+				int_bit_ena[(off_addr*EXT_DATA_WIDTH) + i * 8 +: 8] = {8{ext_byte_ena[i]}};
 			end
 		end
 	end
