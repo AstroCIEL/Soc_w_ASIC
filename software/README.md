@@ -43,8 +43,10 @@ software/
 #### 基本用法
 
 ```bash
-# 构建所有应用程序
+# 构建所有应用程序（默认是sim用途，时钟500MHz）
 make all
+# 构建所有应用程序（fpga用途，时钟40MHz）
+make all target=fpga
 
 # 构建特定应用
 make hello_world
@@ -93,19 +95,7 @@ nr_lanes ?= 2    # 向量处理器 lane 数量
 vlen     ?= 2048 # 向量寄存器位宽（VLEN）
 ```
 
-### 第三套网表：ASIC（片内 DMA）
-
-与 **maximum 的 iDMA** 无关；仅在仿真使用 `sim/filelist_minimum_asic_dma.f`（RTL：`hardware/soc/minimum_asic_dma/`）时有效：
-
-```bash
-make asic_dma_accel_test
-# 在 sim/ 下：make vcs FILELIST=filelist_minimum_asic_dma.f
-# make vcs-run FILELIST=filelist_minimum_asic_dma.f app=../software/build/bin/asic_dma_accel_test
-```
-
-寄存器与 API 见 `soc/include/asic_dma_accel.h`（基址与 `soc.h` 中 `ASIC_ACCEL_BASE` 一致）。
-
-### 第四套网表：VMMA
+### 第三套网表：VMMA
 
 与 `asic_dma_accel` **共用 MMIO 基址数值** `0x7000_0000`，但 **RTL / 仿真 filelist 不同**，不可混用：
 

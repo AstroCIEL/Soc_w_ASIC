@@ -18,7 +18,8 @@ ROOT_DIR := $(patsubst %/,%, $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 export ROOT := $(abspath $(ROOT_DIR)/..)
 
 # ── Shared paths ──────────────────────────────────────────────────────────────
-FILELIST        := filelist_minimum_my_mxu_axu.f
+FILELIST        ?= filelist_minimum_my_mxu_axu.f
+VCS_TOP         ?= ariane_soc_tb
 VERIL_FILELIST  := filelist_verilator.f
 TB_DIR   := ../tb
 DPI_DIR  := $(TB_DIR)/dpi
@@ -46,12 +47,12 @@ VCS   := $(VCS_HOME)/bin/vcs
 VERDI := $(VERDI_HOME)/bin/verdi
 
 # GCC 11 for C++17 support (required for DPI compilation)
-GCC_HOME := /data/home/rh_xu30/Work/ara_soc_vpu/tools/gcc-install
+GCC_HOME := /data/home/rh_xu30/Work/ara_soc/tools/gcc-install
 CXX      := $(GCC_HOME)/bin/g++
 CC       := $(GCC_HOME)/bin/gcc
 
 VCS_BUILD := $(ROOT_DIR)/build/vcs
-VCS_TOP   := ariane_soc_tb
+VCS_TOP   := $(VCS_TOP)
 VCS_BIN   := $(VCS_BUILD)/simv
 
 
@@ -105,7 +106,7 @@ verdi:
 	  -ssf waveform.fsdb
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Verilator                                                                ║
+# ║  Verilator (not verified)                                                 ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 VERILATOR  := verilator
 OBJCACHE   := $(shell which ccache 2>/dev/null)
