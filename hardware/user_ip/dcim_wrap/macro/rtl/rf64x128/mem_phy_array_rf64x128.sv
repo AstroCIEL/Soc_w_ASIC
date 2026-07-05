@@ -23,11 +23,13 @@ module mem_phy_array_rf64x128 #(
 	output logic [DATA_WIDTH-1:0]  rdata,
 	input  logic [ADDR_WIDTH-1:0]  addr,
 
-	input  logic [2:0]             cfg_ema,
-	input  logic [1:0]             cfg_emaw,
-	input  logic                   cfg_emas,
-	input  logic [1:0]             cfg_wablm,
-	input  logic [1:0]             cfg_rawlm
+	input  logic [2:0]             cfg_ema,		// Default: 3'b100
+	input  logic [1:0]             cfg_emaw,	// Default: 2'b01
+	input  logic                   cfg_emas,	// Default: 1'b0
+	input  logic                   cfg_wabl,	// Default: 1'b1
+	input  logic [1:0]             cfg_wablm,	// Default: 2'b01
+	input  logic                   cfg_rawl,	// Default: 1'b0
+	input  logic [1:0]             cfg_rawlm	// Default: 2'b00
 );
 
 	logic [MACRO_WIDTH-1:0] w_rdata [W_RATIO][D_RATIO];
@@ -133,8 +135,8 @@ module mem_phy_array_rf64x128 #(
 					.ema   (cfg_ema),
 					.emaw  (cfg_emaw),
 					.emas  (cfg_emas),
-					.rawl  (1'b0),
-					.wabl  (1'b1),
+					.rawl  (cfg_rawl),
+					.wabl  (cfg_wabl),
 					.rawlm (cfg_rawlm),
 					.wablm (cfg_wablm)
 				);

@@ -28,7 +28,7 @@ module adapt_cfg #(
 	output	logic 						cfg_loop,
 	output	logic [ACT_LENG_WIDTH-1: 0]	cfg_act_length,
 	output	logic [OUT_LENG_WIDTH-1: 0] cfg_out_length,
-	output	logic						cfg_act_sel,
+	output	logic						cfg_mem_sel,
 	output	logic						cfg_out_sel,
 	output	logic						cfg_wei_sel,
 	output  logic [WEI_ADDR_WIDTH-1: 0]	cfg_addr_load,
@@ -36,7 +36,9 @@ module adapt_cfg #(
 	output	logic [2: 0]				cfg_ema,
 	output	logic [1: 0]				cfg_emaw,
 	output	logic						cfg_emas,
+	output	logic						cfg_wabl,
 	output	logic [1: 0]				cfg_wablm,
+	output	logic						cfg_rawl,
 	output	logic [1: 0]				cfg_rawlm
 );
 
@@ -49,14 +51,14 @@ module adapt_cfg #(
 			cfg_loop		<= '0;
 			cfg_act_length	<= '0;
 			cfg_out_length	<= '0;
-			cfg_act_sel		<= '0;
-			cfg_out_sel		<= '0;
-			cfg_wei_sel		<= '0;
-			cfg_ema			<= 3'b100;
-			cfg_emaw		<= 2'b01;
-			cfg_emas		<= 1'b0;
-			cfg_wablm		<= 2'b01;
-			cfg_rawlm		<= 2'b00;
+			cfg_mem_sel		<= '0;
+			cfg_ema			<= 3'b111;	// 3'b111
+			cfg_emaw		<= 2'b11;	// 2'b11
+			cfg_emas		<= 1'b1;	// 1'b1
+			cfg_wabl		<= 1'b1;	// 1'b1
+			cfg_wablm		<= 2'b01;	// 2'b01
+			cfg_rawl		<= 1'b0;	// 1'b0
+			cfg_rawlm		<= 2'b00;	// 2'b00
 			cfg_addr_load	<= '0;
 		end else if (ext_req && ext_we) begin
 			case (ext_addr[6:3])
@@ -67,23 +69,19 @@ module adapt_cfg #(
 				4'h4: 	cfg_loop		<= ext_wdata[0];
 				4'h5: 	cfg_act_length	<= ext_wdata[ACT_LENG_WIDTH-1:0];
 				4'h6: 	cfg_out_length	<= ext_wdata[OUT_LENG_WIDTH-1:0];
-				4'h7: 	cfg_act_sel		<= ext_wdata[0];
-				4'h8: 	cfg_out_sel		<= ext_wdata[0];
-				4'h9: 	cfg_wei_sel		<= ext_wdata[0];
-				4'hA:	cfg_ema			<= ext_wdata[2: 0];
-				4'hB:	cfg_emaw		<= ext_wdata[1: 0];
-				4'hC:	cfg_emas		<= ext_wdata[0];
-				4'hD:	cfg_wablm		<= ext_wdata[1: 0];
+				4'h7: 	cfg_mem_sel		<= ext_wdata[0];
+				4'h8:	cfg_ema			<= ext_wdata[2: 0];
+				4'h9:	cfg_emaw		<= ext_wdata[1: 0];
+				4'hA:	cfg_emas		<= ext_wdata[0];
+				4'hB:	cfg_wabl		<= ext_wdata[0];
+				4'hC:	cfg_wablm		<= ext_wdata[1: 0];
+				4'hD:	cfg_rawl		<= ext_wdata[0];
 				4'hE:	cfg_rawlm		<= ext_wdata[1: 0];
 				4'hF:	cfg_addr_load	<= ext_wdata[WEI_ADDR_WIDTH-1: 0];
 				default: ; // 保持不变
 			endcase
-		end else if(ctrl_start) begin	// 收到启动脉冲后自动将buffer读写权限变为内部
-			cfg_act_sel <= 1'b0;
-			cfg_out_sel <= 1'b0;
-			cfg_wei_sel <= 1'b0;
-		end else if(ctrl_dcim_load) begin // 收到载入脉冲后自动将WEI读写权限变为内部
-			cfg_wei_sel <= 1'b0;
+		end else if(ctrl_start | ctrl_dcim_load) begin	// 收到启动/载入脉冲后自动将buffer读写权限变为内部
+			cfg_mem_sel <= 1'b0;
 		end
 	end
 
@@ -99,13 +97,13 @@ module adapt_cfg #(
 			4'h4: 	ext_rdata_combo[0]                  = cfg_loop;
 			4'h5: 	ext_rdata_combo[ACT_LENG_WIDTH-1: 0]= cfg_act_length;
 			4'h6: 	ext_rdata_combo[OUT_LENG_WIDTH-1: 0]= cfg_out_length;
-			4'h7: 	ext_rdata_combo[0]                  = cfg_act_sel;
-			4'h8: 	ext_rdata_combo[0]                  = cfg_out_sel;
-			4'h9: 	ext_rdata_combo[0]				  	= cfg_wei_sel;
-			4'hA:	ext_rdata_combo[2: 0]				= cfg_ema;
-			4'hB:	ext_rdata_combo[1: 0]				= cfg_emaw;
-			4'hC:	ext_rdata_combo[0]					= cfg_emas;
-			4'hD:	ext_rdata_combo[1: 0]				= cfg_wablm;
+			4'h7: 	ext_rdata_combo[0]                  = cfg_mem_sel;
+			4'h8:	ext_rdata_combo[2: 0]				= cfg_ema;
+			4'h9:	ext_rdata_combo[1: 0]				= cfg_emaw;
+			4'hA:	ext_rdata_combo[0]					= cfg_emas;
+			4'hB:	ext_rdata_combo[0]					= cfg_wabl;
+			4'hC:	ext_rdata_combo[1: 0]				= cfg_wablm;
+			4'hD:	ext_rdata_combo[0]					= cfg_rawl;
 			4'hE:	ext_rdata_combo[1: 0]				= cfg_rawlm;
 			4'hF:   ext_rdata_combo[WEI_ADDR_WIDTH-1: 0]= cfg_addr_load;
 			default: ext_rdata_combo                  	= '0;
@@ -124,5 +122,5 @@ module adapt_cfg #(
 			ext_rdata <= '0; // 没有读请求时总线清零，避免数据残留
 		end
 	end
-	
+
 endmodule

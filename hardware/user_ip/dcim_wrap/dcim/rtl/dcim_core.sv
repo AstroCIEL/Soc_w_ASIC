@@ -3,7 +3,7 @@ module dcim_core #(
     parameter 		CH_IN 	= 64,
     parameter 		CH_OUT 	= 64,
     parameter 		SRAM_DP = 128,
-    parameter 		CYCLE 	= 8, 
+    parameter 		CYCLE 	= 8,
 	parameter		EXT_DATA_WIDTH = 64,
     localparam 		SRAM_WD = CH_IN * CH_OUT * WD1 / CYCLE, // 128-bit
     localparam 		ADDR_WD = $clog2(SRAM_DP),
@@ -15,13 +15,13 @@ module dcim_core #(
     input 	logic 							rstn,
     input 	logic 							clr,
     input 	logic 							ena,
-	
+
 	input 	logic [2: 0] 					mode_cal,
 
 	input 	logic  							load_wei,
 	input 	logic  				  			swap_wei,
 	input 	logic [ADDR_WD-1: 0]			addr_load,
-	
+
 	input 	logic							ext_req_wei,
 	input 	logic							ext_we_wei,
 	input	logic [EXT_ADDR_WIDTH-1: 0]		ext_addr_wei,
@@ -30,16 +30,18 @@ module dcim_core #(
 	output	logic [EXT_DATA_WIDTH-1: 0]		ext_rdata_wei,
 	input	logic							cfg_sel_wei,
 
-	input 	logic [2: 0]					cfg_ema,	// default: 3'b100
-	input 	logic [1: 0]					cfg_emaw,	// default: 2'b01
-	input 	logic							cfg_emas,	// default: 1'b0
-	input 	logic [1: 0]					cfg_wablm,	// default: 2'b01
-	input 	logic [1: 0]					cfg_rawlm,	// default: 2'b00
+	input 	logic [2: 0]					cfg_ema,
+	input 	logic [1: 0]					cfg_emaw,
+	input 	logic							cfg_emas,
+	input	logic							cfg_wabl,
+	input 	logic [1: 0]					cfg_wablm,
+	input	logic							cfg_rawl,
+	input 	logic [1: 0]					cfg_rawlm,
 
 	input 	logic  							up_valid_cal,
 	output 	logic							up_ready_cal,
     input 	logic  [CH_IN*WD1-1: 0] 		up_data_cal,
-	
+
 	output 	logic							dn_valid,
 	input 	logic  							dn_ready,
     output	logic [CH_OUT*WD2-1: 0] 		dn_data
@@ -73,7 +75,9 @@ module dcim_core #(
 		.cfg_ema(cfg_ema),
 		.cfg_emaw(cfg_emaw),
 		.cfg_emas(cfg_emas),
+		.cfg_rawl(cfg_rawl),
 		.cfg_rawlm(cfg_rawlm),
+		.cfg_wabl(cfg_wabl),
 		.cfg_wablm(cfg_wablm)
 	);
 

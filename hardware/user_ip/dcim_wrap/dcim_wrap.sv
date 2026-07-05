@@ -65,13 +65,13 @@ module dcim_wrap #(
 	logic 						cfg_loop;
 	logic [ACT_LENG_WIDTH-1: 0]	cfg_act_length;
 	logic [OUT_LENG_WIDTH-1: 0]	cfg_out_length;
-	logic						cfg_act_sel;
-	logic						cfg_out_sel;
-	logic						cfg_wei_sel;
+	logic						cfg_mem_sel;
 	logic [2: 0]				cfg_ema;
 	logic [1: 0]				cfg_emaw;
 	logic						cfg_emas;
+	logic						cfg_wabl;
 	logic [1: 0]				cfg_wablm;
+	logic						cfg_rawl;
 	logic [1: 0]				cfg_rawlm;
 	logic [WEI_ADDR_WIDTH-1: 0]	cfg_addr_load;
 
@@ -113,7 +113,7 @@ module dcim_wrap #(
 			int_be_out[i]    = '1;
 
 			// Ready to receive result when out buffer is in internal mode
-			dcim_ready_out[i] = ~cfg_out_sel;
+			dcim_ready_out[i] = ~cfg_mem_sel;
 		end
 	end
 
@@ -167,13 +167,13 @@ module dcim_wrap #(
 		.cfg_addr_load  (cfg_addr_load),
 		.cfg_act_length (cfg_act_length),
 		.cfg_out_length (cfg_out_length),
-		.cfg_act_sel    (cfg_act_sel),
-		.cfg_out_sel    (cfg_out_sel),
-		.cfg_wei_sel    (cfg_wei_sel),
+		.cfg_mem_sel    (cfg_mem_sel),
 		.cfg_ema        (cfg_ema),
 		.cfg_emaw       (cfg_emaw),
 		.cfg_emas       (cfg_emas),
+		.cfg_wabl		(cfg_wabl),
 		.cfg_wablm      (cfg_wablm),
+		.cfg_rawl		(cfg_rawl),
 		.cfg_rawlm      (cfg_rawlm)
 	);
 
@@ -244,15 +244,17 @@ module dcim_wrap #(
 				.int_rdata    (int_rdata_act[i]),
 				.int_bit_ena  (int_be_act[i]),
 
-				.cfg_sel      (cfg_act_sel),
+				.cfg_sel      (cfg_mem_sel),
 				.cfg_ema      (cfg_ema),
 				.cfg_emaw     (cfg_emaw),
 				.cfg_emas     (cfg_emas),
+				.cfg_wabl     (cfg_wabl),
 				.cfg_wablm    (cfg_wablm),
+				.cfg_rawl     (cfg_rawl),
 				.cfg_rawlm    (cfg_rawlm)
 			);
 		end
-		
+
 		for (i=0; i<4; i++) begin : GenOutBufferArray
 			out_receive #(
 				.OUT_DATA_WIDTH(OUT_DATA_WIDTH),
@@ -294,11 +296,13 @@ module dcim_wrap #(
 				.int_rdata    (),
 				.int_bit_ena  (int_be_out[i]),
 
-				.cfg_sel      (cfg_out_sel),
+				.cfg_sel      (cfg_mem_sel),
 				.cfg_ema      (cfg_ema),
 				.cfg_emaw     (cfg_emaw),
 				.cfg_emas     (cfg_emas),
+				.cfg_wabl     (cfg_wabl),
 				.cfg_wablm    (cfg_wablm),
+				.cfg_rawl     (cfg_rawl),
 				.cfg_rawlm    (cfg_rawlm)
 			);
 		end
@@ -323,7 +327,7 @@ module dcim_wrap #(
 				.load_wei         (ctrl_dcim_load),
 				.swap_wei         (ctrl_dcim_swap),
 				.addr_load        (cfg_addr_load),
-				.cfg_sel_wei      (cfg_wei_sel),
+				.cfg_sel_wei      (cfg_mem_sel),
 
 				.ext_req_wei      (ext_req_wei[i]),
 				.ext_we_wei       (axi_we),
@@ -335,7 +339,9 @@ module dcim_wrap #(
 				.cfg_ema          (cfg_ema),
 				.cfg_emaw         (cfg_emaw),
 				.cfg_emas         (cfg_emas),
+				.cfg_wabl         (cfg_wabl),
 				.cfg_wablm        (cfg_wablm),
+				.cfg_rawl         (cfg_rawl),
 				.cfg_rawlm        (cfg_rawlm),
 
 				.up_valid_cal     (dcim_valid_cal[i]),

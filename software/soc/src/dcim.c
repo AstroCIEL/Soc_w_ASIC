@@ -38,7 +38,7 @@ static void dcim_op_init(struct dcim_drv *d,
 
     d->clear(d);
     d->write_cfg64(d, DCIM_CFG_SLOT_ENA, 1u);
-    d->set_buffer_owner(d, DCIM_BUF_CPU, DCIM_BUF_CPU, DCIM_BUF_CPU);
+    d->set_buffer_owner(d, DCIM_BUF_CPU);
 }
 
 static void dcim_op_write_cfg64(struct dcim_drv *d, uint32_t slot_off, uint64_t val)
@@ -72,12 +72,9 @@ static void dcim_op_configure(struct dcim_drv *d, uint32_t topo, uint32_t mode,
     d->write_cfg64(d, DCIM_CFG_SLOT_LOOP, loop ? 1u : 0u);
 }
 
-static void dcim_op_set_buffer_owner(struct dcim_drv *d, uint32_t act_cpu,
-                                     uint32_t out_cpu, uint32_t wei_cpu)
+static void dcim_op_set_buffer_owner(struct dcim_drv *d, uint32_t mem_cpu)
 {
-    d->write_cfg64(d, DCIM_CFG_SLOT_ACT_SEL, act_cpu ? 1u : 0u);
-    d->write_cfg64(d, DCIM_CFG_SLOT_OUT_SEL, out_cpu ? 1u : 0u);
-    d->write_cfg64(d, DCIM_CFG_SLOT_WEI_SEL, wei_cpu ? 1u : 0u);
+    d->write_cfg64(d, DCIM_CFG_SLOT_MEM_SEL, mem_cpu ? 1u : 0u);
 }
 
 static void dcim_op_write_act64(struct dcim_drv *d, unsigned bank,

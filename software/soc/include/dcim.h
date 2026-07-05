@@ -9,7 +9,7 @@
  * SoC window — match hardware/soc/minimum_dcim/ariane_soc_pkg.sv
  *
  * Single AXI slave; region select = axi_addr[19:17] (absolute address).
- * cfg_sel / act_sel / out_sel / wei_sel: 1 = CPU, 0 = accelerator (internal).
+ * cfg_mem_sel: 1 = CPU, 0 = accelerator (internal); shared by act/out/wei buffers.
  *
  * Current RTL has no irq_o and no MMIO STATUS; completion uses software delay
  * (see dcim_wait_done) until an interrupt path is added.
@@ -51,14 +51,15 @@
 #define DCIM_CFG_SLOT_LOOP        0x20u
 #define DCIM_CFG_SLOT_ACT_LEN     0x28u
 #define DCIM_CFG_SLOT_OUT_LEN     0x30u
-#define DCIM_CFG_SLOT_ACT_SEL     0x38u
-#define DCIM_CFG_SLOT_OUT_SEL     0x40u
-#define DCIM_CFG_SLOT_WEI_SEL     0x48u
-#define DCIM_CFG_SLOT_EMA         0x50u
-#define DCIM_CFG_SLOT_EMAW        0x58u
-#define DCIM_CFG_SLOT_EMAS        0x60u
-#define DCIM_CFG_SLOT_WABLM       0x68u
+#define DCIM_CFG_SLOT_MEM_SEL     0x38u
+#define DCIM_CFG_SLOT_EMA         0x40u
+#define DCIM_CFG_SLOT_EMAW        0x48u
+#define DCIM_CFG_SLOT_EMAS        0x50u
+#define DCIM_CFG_SLOT_WABL        0x58u
+#define DCIM_CFG_SLOT_WABLM       0x60u
+#define DCIM_CFG_SLOT_RAWL        0x68u
 #define DCIM_CFG_SLOT_RAWLM       0x70u
+#define DCIM_CFG_SLOT_ADDR_LOAD   0x78u
 
 /* ctrl commands: ext_addr[4:3] << 3 from DCIM_CTRL_BASE */
 #define DCIM_CTRL_START_OFF       0x00u
@@ -117,14 +118,15 @@ struct dcim_cfg_regs {
     volatile uint64_t loop;
     volatile uint64_t act_length;
     volatile uint64_t out_length;
-    volatile uint64_t act_sel;
-    volatile uint64_t out_sel;
-    volatile uint64_t wei_sel;
+    volatile uint64_t mem_sel;
     volatile uint64_t ema;
     volatile uint64_t emaw;
     volatile uint64_t emas;
+    volatile uint64_t wabl;
     volatile uint64_t wablm;
+    volatile uint64_t rawl;
     volatile uint64_t rawlm;
+    volatile uint64_t addr_load;
 };
 
 #define DCIM_CFG_REGS ((struct dcim_cfg_regs *)(uintptr_t)(DCIM_CFG_BASE))
@@ -145,8 +147,7 @@ struct dcim_drv {
     void (*configure)(struct dcim_drv *d, uint32_t topo, uint32_t mode,
                       uint32_t acc, uint32_t act_len, uint32_t out_len,
                       uint32_t loop);
-    void (*set_buffer_owner)(struct dcim_drv *d, uint32_t act_cpu,
-                             uint32_t out_cpu, uint32_t wei_cpu);
+    void (*set_buffer_owner)(struct dcim_drv *d, uint32_t mem_cpu);
     void (*write_act64)(struct dcim_drv *d, unsigned bank, uint32_t word_off,
                         uint64_t val);
     uint64_t (*read_act64)(struct dcim_drv *d, unsigned bank, uint32_t word_off);

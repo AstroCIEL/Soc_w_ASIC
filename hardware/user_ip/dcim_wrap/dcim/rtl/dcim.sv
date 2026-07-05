@@ -10,7 +10,7 @@ module dcim #(
     parameter 	CYCLE 			= 8,
     parameter 	ACC 			= 4,
 	parameter	EXT_DATA_WIDTH 	= 64,
-    
+
     localparam 	SRAM_WD 		= CH_IN * CH_OUT * WD1 / CYCLE, // 128-bit
     localparam 	ADDR_WD 		= $clog2(SRAM_DP),
 	localparam	EXT_ADDR_WIDTH 	= $clog2(SRAM_DP * SRAM_WD / EXT_DATA_WIDTH),
@@ -23,7 +23,7 @@ module dcim #(
     input 	logic							rstn,
     input 	logic							clr,
     input 	logic							ena,
-    
+
 	input  	logic [2: 0] 					mode_cal,
 	input  	logic [ACC_UBD_WD-1: 0] 		acc,
 	input  	logic							load_wei,
@@ -37,18 +37,20 @@ module dcim #(
     input 	logic [EXT_DATA_WIDTH/8-1: 0] 	ext_byte_ena_wei,
     input  	logic [EXT_DATA_WIDTH-1: 0] 	ext_wdata_wei,
 	output	logic [EXT_DATA_WIDTH-1: 0] 	ext_rdata_wei,
-	
+
 	// voltage: 0.8v
-	input	logic [2: 0]					cfg_ema,	// default: 3'b100
-	input	logic [1: 0]					cfg_emaw,	// default: 2'b01
-	input	logic							cfg_emas,	// default: 1'b0
-	input	logic [1: 0]					cfg_wablm,	// default: 2'b01
-	input	logic [1: 0]					cfg_rawlm,	// default: 2'b00
+	input	logic [2: 0]					cfg_ema,
+	input	logic [1: 0]					cfg_emaw,
+	input	logic							cfg_emas,
+	input	logic							cfg_wabl,
+	input	logic [1: 0]					cfg_wablm,
+	input	logic							cfg_rawl,
+	input	logic [1: 0]					cfg_rawlm,
 
 	input  	logic							up_valid_cal,
 	output 	logic							up_ready_cal,
-    input 	logic [CH_IN*WD1-1: 0] 			up_data_cal, 
-    
+    input 	logic [CH_IN*WD1-1: 0] 			up_data_cal,
+
 	output 	logic							dn_valid,
 	input  	logic							dn_ready,
     output 	logic [CH_OUT*WD3-1: 0] 		dn_data
@@ -85,13 +87,13 @@ module dcim #(
 		.EXT_DATA_WIDTH(EXT_DATA_WIDTH)
 	) u_dcim_core (
 		.clk(clk),	.rstn(rstn),	.clr(clr),	.ena(ena),	.mode_cal(mode_cal),
-	
+
 		.load_wei(load_wei),	.swap_wei(swap_wei),
 		.addr_load(addr_load),
 
 		.ext_req_wei(ext_req_wei),
-		.ext_we_wei(ext_we_wei),	
-		.ext_addr_wei(ext_addr_wei),	
+		.ext_we_wei(ext_we_wei),
+		.ext_addr_wei(ext_addr_wei),
 		.ext_byte_ena_wei(ext_byte_ena_wei),
 		.ext_wdata_wei(ext_wdata_wei),
 		.ext_rdata_wei(ext_rdata_wei),
@@ -104,11 +106,13 @@ module dcim #(
 		.dn_valid(mid_valid_cal),
 		.dn_ready(mid_ready_cal),
 		.dn_data(mid_data_cal),
-		
+
 		.cfg_ema(cfg_ema),
 		.cfg_emaw(cfg_emaw),
 		.cfg_emas(cfg_emas),
+		.cfg_rawl(cfg_rawl),
 		.cfg_rawlm(cfg_rawlm),
+		.cfg_wabl(cfg_wabl),
 		.cfg_wablm(cfg_wablm)
 
 	);

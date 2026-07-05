@@ -32,12 +32,13 @@ module dcim_memory#(
 	output [CH_IN*CH_OUT*WD1-1: 0]	dn_data,
 
 	// voltage: 0.8v
-	input  [2: 0]					cfg_ema,	// default: 3'b100
-	input  [1: 0]					cfg_emaw,	// default: 2'b01
-	input							cfg_emas,	// default: 1'b0
-	input  [1: 0]					cfg_wablm,	// default: 2'b01
-	input  [1: 0]					cfg_rawlm	// default: 2'b00
-
+	input  [2: 0]					cfg_ema,
+	input  [1: 0]					cfg_emaw,
+	input							cfg_emas,
+	input							cfg_wabl,
+	input  [1: 0]					cfg_wablm,
+	input							cfg_rawl,
+	input  [1: 0]					cfg_rawlm
 );
 	wire mid_valid, mid_ready;
 	wire [WD-1: 0] mid_data;
@@ -48,13 +49,13 @@ module dcim_memory#(
 		.EXT_DATA_WIDTH(EXT_DATA_WIDTH),
 		.INT_DATA_WIDTH(WD),
 		.DEPTH(DP)
-	) u_mem_wrap (
+	) u_mem_wrap_rf128x128 (
 		.clk(clk),
 		.rstn(rstn),
 		.clr(clr),
 		.ena(ena),
 		.cfg_sel(cfg_sel),
-		
+
 		.ext_req(ext_req),
 		.ext_we(ext_we),
 		.ext_addr(ext_addr),
@@ -68,11 +69,13 @@ module dcim_memory#(
 		.int_bit_ena('1),
 		.int_wdata('0),
 		.int_rdata(mid_data),
-		
+
 		.cfg_ema(cfg_ema),
 		.cfg_emaw(cfg_emaw),
 		.cfg_emas(cfg_emas),
+		.cfg_rawl(cfg_rawl),
 		.cfg_rawlm(cfg_rawlm),
+		.cfg_wabl(cfg_wabl),
 		.cfg_wablm(cfg_wablm)
 	);
 
@@ -80,7 +83,7 @@ module dcim_memory#(
 		.ADDR_WD(ADDR_WD), .CYCLE(CYCLE)
 	) u_load_fsm(
 		.clk(clk), .rstn(rstn), .clr(clr), .ena(ena),
-		.load(load),		
+		.load(load),
 		.req(fsm_req),
 		.we(fsm_we),
 		.base_addr(addr_load),

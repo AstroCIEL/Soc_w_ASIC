@@ -36,7 +36,7 @@ static int check_macro_rw(struct dcim_drv *d)
     const uint64_t out2 = 0x2222333344445555ULL;
     const uint64_t out3 = 0x3333444455556666ULL;
 
-    d->set_buffer_owner(d, DCIM_BUF_CPU, DCIM_BUF_CPU, DCIM_BUF_CPU);
+    d->set_buffer_owner(d, DCIM_BUF_CPU);
 
     d->write_act64(d, 0, 0, act0);
     d->write_act64(d, 1, 1, act1);
@@ -69,21 +69,17 @@ static int check_macro_rw(struct dcim_drv *d)
 
 static int check_ctrl_rw(struct dcim_drv *d)
 {
-    d->set_buffer_owner(d, DCIM_BUF_CPU, DCIM_BUF_CPU, DCIM_BUF_CPU);
+    d->set_buffer_owner(d, DCIM_BUF_CPU);
     d->load_wei(d);
     d->swap_wei(d);
     d->start(d);
 
-    /* START pulse should hand ownership to internal side. */
-    if (d->read_cfg64(d, DCIM_CFG_SLOT_ACT_SEL) != 0u) return -1;
-    if (d->read_cfg64(d, DCIM_CFG_SLOT_OUT_SEL) != 0u) return -1;
-    if (d->read_cfg64(d, DCIM_CFG_SLOT_WEI_SEL) != 0u) return -1;
+    /* START/LOAD pulse should hand ownership to internal side. */
+    if (d->read_cfg64(d, DCIM_CFG_SLOT_MEM_SEL) != 0u) return -1;
 
     d->clear(d);
-    d->set_buffer_owner(d, DCIM_BUF_CPU, DCIM_BUF_CPU, DCIM_BUF_CPU);
-    if (d->read_cfg64(d, DCIM_CFG_SLOT_ACT_SEL) != 1u) return -1;
-    if (d->read_cfg64(d, DCIM_CFG_SLOT_OUT_SEL) != 1u) return -1;
-    if (d->read_cfg64(d, DCIM_CFG_SLOT_WEI_SEL) != 1u) return -1;
+    d->set_buffer_owner(d, DCIM_BUF_CPU);
+    if (d->read_cfg64(d, DCIM_CFG_SLOT_MEM_SEL) != 1u) return -1;
     return 0;
 }
 

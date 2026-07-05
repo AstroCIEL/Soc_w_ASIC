@@ -130,7 +130,7 @@ int main(void)
                (volatile uint8_t *)(uintptr_t)DCIM_OUT_BASE,
                (volatile uint8_t *)(uintptr_t)DCIM_WEI_BASE);
 
-    dcim0.set_buffer_owner(&dcim0, DCIM_BUF_CPU, DCIM_BUF_CPU, DCIM_BUF_CPU);
+    dcim0.set_buffer_owner(&dcim0, DCIM_BUF_CPU);
     rc = write_input_buffers(&dcim0);
     if (rc != 0) {
         printf("DCIM_FAIL\n");
@@ -153,7 +153,7 @@ int main(void)
      * Use a fixed post-start delay before reading OUT buffer. */
     dcim0.wait_done(&dcim0, DCIM_POST_START_CYCLES);
 
-    dcim0.set_buffer_owner(&dcim0, DCIM_BUF_CPU, DCIM_BUF_CPU, DCIM_BUF_CPU);
+    dcim0.set_buffer_owner(&dcim0, DCIM_BUF_CPU);
     DCIM_FENCE_RW;
 
     rc = compare_output_buffers(&dcim0);

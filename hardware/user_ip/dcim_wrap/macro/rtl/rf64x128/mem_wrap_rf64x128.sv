@@ -38,11 +38,13 @@ module mem_wrap_rf64x128 #(
 
 	input  logic                       cfg_sel,
 
-	input  logic [2:0]                 cfg_ema,
-	input  logic [1:0]                 cfg_emaw,
-	input  logic                       cfg_emas,
-	input  logic [1:0]                 cfg_wablm,
-	input  logic [1:0]                 cfg_rawlm
+	input  logic [2:0]                 cfg_ema,		// Default: 3'b100
+	input  logic [1:0]                 cfg_emaw,	// Default: 2'b01
+	input  logic                       cfg_emas,	// Default: 1'b0
+	input  logic                       cfg_wabl,	// Default: 1'b1
+	input  logic [1:0]                 cfg_wablm,	// Default: 2'b01
+	input  logic                       cfg_rawl,	// Default: 1'b0
+	input  logic [1:0]                 cfg_rawlm	// Default: 2'b00
 );
 
 	logic [INT_ADDR_WIDTH-1:0]  ext_row_addr;
@@ -96,21 +98,23 @@ module mem_wrap_rf64x128 #(
 		.DATA_WIDTH(INT_DATA_WIDTH),
 		.DATA_DEPTH(DEPTH)
 	) u_rf_wrap (
-		.clk      (clk),
-		.rstn     (rstn),
-		.clr      (clr),
-		.ena      (ena),
-		.req      (req),
-		.we       (we),
-		.addr     (addr),
-		.wdata    (wdata),
-		.be       (be),
+		.clk       (clk),
+		.rstn      (rstn),
+		.clr       (clr),
+		.ena       (ena),
+		.req       (req),
+		.we        (we),
+		.addr      (addr),
+		.wdata     (wdata),
+		.be        (be),
 		.macro_ena (macro_ena),
-		.rdata    (rdata),
-		.cfg_ema  (cfg_ema),
-		.cfg_emaw (cfg_emaw),
-		.cfg_emas (cfg_emas),
+		.rdata     (rdata),
+		.cfg_ema   (cfg_ema),
+		.cfg_emaw  (cfg_emaw),
+		.cfg_emas  (cfg_emas),
+		.cfg_rawl  (cfg_rawl),
 		.cfg_rawlm (cfg_rawlm),
+		.cfg_wabl  (cfg_wabl),
 		.cfg_wablm (cfg_wablm)
 	);
 
