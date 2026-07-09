@@ -4,7 +4,7 @@
 #  OS:                Linux x86_64(Host ID EDA01.R760)
 #  Generated on:      Sun Jun  7 13:52:24 2026
 #  Design:            DCO
-#  Command:           saveNetlist -excludeCellInst {TAPCELLBWP7T40P140 FILL2BWP7T40P140HVT FILL3BWP7T40P140HVT DCAP4BWP7T40P140HVT DCAP8BWP7T40P140HVT DCAP16BWP7T40P140HVT DCAP32BWP7T40P140HVT DCAP64BWP7T40P140HVT BOUNDARY_LEFTBWP7T40P140 BOUNDARY_RIGHTBWP7T40P140 PCORNER PFILLER20 PFILLER10 PFILLER5 PFILLER1 PFILLER05 PFILLER0005} -excludeLeafCell -topModuleFirst ../DCO/DCO_hier_postpnr.v
+#  Command:           saveNetlist -excludeCellInst {TAPCELLBWP7T30P140 FILL2BWP7T30P140HVT FILL3BWP7T30P140HVT DCAP4BWP7T30P140HVT DCAP8BWP7T30P140HVT DCAP16BWP7T30P140HVT DCAP32BWP7T30P140HVT DCAP64BWP7T30P140HVT BOUNDARY_LEFTBWP7T30P140 BOUNDARY_RIGHTBWP7T30P140 PCORNER PFILLER20 PFILLER10 PFILLER5 PFILLER1 PFILLER05 PFILLER0005} -excludeLeafCell -topModuleFirst ../DCO/DCO_hier_postpnr.v
 ###############################################################
 */
 module DCO (
@@ -125,7 +125,7 @@ module VARIABLE_CAP_20 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -138,9 +138,9 @@ module BUF_31 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -163,9 +163,9 @@ module BUF_34 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -178,9 +178,9 @@ module BUF_35 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -193,9 +193,9 @@ module BUF_36 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -208,9 +208,9 @@ module BUF_37 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -223,9 +223,9 @@ module BUF_38 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -238,9 +238,9 @@ module BUF_39 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -253,9 +253,9 @@ module BUF_40 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -268,9 +268,9 @@ module BUF_41 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -284,7 +284,7 @@ module MUX_0 (
    input A;
    input B;
 
-   MUX2D4BWP7T40P140HVT mux2 (.I0(A),
+   MUX2D4BWP7T30P140HVT mux2 (.I0(A),
 	.I1(B),
 	.S(SEL),
 	.Z(Y));
@@ -300,7 +300,7 @@ module MUX_1 (
    input A;
    input B;
 
-   MUX2D4BWP7T40P140HVT mux2 (.I0(A),
+   MUX2D4BWP7T30P140HVT mux2 (.I0(A),
 	.I1(B),
 	.S(SEL),
 	.Z(Y));
@@ -316,7 +316,7 @@ module MUX_2 (
    input A;
    input B;
 
-   MUX2D4BWP7T40P140HVT mux2 (.I0(A),
+   MUX2D4BWP7T30P140HVT mux2 (.I0(A),
 	.I1(B),
 	.S(SEL),
 	.Z(Y));
@@ -332,7 +332,7 @@ module MUX_3 (
    input A;
    input B;
 
-   MUX2D4BWP7T40P140HVT mux2 (.I0(A),
+   MUX2D4BWP7T30P140HVT mux2 (.I0(A),
 	.I1(B),
 	.S(SEL),
 	.Z(Y));
@@ -348,7 +348,7 @@ module MUX_4 (
    input A;
    input B;
 
-   MUX2D4BWP7T40P140HVT mux2 (.I0(A),
+   MUX2D4BWP7T30P140HVT mux2 (.I0(A),
 	.I1(B),
 	.S(SEL),
 	.Z(Y));
@@ -364,7 +364,7 @@ module MUX_5 (
    input A;
    input B;
 
-   MUX2D4BWP7T40P140HVT mux2 (.I0(A),
+   MUX2D4BWP7T30P140HVT mux2 (.I0(A),
 	.I1(B),
 	.S(SEL),
 	.Z(Y));
@@ -376,7 +376,7 @@ module VARIABLE_CAP_0 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -386,7 +386,7 @@ module VARIABLE_CAP_1 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -396,7 +396,7 @@ module VARIABLE_CAP_2 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -406,7 +406,7 @@ module VARIABLE_CAP_3 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -416,7 +416,7 @@ module VARIABLE_CAP_4 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -426,7 +426,7 @@ module VARIABLE_CAP_5 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -436,7 +436,7 @@ module VARIABLE_CAP_6 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -446,7 +446,7 @@ module VARIABLE_CAP_7 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -456,7 +456,7 @@ module VARIABLE_CAP_8 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -466,7 +466,7 @@ module VARIABLE_CAP_9 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -476,7 +476,7 @@ module VARIABLE_CAP_10 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -486,7 +486,7 @@ module VARIABLE_CAP_11 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -496,7 +496,7 @@ module VARIABLE_CAP_12 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -506,7 +506,7 @@ module VARIABLE_CAP_13 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -516,7 +516,7 @@ module VARIABLE_CAP_14 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -526,7 +526,7 @@ module VARIABLE_CAP_15 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -536,7 +536,7 @@ module VARIABLE_CAP_16 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -546,7 +546,7 @@ module VARIABLE_CAP_17 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -556,7 +556,7 @@ module VARIABLE_CAP_18 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -566,7 +566,7 @@ module VARIABLE_CAP_19 (
    input EN;
    input A;
 
-   ND2D4BWP7T40P140HVT nand2_cell (.A1(A),
+   ND2D4BWP7T30P140HVT nand2_cell (.A1(A),
 	.A2(EN));
 endmodule
 
@@ -579,9 +579,9 @@ module BUF_0 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -604,9 +604,9 @@ module BUF_1 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -629,9 +629,9 @@ module BUF_2 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -654,9 +654,9 @@ module BUF_3 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -679,9 +679,9 @@ module BUF_4 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -704,9 +704,9 @@ module BUF_5 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -729,9 +729,9 @@ module BUF_6 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -754,9 +754,9 @@ module BUF_7 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -779,9 +779,9 @@ module BUF_8 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -804,9 +804,9 @@ module BUF_9 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -829,9 +829,9 @@ module BUF_10 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -854,9 +854,9 @@ module BUF_11 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -879,9 +879,9 @@ module BUF_12 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -904,9 +904,9 @@ module BUF_13 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -929,9 +929,9 @@ module BUF_14 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -954,9 +954,9 @@ module BUF_15 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -979,9 +979,9 @@ module BUF_16 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1004,9 +1004,9 @@ module BUF_17 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1029,9 +1029,9 @@ module BUF_18 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1054,9 +1054,9 @@ module BUF_19 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1079,9 +1079,9 @@ module BUF_20 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1104,9 +1104,9 @@ module BUF_21 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1129,9 +1129,9 @@ module BUF_22 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1154,9 +1154,9 @@ module BUF_23 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1179,9 +1179,9 @@ module BUF_24 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1204,9 +1204,9 @@ module BUF_25 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1229,9 +1229,9 @@ module BUF_26 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1254,9 +1254,9 @@ module BUF_27 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1279,9 +1279,9 @@ module BUF_28 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1304,9 +1304,9 @@ module BUF_29 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1329,9 +1329,9 @@ module BUF_30 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1406,7 +1406,7 @@ module DCO_RING (
 	.A(A[5]));
    VARIABLE_CAP_0 XVARIABLE_CAP5_6 (.EN(FC_SEL[5]),
 	.A(A[5]));
-   ND2D2BWP7T40P140HVT nanden (.A1(A[6]),
+   ND2D2BWP7T30P140HVT nanden (.A1(A[6]),
 	.A2(EN),
 	.ZN(A_tmp[0]));
    BUF_41 buf_a0 (.Y(A[0]),
@@ -1525,7 +1525,7 @@ module MUX_6 (
    input A;
    input B;
 
-   MUX2D4BWP7T40P140HVT mux2 (.I0(A),
+   MUX2D4BWP7T30P140HVT mux2 (.I0(A),
 	.I1(B),
 	.S(SEL),
 	.Z(Y));
@@ -1540,9 +1540,9 @@ module BUF_33 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1568,38 +1568,38 @@ module MX_CLK_DIVIDER_1 (
    wire n_0;
    wire n_4;
 
-   BUFFD0BWP7T40P140HVT FE_OFC1_n_5 (.I(n_5),
+   BUFFD0BWP7T30P140HVT FE_OFC1_n_5 (.I(n_5),
 	.Z(FE_OFN1_n_5));
    BUF_33 bufmx (.Y(CLK_OUT),
 	.A(clk_div_sel));
-   DFCNQD1BWP7T40P140HVT div4_q_reg (.CDN(FRSTN),
+   DFCNQD1BWP7T30P140HVT div4_q_reg (.CDN(FRSTN),
 	.CP(CLK_IN),
 	.D(n_3),
 	.Q(div4_q));
-   XOR2D2BWP7T40P140HVT g32 (.A1(div2_q),
+   XOR2D2BWP7T30P140HVT g32 (.A1(div2_q),
 	.A2(div4_q),
 	.Z(n_3));
-   DFCNQD1BWP7T40P140HVT div2_q_reg (.CDN(FRSTN),
+   DFCNQD1BWP7T30P140HVT div2_q_reg (.CDN(FRSTN),
 	.CP(CLK_IN),
 	.D(n_2),
 	.Q(div2_q));
-   INVD0BWP7T40P140HVT g34 (.I(div2_q),
+   INVD0BWP7T30P140HVT g34 (.I(div2_q),
 	.ZN(n_2));
-   OAI221D0BWP7T40P140HVT g55 (.A1(div4_q),
+   OAI221D0BWP7T30P140HVT g55 (.A1(div4_q),
 	.A2(n_1),
 	.B1(SEL[1]),
 	.B2(div2_q),
 	.C(SEL[0]),
 	.ZN(n_5));
-   INVD0BWP7T40P140HVT g56 (.I(SEL[1]),
+   INVD0BWP7T30P140HVT g56 (.I(SEL[1]),
 	.ZN(n_1));
-   CKND2D8BWP7T40P140HVT g49 (.A1(n_0),
+   CKND2D8BWP7T30P140HVT g49 (.A1(n_0),
 	.A2(FE_OFN1_n_5),
 	.ZN(clk_div_sel));
-   ND2D16BWP7T40P140HVT g50 (.A1(CLK_IN),
+   ND2D16BWP7T30P140HVT g50 (.A1(CLK_IN),
 	.A2(n_4),
 	.ZN(n_0));
-   CKND1BWP7T40P140HVT g51 (.I(SEL[0]),
+   CKND1BWP7T30P140HVT g51 (.I(SEL[0]),
 	.ZN(n_4));
 endmodule
 
@@ -1612,15 +1612,15 @@ module CLK_BUF_CHAIN_1 (
    // Internal wires
    wire [3:0] int1;
 
-   BUFFD1BWP7T40P140HVT buf1 (.I(A),
+   BUFFD1BWP7T30P140HVT buf1 (.I(A),
 	.Z(int1[0]));
-   BUFFD4BWP7T40P140HVT buf2 (.I(int1[0]),
+   BUFFD4BWP7T30P140HVT buf2 (.I(int1[0]),
 	.Z(int1[1]));
-   BUFFD8BWP7T40P140HVT buf3 (.I(int1[1]),
+   BUFFD8BWP7T30P140HVT buf3 (.I(int1[1]),
 	.Z(int1[2]));
-   BUFFD12BWP7T40P140HVT buf4 (.I(int1[2]),
+   BUFFD12BWP7T30P140HVT buf4 (.I(int1[2]),
 	.Z(int1[3]));
-   BUFFD20BWP7T40P140HVT buf5 (.I(int1[3]),
+   BUFFD20BWP7T30P140HVT buf5 (.I(int1[3]),
 	.Z(Y));
 endmodule
 
@@ -1660,9 +1660,9 @@ module BUF_45 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1810,9 +1810,9 @@ module BUF_32 (
    // Internal wires
    wire tmp;
 
-   INVD1BWP7T40P140HVT buf1 (.I(A),
+   INVD1BWP7T30P140HVT buf1 (.I(A),
 	.ZN(tmp));
-   INVD2BWP7T40P140HVT buf2 (.I(tmp),
+   INVD2BWP7T30P140HVT buf2 (.I(tmp),
 	.ZN(Y));
 endmodule
 
@@ -1838,38 +1838,38 @@ module MX_CLK_DIVIDER_0 (
    wire n_0;
    wire n_4;
 
-   BUFFD0BWP7T40P140HVT FE_OFC0_n_5 (.I(n_5),
+   BUFFD0BWP7T30P140HVT FE_OFC0_n_5 (.I(n_5),
 	.Z(FE_OFN0_n_5));
    BUF_32 bufmx (.Y(CLK_OUT),
 	.A(clk_div_sel));
-   DFCNQD1BWP7T40P140HVT div4_q_reg (.CDN(FRSTN),
+   DFCNQD1BWP7T30P140HVT div4_q_reg (.CDN(FRSTN),
 	.CP(CLK_IN),
 	.D(n_3),
 	.Q(div4_q));
-   XOR2D2BWP7T40P140HVT g32 (.A1(div2_q),
+   XOR2D2BWP7T30P140HVT g32 (.A1(div2_q),
 	.A2(div4_q),
 	.Z(n_3));
-   DFCNQD1BWP7T40P140HVT div2_q_reg (.CDN(FRSTN),
+   DFCNQD1BWP7T30P140HVT div2_q_reg (.CDN(FRSTN),
 	.CP(CLK_IN),
 	.D(n_2),
 	.Q(div2_q));
-   INVD0BWP7T40P140HVT g34 (.I(div2_q),
+   INVD0BWP7T30P140HVT g34 (.I(div2_q),
 	.ZN(n_2));
-   OAI221D0BWP7T40P140HVT g55 (.A1(div4_q),
+   OAI221D0BWP7T30P140HVT g55 (.A1(div4_q),
 	.A2(n_1),
 	.B1(SEL[1]),
 	.B2(div2_q),
 	.C(SEL[0]),
 	.ZN(n_5));
-   INVD0BWP7T40P140HVT g56 (.I(SEL[1]),
+   INVD0BWP7T30P140HVT g56 (.I(SEL[1]),
 	.ZN(n_1));
-   CKND2D8BWP7T40P140HVT g49 (.A1(n_0),
+   CKND2D8BWP7T30P140HVT g49 (.A1(n_0),
 	.A2(FE_OFN0_n_5),
 	.ZN(clk_div_sel));
-   ND2D16BWP7T40P140HVT g50 (.A1(CLK_IN),
+   ND2D16BWP7T30P140HVT g50 (.A1(CLK_IN),
 	.A2(n_4),
 	.ZN(n_0));
-   CKND1BWP7T40P140HVT g51 (.I(SEL[0]),
+   CKND1BWP7T30P140HVT g51 (.I(SEL[0]),
 	.ZN(n_4));
 endmodule
 
@@ -1882,15 +1882,15 @@ module CLK_BUF_CHAIN_0 (
    // Internal wires
    wire [3:0] int1;
 
-   BUFFD1BWP7T40P140HVT buf1 (.I(A),
+   BUFFD1BWP7T30P140HVT buf1 (.I(A),
 	.Z(int1[0]));
-   BUFFD4BWP7T40P140HVT buf2 (.I(int1[0]),
+   BUFFD4BWP7T30P140HVT buf2 (.I(int1[0]),
 	.Z(int1[1]));
-   BUFFD8BWP7T40P140HVT buf3 (.I(int1[1]),
+   BUFFD8BWP7T30P140HVT buf3 (.I(int1[1]),
 	.Z(int1[2]));
-   BUFFD12BWP7T40P140HVT buf4 (.I(int1[2]),
+   BUFFD12BWP7T30P140HVT buf4 (.I(int1[2]),
 	.Z(int1[3]));
-   BUFFD20BWP7T40P140HVT buf5 (.I(int1[3]),
+   BUFFD20BWP7T30P140HVT buf5 (.I(int1[3]),
 	.Z(Y));
 endmodule
 

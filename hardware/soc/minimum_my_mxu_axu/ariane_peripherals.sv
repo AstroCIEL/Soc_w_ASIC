@@ -599,7 +599,8 @@ module ariane_peripherals #(
         .axi_cfg_req_t   ( dma_cfg_axi_req_t  ),
         .axi_cfg_rsp_t   ( dma_cfg_axi_resp_t ),
         .axi_mst_req_t   ( dma_mst_axi_req_t  ),
-        .axi_mst_rsp_t   ( dma_mst_axi_resp_t )
+        .axi_mst_rsp_t   ( dma_mst_axi_resp_t ),
+        .NSpeculation    ( 0                  )
     ) i_dma (
         .clk_i,
         .rst_ni,
