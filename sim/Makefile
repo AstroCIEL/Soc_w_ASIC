@@ -52,7 +52,7 @@ CXX      := $(GCC_HOME)/bin/g++
 CC       := $(GCC_HOME)/bin/gcc
 
 VCS_BUILD := $(ROOT_DIR)/build/vcs
-VCS_TOP   := ariane_soc_tb
+VCS_TOP   := $(VCS_TOP)
 VCS_BIN   := $(VCS_BUILD)/simv
 
 
@@ -106,7 +106,7 @@ verdi:
 	  -ssf waveform.fsdb
 
 # ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Verilator                                                                ║
+# ║  Verilator (not verified)                                                 ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 VERILATOR  := verilator
 OBJCACHE   := $(shell which ccache 2>/dev/null)

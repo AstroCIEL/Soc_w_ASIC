@@ -18,7 +18,6 @@ module ariane_peripherals #(
     parameter int           AxiAddrWidth  = -1,
     parameter int           AxiDataWidth  = -1,
     parameter int           AxiIdWidth    = -1,      // id width on peripheral (xbar-master) ports
-    parameter int           AxiMstIdWidth = -1,      // id width on xbar-slave (upstream master) ports
     parameter int           AxiUserWidth  = 1,
     parameter logic [63:0]  DRAMBase      = 64'h8000_0000,
     parameter logic [63:0]  DRAMLength    = 64'h4000_0000
@@ -29,22 +28,7 @@ module ariane_peripherals #(
     AXI_BUS.Slave      uart            ,
     AXI_BUS.Slave      timer           ,
     AXI_BUS.Slave      ctrl            , // Ctrl registers @ 0xD000_0000
-    // AXI_BUS.Slave      default_slave   , // Default slave (mem + IRQ doorbell)
-
-    AXI_BUS.Slave      mxu_cfg         ,
-    AXI_BUS.Slave      mxu_wgt         ,
-    AXI_BUS.Slave      mxu_act         ,
-    AXI_BUS.Slave      mxu_out         ,
-
-    AXI_BUS.Slave      axu_cfg         ,
-    AXI_BUS.Slave      axu_opa         ,
-    AXI_BUS.Slave      axu_opb         ,
-    AXI_BUS.Slave      axu_out         ,
-
-    AXI_BUS.Slave      dma_cfg         , // DMA config slave @ DMABase
-    AXI_BUS.Master     dma_mst         , // DMA data master back into xbar
-    AXI_BUS.Slave      global_buf      , // global_buffer @ GlobalBufferBase
-
+    AXI_BUS.Slave      default_slave   , // Default slave (mem + IRQ doorbell)
     output logic [1:0] irq_o           ,
     // ctrl_registers outputs
     output logic [AxiDataWidth-1:0] exit_o         ,
@@ -61,7 +45,7 @@ module ariane_peripherals #(
     logic [ariane_soc::NumSources-1:0] irq_sources;
 
     // Unused interrupt sources
-    assign irq_sources[ariane_soc::NumSources-1:8] = '0;
+    assign irq_sources[ariane_soc::NumSources-1:7] = '0;
 
     REG_BUS #(
         .ADDR_WIDTH ( 32 ),
@@ -446,169 +430,40 @@ module ariane_peripherals #(
     // ---------------
     // 7. Default Slave (simple mem + IRQ doorbell) @ DefaultSlaveBase
     // ---------------
-    // logic                     dslv_req;
-    // logic                     dslv_we;
-    // logic [AxiAddrWidth-1:0]  dslv_addr;
-    // logic [AxiDataWidth-1:0]  dslv_wdata;
-    // logic [AxiDataWidth-1:0]  dslv_rdata;
-
-    // axi2mem #(
-    //     .AXI_ID_WIDTH   ( AxiIdWidth   ),
-    //     .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-    //     .AXI_DATA_WIDTH ( AxiDataWidth ),
-    //     .AXI_USER_WIDTH ( AxiUserWidth )
-    // ) i_axi2dslv (
-    //     .clk_i  ( clk_i         ),
-    //     .rst_ni ( rst_ni        ),
-    //     .slave  ( default_slave ),
-    //     .req_o  ( dslv_req      ),
-    //     .we_o   ( dslv_we       ),
-    //     .addr_o ( dslv_addr     ),
-    //     .be_o   (               ),
-    //     .user_o (               ),
-    //     .data_o ( dslv_wdata    ),
-    //     .user_i ( '0            ),
-    //     .data_i ( dslv_rdata    )
-    // );
-
-    // default_slave i_default_slave (
-    //     .clk_i     ( clk_i          ),
-    //     .rst       ( ~rst_ni        ),
-    //     .axi_req   ( dslv_req       ),
-    //     .axi_we    ( dslv_we        ),
-    //     .axi_addr  ( dslv_addr      ),
-    //     .axi_wdata ( dslv_wdata     ),
-    //     .axi_rdata ( dslv_rdata     ),
-    //     .irq_o     ( irq_sources[1] )
-    // );
-
-    // ---------------
-    // 8. MXU Accelerator
-    // ---------------
-    // 我们已经打包了4个axi2mem模块在wrapper里面
-    mxu_top_wrapper #(
-        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-        .AXI_DATA_WIDTH ( AxiDataWidth )
-    ) i_mxu_top_wrapper (
-        .clk_i  ( clk_i          ),
-        .rst_ni ( rst_ni         ),
-        .cfg    ( mxu_cfg        ),
-        .wgtbuf ( mxu_wgt        ),
-        .actbuf ( mxu_act        ),
-        .outbuf ( mxu_out        ),
-        .irq_o  ( irq_sources[2] )
-    );
-
-    
-    // ---------------
-    // 9. AXU Accelerator
-    // ---------------
-    // 我们已经打包了4个axi2mem模块在wrapper里面
-    axu_top_wrapper #(
-        .AXI_ADDR_WIDTH ( AxiAddrWidth ),
-        .AXI_DATA_WIDTH ( AxiDataWidth )
-    ) i_axu_top_wrapper (
-        .clk_i    ( clk_i          ),
-        .rst_ni   ( rst_ni         ),
-        .cfg      ( axu_cfg        ),
-        .op_a_buf ( axu_opa        ),
-        .op_b_buf ( axu_opb        ),
-        .out_buf  ( axu_out        ),
-        .irq_o    ( irq_sources[1] )
-    );
-
-    // ---------------
-    // 10. Global Buffer
-    // ---------------
-    logic                          gbuf_req;
-    logic                          gbuf_we;
-    logic [AxiAddrWidth-1:0]       gbuf_addr;
-    logic [AxiDataWidth/8-1:0]     gbuf_be;
-    logic [AxiDataWidth-1:0]       gbuf_wdata;
-    logic [AxiDataWidth-1:0]       gbuf_rdata;
+    logic                     dslv_req;
+    logic                     dslv_we;
+    logic [AxiAddrWidth-1:0]  dslv_addr;
+    logic [AxiDataWidth-1:0]  dslv_wdata;
+    logic [AxiDataWidth-1:0]  dslv_rdata;
 
     axi2mem #(
-        .AXI_ID_WIDTH   ( $bits(global_buf.aw_id) ),
-        .AXI_ADDR_WIDTH ( AxiAddrWidth            ),
-        .AXI_DATA_WIDTH ( AxiDataWidth            ),
-        .AXI_USER_WIDTH ( AxiUserWidth            )
-    ) i_axi2gbuf (
-        .clk_i  ( clk_i      ),
-        .rst_ni ( rst_ni     ),
-        .slave  ( global_buf ),
-        .req_o  ( gbuf_req   ),
-        .we_o   ( gbuf_we    ),
-        .addr_o ( gbuf_addr  ),
-        .be_o   ( gbuf_be    ),
-        .user_o (            ),
-        .data_o ( gbuf_wdata ),
-        .user_i ( '0         ),
-        .data_i ( gbuf_rdata )
-    );
-
-    global_buffer #(
+        .AXI_ID_WIDTH   ( AxiIdWidth   ),
         .AXI_ADDR_WIDTH ( AxiAddrWidth ),
         .AXI_DATA_WIDTH ( AxiDataWidth ),
-        .NUM_BANKS      ( 1            )
-    ) i_global_buffer (
-        .clk_i          ( clk_i      ),
-        .rstn_i         ( rst_ni     ),
-        .axi_req_i      ( gbuf_req   ),
-        .axi_write_en_i ( gbuf_we    ),
-        .axi_addr_i     ( gbuf_addr  ),
-        .axi_byte_en_i  ( gbuf_be    ),
-        .axi_wdata_i    ( gbuf_wdata ),
-        .axi_rdata_o    ( gbuf_rdata )
+        .AXI_USER_WIDTH ( AxiUserWidth )
+    ) i_axi2dslv (
+        .clk_i  ( clk_i         ),
+        .rst_ni ( rst_ni        ),
+        .slave  ( default_slave ),
+        .req_o  ( dslv_req      ),
+        .we_o   ( dslv_we       ),
+        .addr_o ( dslv_addr     ),
+        .be_o   (               ),
+        .user_o (               ),
+        .data_o ( dslv_wdata    ),
+        .user_i ( '0            ),
+        .data_i ( dslv_rdata    )
     );
 
-    // ---------------
-    // 11. DMA (iDMA desc64 frontend + rw_axi backend)
-    // ---------------
-    typedef logic [AxiAddrWidth-1:0]   dma_cfg_addr_t;
-    typedef logic [AxiDataWidth-1:0]   dma_cfg_data_t;
-    typedef logic [AxiDataWidth/8-1:0] dma_cfg_strb_t;
-    typedef logic [AxiIdWidth-1:0]     dma_cfg_id_t;
-    typedef logic [AxiUserWidth-1:0]   dma_cfg_user_t;
-    `AXI_TYPEDEF_ALL(dma_cfg_axi, dma_cfg_addr_t, dma_cfg_id_t,
-                                  dma_cfg_data_t, dma_cfg_strb_t, dma_cfg_user_t)
-
-    typedef logic [AxiMstIdWidth-1:0]  dma_mst_id_t;
-    `AXI_TYPEDEF_ALL(dma_mst_axi, dma_cfg_addr_t, dma_mst_id_t,
-                                  dma_cfg_data_t, dma_cfg_strb_t, dma_cfg_user_t)
-
-    dma_cfg_axi_req_t  dma_cfg_req;
-    dma_cfg_axi_resp_t dma_cfg_rsp;
-    dma_mst_axi_req_t  dma_mst_req;
-    dma_mst_axi_resp_t dma_mst_rsp;
-
-    `AXI_ASSIGN_TO_REQ   (dma_cfg_req, dma_cfg)
-    `AXI_ASSIGN_FROM_RESP(dma_cfg,     dma_cfg_rsp)
-
-    `AXI_ASSIGN_FROM_REQ (dma_mst,     dma_mst_req)
-    `AXI_ASSIGN_TO_RESP  (dma_mst_rsp, dma_mst)
-
-    ariane_dma_desc64 #(
-        .AxiCfgAddrWidth ( AxiAddrWidth       ),
-        .AxiCfgDataWidth ( AxiDataWidth       ),
-        .AxiCfgIdWidth   ( AxiIdWidth         ),
-        .AxiCfgUserWidth ( AxiUserWidth       ),
-        .AxiMstAddrWidth ( AxiAddrWidth       ),
-        .AxiMstDataWidth ( AxiDataWidth       ),
-        .AxiMstIdWidth   ( AxiMstIdWidth      ),
-        .AxiMstUserWidth ( AxiUserWidth       ),
-        .axi_cfg_req_t   ( dma_cfg_axi_req_t  ),
-        .axi_cfg_rsp_t   ( dma_cfg_axi_resp_t ),
-        .axi_mst_req_t   ( dma_mst_axi_req_t  ),
-        .axi_mst_rsp_t   ( dma_mst_axi_resp_t ),
-        .NSpeculation    ( 0                  )
-    ) i_dma (
-        .clk_i,
-        .rst_ni,
-        .cfg_req_i ( dma_cfg_req    ),
-        .cfg_rsp_o ( dma_cfg_rsp    ),
-        .mst_req_o ( dma_mst_req    ),
-        .mst_rsp_i ( dma_mst_rsp    ),
-        .irq_o     ( irq_sources[7] )
+    default_slave i_default_slave (
+        .clk_i     ( clk_i          ),
+        .rst       ( ~rst_ni        ),
+        .axi_req   ( dslv_req       ),
+        .axi_we    ( dslv_we        ),
+        .axi_addr  ( dslv_addr      ),
+        .axi_wdata ( dslv_wdata     ),
+        .axi_rdata ( dslv_rdata     ),
+        .irq_o     ( irq_sources[1] )
     );
 
 endmodule

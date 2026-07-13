@@ -53,7 +53,15 @@ ARA SoC 是一个基于 RISC-V 的片上系统，集成了 CVA6 (Ariane) 64 位�
 - 驱动：`my_mxu.h`、`my_axu.h`、`global_buffer.h`
 - 综合默认 `SOC_CONFIG=minimum_my_mxu_axu`，详见 [README_SYN.md](README_SYN.md)
 
-> **已移除的配置**：早期 `minimum_asic_dma`（`asic_dma_accel` 片内 DMA 演示）及其仿真 filelist / 测试应用已从仓库清理；`hardware/user_ip/asic_dma_accel/` 仅保留参考 RTL，不再接入任一网表。
+### 6. Minimum + DCO
+
+tb为`/data/home/rh_xu30/Work/ara_soc_lite/tb/ariane_soc_minimum_dco_tb.sv`，仿真时用
+
+```bash
+cd sim
+make vcs FILELIST=filelist_minimum_dco.f VCS_TOP=ariane_soc_minimum_dco_tb
+make vcs-run FILELIST=filelist_minimum_dco.f VCS_TOP=ariane_soc_minimum_dco_tb app=../software/build/bin/hello_world
+```
 
 ## 快速开始
 
