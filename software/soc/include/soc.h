@@ -55,13 +55,6 @@ typedef enum irqn {
 #define IRQn_VVMA_ACCEL     8
 
 /* ------------------------------------------------------------------ */
-/* DCIM wrap (minimum_dcim variant)                                   */
-/*   - single MMIO window @ DCIMBase with internal region decode      */
-/*   - no PLIC irq in current RTL                                     */
-/* ------------------------------------------------------------------ */
-#define DCIM_BASE_ADDR      0xE0000000UL
-
-/* ------------------------------------------------------------------ */
 /* SoC control registers (ctrl_registers.sv, 64b-strided AXI)          */
 /* ------------------------------------------------------------------ */
 #define SOC_CTRL_BASE           0xD0000000UL

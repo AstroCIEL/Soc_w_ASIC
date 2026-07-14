@@ -178,18 +178,6 @@ make -C sim vcs   # 默认 FILELIST=filelist_minimum_my_mxu_axu.f
 make -C sim vcs-run app=../software/build/bin/my_axu_test
 ```
 
-**Minimum + DCIM**：
-
-```bash
-make -C software dcim_test
-make -C sim clean && make -C sim vcs FILELIST=filelist_minimum_dcim.f
-make -C sim vcs-run FILELIST=filelist_minimum_dcim.f \
-  app=../software/build/bin/dcim_test
-
-# 一键脚本（可选 golden 校验）
-DCIM_RUN_GOLDEN=1 ./dcim_shell.sh
-```
-
 #### 仿真 filelist 对照
 
 | 仿真 filelist（在 `sim/` 下） | SoC RTL 目录 | 说明 |
@@ -199,7 +187,6 @@ DCIM_RUN_GOLDEN=1 ./dcim_shell.sh
 | `filelist_minimum_vmma_dma.f` | `hardware/soc/minimum_vmma_dma/` | VMMA（VecMatMul + 内部 DMA） |
 | `filelist_minimum_my_mxu.f` | `hardware/soc/minimum_my_mxu/` | 自定义 MXU 加速模块 |
 | `filelist_minimum_my_mxu_axu.f` | `hardware/soc/minimum_my_mxu_axu/` | MXU + AXU + global buffer + iDMA（**默认**） |
-| `filelist_minimum_dcim.f` | `hardware/soc/minimum_dcim/` | DCIM wrap（单窗口 MMIO + region decode） |
 
 `vmma` 与 `my_mxu` / `my_mxu_axu` 在 `0x7000_0000` 一带的 MMIO 布局**互斥**，必须通过正确的 `FILELIST` 选择对应 RTL。详见 `doc/DOC.md`、`doc/ASIC_INTEGRATION.md`。
 
