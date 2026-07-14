@@ -1,0 +1,1 @@
+Macro Pin Settings Refer to `EDA2:/data/data_eda2/PDK_Tech/TSMC_22NM_RF_ULL/IP/Memory_Compiler/rf_sp_hde_svt_mvt/r0p0/README-tsmc-cln22ul-rf_sp_hde_svt_mvt.txt`

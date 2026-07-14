@@ -13,6 +13,7 @@ software/
 │   ├── dma_desc64_test/  # DMA 描述符64测试
 │   ├── asic_dma_accel_test/ # minimum_asic_dma 网表：片内 DMA ASIC
 │   ├── vmma_test/       # minimum_vmma_dma 网表：VMMA（VecMatMul + DMA）
+│   ├── dcim_test/       # minimum_dcim 网表：DCIM wrap MMIO smoke
 │   ├── asic_accel_test/  # MMIO ASIC 示例（默认网表未接，见根目录 DOC）
 │   └── ...           # 其他测试应用
 ├── sdk/              # 软件开发套件
@@ -81,6 +82,7 @@ make clean
 | `dma_reg64_1d_test` | DMA 寄存器64 1D测试 | 1D 内存拷贝 |
 | `asic_dma_accel_test` | 自定义 ASIC（片内 DMA） | 需 `sim/filelist_minimum_asic_dma.f`；驱动 `asic_dma_accel.c` |
 | `vmma_test` | VMMA（VecMatMul + 片内 DMA） | 需 **`sim/filelist_minimum_vmma_dma.f`**；驱动 `vmma.c`；见 `DOC.md` §1.5（D$ 与缓冲布局） |
+| `dcim_test` | DCIM wrap（单窗口 MMIO） | 需 **`sim/filelist_minimum_dcim.f`**；驱动 `dcim.c`；marker **`DCIM_PASS`**；见 `doc/如何修改softwareware文件夹下的内容？.md` §11 |
 | `asic_accel_test` | MMIO ASIC 示例 | 参考用；默认 SoC 未实例化，需自行接 RTL |
 | `clint_test` | 定时器测试 | CLINT 中断 |
 | `default_slave` | 默认从设备测试 | PLIC 中断 |
@@ -106,6 +108,21 @@ make vmma_test
 ```
 
 API 见 `soc/include/vmma.h`（`VMMA_ACCEL_BASE`、`struct vmma_drv`）。`vmma_test` 通过 `app.mk` 中 **`vmma_test_LDFLAGS := -Wl,--section-start=.vmma_dma_out=0x8001F800`** 将 DMA 输出段放到 DRAM 高址，缓解 **写穿 D-cache + 预取** 导致的读回错误（详见根目录 `DOC.md`）。
+
+### DCIM wrap 网表（`minimum_dcim`）
+
+与 MXU/VMMA **地址互斥**；MMIO 基址 **`0xE000_0000`**，内部再分 ctrl/cfg/act/out/wei region：
+
+```bash
+make dcim_test
+# 可选：make dcim_test DCIM_TEST_TOPO=3 DCIM_WAIT_CYCLES=10000000
+# 在 sim/ 下：
+make vcs FILELIST=filelist_minimum_dcim.f
+make vcs-run FILELIST=filelist_minimum_dcim.f app=../software/build/bin/dcim_test
+# 或仓库根目录：./dcim_shell.sh
+```
+
+API 见 `soc/include/dcim.h`（`DCIM_BASE_ADDR`、`struct dcim_drv`）。当前 RTL 无 STATUS/中断，`wait_done()` 为软件延时；kick 前对 buffer 写使用 **`DCIM_FENCE_OW`**（定义于 `dcim.h`）。
 
 ### 特殊应用配置
 

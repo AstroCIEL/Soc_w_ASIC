@@ -29,6 +29,7 @@ MXU、AXU 在本文中只是两个例子；真正需要掌握的是 AXI/MMIO wra
 | `minimum_my_mxu` | 早期 MXU-only 版本 | 适合回看单模块接入过程 |
 | `minimum_my_mxu_axu` | 当前最新主线 | 同时包含 MXU、AXU、GlobalBuffer、iDMA |
 | `minimum_asic_dma` / `minimum_vmma_dma` | 早期/并行 DMA 型探索 | 可参考，但不要和本文 MMIO buffer 型流程混用 |
+| `minimum_dcim` | DCIM wrap 单窗口 MMIO | 单 AXI slave + 内部 region 译码；见 §12 |
 
 后续新增模块时，优先参照 `minimum_my_mxu_axu` 的组织方式。
 

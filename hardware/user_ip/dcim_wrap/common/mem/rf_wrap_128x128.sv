@@ -1,0 +1,180 @@
+module rf_wrap_128x128 #(
+	parameter	DATA_WIDTH 		= 512,
+	parameter	DATA_DEPTH		= 128,
+	localparam	MACRO_WIDTH		= 128,
+	localparam	MACRO_DEPTH		= 128,
+	localparam	W_RATIO			= DATA_WIDTH / MACRO_WIDTH,
+	localparam	D_RATIO			= DATA_DEPTH / MACRO_DEPTH,
+	localparam	ADDR_WIDTH		= $clog2(DATA_DEPTH),
+	localparam	MACRO_ADDRW		= $clog2(MACRO_DEPTH),
+	localparam	OFFSET_WIDTH	= ADDR_WIDTH - MACRO_ADDRW
+)(
+	input	logic					clk,
+	input	logic					rstn,
+	input	logic					clr,
+	input	logic					ena,
+	input	logic					req,
+	input	logic					we,
+	input	logic [DATA_WIDTH-1: 0]	be,
+	input	logic [DATA_WIDTH-1: 0]	wdata,
+	output	logic [DATA_WIDTH-1: 0]	rdata,
+	input	logic [ADDR_WIDTH-1: 0]	addr,
+
+	// voltage: 0.8v
+	input	logic [2: 0]			cfg_ema,	// default: 3'b100
+	input	logic [1: 0]			cfg_emaw,	// default: 2'b01
+	input	logic					cfg_emas,	// default: 1'b0
+	input	logic [1: 0]			cfg_wablm,	// default: 2'b01
+	input	logic [1: 0]			cfg_rawlm	// default: 2'b00
+);
+
+	logic [MACRO_WIDTH-1: 0] w_rdata [W_RATIO][D_RATIO];
+
+	// 二维数组：独立控制每个宏的使能 (Width x Depth)
+	logic macro_req [W_RATIO][D_RATIO];
+
+	// -------------------------------------------------------------------------
+	// 组合逻辑控制请求掩码
+	// -------------------------------------------------------------------------
+	generate
+		if (OFFSET_WIDTH > 0) begin : GenReqSegment
+			always_comb begin
+				for (int w = 0; w < W_RATIO; w++) begin
+					for (int d = 0; d < D_RATIO; d++) begin
+						macro_req[w][d] = 1'b0;
+					end
+				end
+
+				if (ena && req) begin
+					if (~we) begin
+						/* Read path: do not gate request by be. */
+						for (int w = 0; w < W_RATIO; w++) begin
+							macro_req[w][addr[ADDR_WIDTH-1: MACRO_ADDRW]] = 1'b1;
+						end
+					end else begin
+						/* Write path: keep be-based macro select. */
+						for (int w = 0; w < W_RATIO; w++) begin
+							if (|be[w * MACRO_WIDTH +: MACRO_WIDTH]) begin
+								macro_req[w][addr[ADDR_WIDTH-1: MACRO_ADDRW]] = 1'b1;
+							end
+						end
+					end
+				end
+			end
+		end else begin : GenReqNoSegment
+			always_comb begin
+				for (int w = 0; w < W_RATIO; w++) begin
+					macro_req[w][0] = 1'b0;
+				end
+
+				if (ena && req) begin
+					if (~we) begin
+						/* Read path: do not gate request by be. */
+						for (int w = 0; w < W_RATIO; w++) begin
+							macro_req[w][0] = 1'b1;
+						end
+					end else begin
+						/* Write path: keep be-based macro select. */
+						for (int w = 0; w < W_RATIO; w++) begin
+							if (|be[w * MACRO_WIDTH +: MACRO_WIDTH]) begin
+								macro_req[w][0] = 1'b1;
+							end
+						end
+					end
+				end
+			end
+		end
+	endgenerate
+
+	// -------------------------------------------------------------------------
+	// 读数据拼接与地址延迟
+	// -------------------------------------------------------------------------
+	generate
+		if(OFFSET_WIDTH > 0) begin:GenAddrSegment
+
+			logic [OFFSET_WIDTH - 1 : 0] addr_offset_q;
+
+			always_ff @(posedge clk or negedge rstn) begin
+				if(~rstn) begin
+					addr_offset_q <= '0;
+				end else if(clr) begin
+					addr_offset_q <= '0;
+				end else if(ena & req & ~we) begin
+					addr_offset_q <= addr[ADDR_WIDTH-1: MACRO_ADDRW];
+				end
+			end
+
+			always_comb begin
+				for(int w=0; w<W_RATIO; w++) begin
+					rdata[w * MACRO_WIDTH +: MACRO_WIDTH] = w_rdata[w][addr_offset_q];
+				end
+			end
+
+		end else begin:GenAddrNoSegment
+
+			always_comb begin
+				for(int w=0; w<W_RATIO; w++) begin
+					rdata[w * MACRO_WIDTH +: MACRO_WIDTH] = w_rdata[w][0];
+				end
+			end
+
+		end
+	endgenerate
+
+	// -------------------------------------------------------------------------
+	// SRAM 宏例化
+	// -------------------------------------------------------------------------
+	genvar w_idx, d_idx;
+	generate
+		for(w_idx=0; w_idx<W_RATIO; w_idx++) begin:GenWidth
+			for(d_idx=0; d_idx<D_RATIO; d_idx++) begin:GenDepth
+
+			`ifdef MODEL_MEM
+
+				model_mem #(
+					.DEPTH(MACRO_DEPTH),
+					.DATA_WIDTH(MACRO_WIDTH)  
+				) u_model_mem (
+					.clk(clk),
+                    .req(macro_req[w_idx][d_idx]),	
+                    .we(we),
+					.addr(addr[MACRO_ADDRW-1: 0]),
+					.be(be[w_idx*MACRO_WIDTH+: MACRO_WIDTH]),
+					.wdata(wdata[w_idx*MACRO_WIDTH+: MACRO_WIDTH]), 
+					.rdata(w_rdata[w_idx][d_idx])
+				);
+
+			`else
+
+				rf128x128 u_rf(
+					.clk(clk),
+					.cen(~macro_req[w_idx][d_idx]),
+					.gwen(~we),
+					.wen(~be[w_idx*MACRO_WIDTH+: MACRO_WIDTH]),
+					.a(addr[MACRO_ADDRW-1: 0]),
+					.d(wdata[w_idx*MACRO_WIDTH+: MACRO_WIDTH]),
+					.q(w_rdata[w_idx][d_idx]),
+					.ret1n(1'b1),
+					.ema(cfg_ema),
+					.emaw(cfg_emaw),
+					.emas(cfg_emas),
+					.rawl(1'b0),
+					.wabl(1'b1),
+					.rawlm(cfg_rawlm),
+					.wablm(cfg_wablm)
+				);
+
+			`endif
+			end
+		end
+	endgenerate
+
+	// -------------------------------------------------------------------------
+	// 编译期断言检查
+	// -------------------------------------------------------------------------
+	initial begin
+		if (DATA_WIDTH % MACRO_WIDTH != 0) $error("DATA_WIDTH 必须是 MACRO_WIDTH 的整数倍");
+		if (DATA_DEPTH % MACRO_DEPTH != 0) $error("DATA_DEPTH 必须是 MACRO_DEPTH 的整数倍");
+	end
+
+endmodule
