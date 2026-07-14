@@ -10,7 +10,7 @@ echo "[dcim] build software app=${APP} DCIM_TEST_TOPO=${TOPO}"
 make -C "${ROOT}/software" "${APP}" DCIM_TEST_TOPO="${TOPO}"
 
 echo "[dcim] build simv FILELIST=${FILELIST}"
-make -C "${ROOT}/sim" clean vcs FILELIST="${FILELIST}"
+make -C "${ROOT}/sim" clean vcs FILELIST="${FILELIST}" VCS_TOP="ariane_soc_tb"
 
 ELF="${ROOT}/software/build/bin/${APP}"
 echo "[dcim] run sim with ${ELF}"
