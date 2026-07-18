@@ -8,7 +8,7 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 //
-// Description: Minimum SoC top — CVA6 scalar core only (no Ara VPU, no DMA).
+// Description: Minimum SoC top with on-chip DCO as system clock source.
 
 `include "axi/assign.svh"
 `include "axi/typedef.svh"
@@ -24,12 +24,18 @@ module ariane_soc_top import axi_pkg::*; #(
   parameter int unsigned AXI_ADDRESS_WIDTH = 64,
   parameter int unsigned AXI_DATA_WIDTH    = 64
 ) (
-  input  logic                           clk_i,
+  input  logic                           dco_ext_clk_i,
+  input  logic                           dco_en_i,
+  input  logic [5:0]                     dco_cc_sel_i,
+  input  logic [5:0]                     dco_fc_sel_i,
+  input  logic                           dco_clk_sel_i,
+  input  logic [1:0]                     dco_freq_sel_i,
+  output logic                           dco_clk_div_o,
   input  logic                           rtc_i,
   input  logic                           rst_ni,
   input  logic                           uart_rx_i,
   output logic                           uart_tx_o,
-  output logic [31:0]                    exit_o,
+  output logic                           exit_o,
   input  logic                           jtag_tck_i,
   input  logic                           jtag_tms_i,
   input  logic                           jtag_tdi_i,
@@ -101,6 +107,23 @@ module ariane_soc_top import axi_pkg::*; #(
   dm::dmi_resp_t debug_resp;
 
   assign test_en = 1'b0;
+
+  // ---------------
+  // DCO clock generation (system clock)
+  // ---------------
+  logic clk_i;
+
+  dco_wrapper i_dco_wrapper (
+    .ext_clk_i  ( dco_ext_clk_i  ),
+    .rst_ni     ( rst_ni         ),
+    .en_i       ( dco_en_i       ),
+    .cc_sel_i   ( dco_cc_sel_i   ),
+    .fc_sel_i   ( dco_fc_sel_i   ),
+    .clk_sel_i  ( dco_clk_sel_i  ),
+    .freq_sel_i ( dco_freq_sel_i ),
+    .clk_o      ( clk_i          ),
+    .clk_div_o  ( dco_clk_div_o  )
+  );
 
   AXI_BUS #(
     .AXI_ADDR_WIDTH ( AXI_ADDRESS_WIDTH       ),
