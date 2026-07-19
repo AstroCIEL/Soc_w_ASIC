@@ -31,16 +31,16 @@ GB_RAM_DEF = namedtuple("GB_RAM_DEF", ["Name", "NumWords", "DataWidth"])
 
 # SOC/CPU macros only (L2 + CVA6 cache + Ara VRF).
 cpu_ram_defs = [
-#    CPU_RAM_DEF("l2", 4096, 64),  # sram_l2_4096x64
-    CPU_RAM_DEF("l2", 16384, 64),  # sram_l2_16384x64
+    CPU_RAM_DEF("l2", 4096, 64),  # sram_l2_4096x64
+#    CPU_RAM_DEF("l2", 16384, 64),  # sram_l2_16384x64
 ]
 
 cpu_rf_defs = [
-    CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
-    CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
-    CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
-    CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
-    CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
+#    CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
+#    CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
+#    CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
+#    CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
+#    CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
 ]
 
 # Custom IP macros — disabled

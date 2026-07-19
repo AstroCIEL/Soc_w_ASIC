@@ -64,16 +64,16 @@ module tc_sram #(
       .D     (wdata_i[0]   ),
       .WEN   (wen_bits     ),       // active-low bit write mask
       .Q     (rdata_o[0]   ),
-      // margin / retention / debug signals — fixed at default values
+      // margin / retention / debug signals — fixed at default values [20260719 Cehcked.]
       .STOV  (1'b0         ),       // debug, tie-off 0
       .RET1N (1'b1         ),       // 1 = normal mode (0 = low-power retention)
       .EMA   (3'b100       ),       // SS/low-voltage corner timing margin (model reference value)
-      .EMAW  (2'b01        ),       // SS/low-voltage corner write margin (model reference value)
+      .EMAW  (2'b00        ),       // SS/low-voltage corner write margin (model reference value)
       .EMAS  (1'b0         ),       // SS/low-voltage corner (model reference value)
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (2'b00       )        // write-assist mode bits (default)
+      .WABLM (3'b001       )        // write-assist mode bits (default)
     );    //WABLM对于shvt推荐值为3'b001;svt推荐值为2'b00(位宽不一样)
 
   // l2改为32K
@@ -92,17 +92,17 @@ module tc_sram #(
       .D     (wdata_i[0]   ),
       .WEN   (wen_bits     ),       // active-low bit write mask
       .Q     (rdata_o[0]   ),
-      // margin / retention / debug signals — fixed at default values
+      // margin / retention / debug signals — fixed at default values [20260719 Checked.]
       .STOV  (1'b0         ),       // debug, tie-off 0
       .RET1N (1'b1         ),       // 1 = normal mode (0 = low-power retention)
       .EMA   (3'b100       ),       // SS/low-voltage corner timing margin (model reference value)
-      .EMAW  (2'b01        ),       // SS/low-voltage corner write margin (model reference value)
+      .EMAW  (2'b00        ),       // SS/low-voltage corner write margin (model reference value)
       .EMAS  (1'b0         ),       // SS/low-voltage corner (model reference value)
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (2'b00       )        // write-assist mode bits (default)
-    ); //WABLM对于shvt推荐值为3'b001;svt推荐值为2'b00(位宽不一样)，这里用的是svt的设置
+      .WABLM (3'b001       )        // write-assist mode bits (default)
+    ); //WABLM对于shvt推荐值为3'b001;svt推荐值为2'b00(位宽不一样)，这里用的是shvt的设置
 
 
   end else if (NumWords == 64 && DataWidth == 256) begin : gen_dcache_data
@@ -121,7 +121,7 @@ module tc_sram #(
       .d     (wdata_i[0][127:0]  ),
       .wen   (wen_lo             ),        // active-low bit write mask
       .q     (rdata_o[0][127:0]  ),
-      // margin / retention signals — fixed at default values
+      // margin / retention signals — fixed at default values [20260719 Checked.]
       .ema   (3'b100             ),        // SS/low-voltage corner timing margin (model reference value)
       .emaw  (2'b00              ),        // SS/low-voltage corner write margin (model reference value)
       .emas  (1'b0               ),        // SS/low-voltage corner (model reference value)
@@ -140,7 +140,7 @@ module tc_sram #(
       .d     (wdata_i[0][255:128]),
       .wen   (wen_hi             ),        // active-low bit write mask
       .q     (rdata_o[0][255:128]),
-      // margin / retention signals — fixed at default values
+      // margin / retention signals — fixed at default values [20260719 Checked.]
       .ema   (3'b100             ),        // SS/low-voltage corner timing margin (model reference value)
       .emaw  (2'b00              ),        // SS/low-voltage corner write margin (model reference value)
       .emas  (1'b0               ),        // SS/low-voltage corner (model reference value)
