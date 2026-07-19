@@ -36,11 +36,11 @@ cpu_ram_defs = [
 ]
 
 cpu_rf_defs = [
-#    CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
-#    CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
-#    CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
-#    CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
-#    CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
+    CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
+    CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
+    CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
+    CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
+    CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
 ]
 
 # Custom IP macros — disabled
@@ -55,7 +55,7 @@ cpu_rf_defs = [
 # ]
 
 # Relative paths under PDK_ROOT (filled in resolve_generators).
-_CPU_RAM_REL = "IP/Memory_Compiler/sram_sp_hde_svt_mvt/r1p0/bin/sram_sp_hde_svt_mvt"
+_CPU_RAM_REL = "IP/Memory_Compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
 _CPU_RF_REL = "IP/Memory_Compiler/rf_sp_hde_shvt_mvt/r3p1/bin/rf_sp_hde_shvt_mvt"
 _RAM_REL = "IP/Memory_Compiler/sram_dp_hde_svt_svt/r0p1/bin/sram_dp_hde_svt_svt"
 _RF_REL = "IP/Memory_Compiler/rf_2p_hdc_svt_mvt/r0p0/bin/rf_2p_hdc_svt_mvt"
