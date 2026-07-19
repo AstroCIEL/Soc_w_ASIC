@@ -26,8 +26,13 @@ def resolve_vars(line, variables):
     return re.sub(r'\$\{(\w+)\}', replacer, line)
 
 
-def parse_filelist(flist_path, variables, files, incdirs, defines, seen=None):
-    """Recursively parse a .f filelist."""
+def parse_filelist(flist_path, variables, files, incdirs, defines, seen=None, is_F_mode=True):
+    """Recursively parse a .f filelist.
+    
+    is_F_mode: Controls whether relative paths inside this filelist are relative 
+               to the file itself (True, default for -F behavior) or relative to 
+               the tool's running execution directory (False, for -f behavior).
+    """
     if seen is None:
         seen = set()
 
@@ -36,6 +41,7 @@ def parse_filelist(flist_path, variables, files, incdirs, defines, seen=None):
         return
     seen.add(flist_path)
 
+    # 该 filelist 所在的目录
     base_dir = os.path.dirname(flist_path)
 
     with open(flist_path, 'r') as f:
@@ -46,38 +52,50 @@ def parse_filelist(flist_path, variables, files, incdirs, defines, seen=None):
 
             line = resolve_vars(line, variables)
 
-            # -f recursive include
-            if line.startswith('-f '):
-                sub_path = line[3:].strip()
-                if not os.path.isabs(sub_path):
-                    sub_path = os.path.join(base_dir, sub_path)
-                parse_filelist(sub_path, variables, files, incdirs, defines, seen)
+            # 处理 -f 或 -F 嵌套文件列表
+            if line.startswith('-f ') or line.startswith('-F '):
+                is_sub_F = line.startswith('-F ')
+                sub_file = line[3:].strip()
+                
+                # 无论如何，寻找嵌套 filelist 本身时，如果它是相对路径，
+                # 在现代 EDA 工具中通常也是相对于当前 filelist 寻找的
+                if not os.path.isabs(sub_file):
+                    sub_path = os.path.join(base_dir, sub_file)
+                else:
+                    sub_path = sub_file
+                
+                # 递归调用，并将当前是 -f 还是 -F 的模式传递下去
+                parse_filelist(sub_path, variables, files, incdirs, defines, seen, is_F_mode=is_sub_F)
                 continue
 
+            # --- 下面开始处理路径，根据 is_F_mode 决定以谁为基准 ---
+            # 如果是 F 模式，以当前 .f 所在的 base_dir 为基准进行拼接；
+            # 如果是 f 模式（且不是绝对路径），则保持原样（即相对于执行脚本的当前工作目录 '.'）
+            
             # +incdir+
             if line.startswith('+incdir+'):
                 path = line[8:].strip()
                 if not os.path.isabs(path):
-                    path = os.path.join(base_dir, path)
+                    path = os.path.join(base_dir, path) if is_F_mode else path
                 incdirs.add(os.path.normpath(path))
-                continue
-
-            # +define+
-            if line.startswith('+define+'):
-                defines.add(line[8:].strip())
                 continue
 
             # -I (alternative incdir)
             if line.startswith('-I'):
                 path = line[2:].strip()
                 if not os.path.isabs(path):
-                    path = os.path.join(base_dir, path)
+                    path = os.path.join(base_dir, path) if is_F_mode else path
                 incdirs.add(os.path.normpath(path))
                 continue
 
-            # Source file
+            # +define+ (与路径无关，直接处理)
+            if line.startswith('+define+'):
+                defines.add(line[8:].strip())
+                continue
+
+            # 普通 Source file 路径处理
             if not os.path.isabs(line):
-                line = os.path.join(base_dir, line)
+                line = os.path.join(base_dir, line) if is_F_mode else line
             files.append(os.path.normpath(line))
 
 
