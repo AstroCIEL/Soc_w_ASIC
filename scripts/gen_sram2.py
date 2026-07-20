@@ -29,19 +29,20 @@ GB_RAM_DEF = namedtuple("GB_RAM_DEF", ["Name", "NumWords", "DataWidth"])
 # SOC/CPU macros only (L2 + CVA6 cache + Ara VRF).
 cpu_ram_defs = [
     CPU_RAM_DEF("l2", 4096, 64),  # sram_l2_4096x64
-#   CPU_RAM_DEF("l2", 16384, 64),  # sram_l2_16384x64
+#	CPU_RAM_DEF("l2", 16384, 64),  # sram_l2_16384x64
 ]
 
 cpu_rf_defs = [
-#   CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
-#   CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
-#   CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
-#   CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
-#   CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
+    CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
+    CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
+#	CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
+    CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
+    CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
 ]
 
 # Relative paths under PDK_ROOT (filled in resolve_generators).
-_CPU_RAM_REL = "IP/Memory_Compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
+# _CPU_RAM_REL = "IP/Memory_Compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
+_CPU_RAM_REL = "IP/Memory_Compiler/sram_sp_hde_svt_mvt/r1p0/bin/sram_sp_hde_svt_mvt"
 _CPU_RF_REL = "IP/Memory_Compiler/rf_sp_hde_shvt_mvt/r3p1/bin/rf_sp_hde_shvt_mvt"
 _RAM_REL = "IP/Memory_Compiler/sram_dp_hde_svt_svt/r0p1/bin/sram_dp_hde_svt_svt"
 _RF_REL = "IP/Memory_Compiler/rf_2p_hdc_svt_mvt/r0p0/bin/rf_2p_hdc_svt_mvt"
@@ -67,7 +68,7 @@ corners = ",".join(
         "ssg_cworstt_0p72v_0p72v_m40c",
         "ssg_cworstt_0p72v_0p72v_125c",
         "ffg_cbestt_0p88v_0p88v_m40c",
-        "tt_typical_0p80v_0p80v_25c",
+#        "tt_typical_0p80v_0p80v_25c",
     ]
 )
 
@@ -167,7 +168,7 @@ def build_cpu_rf_cmd(rf: CPU_RF_DEF, target: str) -> List[str]:
 
 
 def run_cmd_in_target_dir(cmd: List[str], target: str, instname: str, base_run_dir: str):
-    """切换到对应的 target/ 目录下执行 Memory Compiler 命令"""
+    """Switch to the corresponding target/ directory and execute the Memory Compiler command"""
     target_dir = os.path.join(base_run_dir, target)
     os.makedirs(target_dir, exist_ok=True)
     
@@ -188,14 +189,18 @@ def run_cmd_in_target_dir(cmd: List[str], target: str, instname: str, base_run_d
         
     os.chdir(base_run_dir)
 
-
 def auto_convert_lib_to_db(base_run_dir: str):
-    """自动扫描 liberty/ 目录下的所有 .lib 文件，并融合转换为 .db 文件"""
+    """Automatically scan all .lib files in liberty/ directory and convert them to .db inside db/ directory"""
     liberty_dir = os.path.join(base_run_dir, "liberty")
+    db_dir = os.path.join(base_run_dir, "db")
+    
     if not os.path.isdir(liberty_dir):
         return
 
-    # 检查 EDA 工具链环境
+    # Check and create an independent db/ directory
+    os.makedirs(db_dir, exist_ok=True)
+
+    # Check EDA toolchain environment
     eda_cmd = ""
     if shutil.which("lc_shell"):
         eda_cmd = "lc_shell"
@@ -205,33 +210,34 @@ def auto_convert_lib_to_db(base_run_dir: str):
         print("\n[WARNING] Neither lc_shell nor dc_shell found. Skipping .db conversion.")
         return
 
-    print(f"\n=== [融合步骤] 开始将 liberty/ 目录下的 .lib 自动转换为 .db (使用 {eda_cmd}) ===")
+    print(f"\n=== [Integration Step] Automatically converting .lib files in liberty/ to .db inside db/ (using {eda_cmd}) ===")
     
-    # 切换进 liberty 目录，让临时文件和输出的 .db 都在这个目录下产生
+    # Switch into liberty directory to perform scanning
     os.chdir(liberty_dir)
 
-    # 扫描当前的所有 .lib 文件
+    # Scan all current .lib files
     lib_files = [f for f in os.listdir(".") if f.endswith(".lib") or ".lib_" in f]
     if not lib_files:
         print("[INFO] No .lib files found in liberty/ directory.")
         os.chdir(base_run_dir)
         return
 
-    # 构建动态 TCL 脚本内容
+    # Build dynamic TCL script content
     tcl_lines = ["# Generated dynamically by gen_sram2.py"]
     for lib in lib_files:
-        # 获取纯内部库名逻辑
+        # Internal library name extraction logic
         if ".lib" in lib:
             current_lib = lib.split(".lib")[0]
         else:
             current_lib = os.path.splitext(lib)[0]
             
-        # 后缀替换生成目标 db 名字
-        db_name = lib.replace(".lib", ".db")
+        # Suffix replacement and enforce target output to the absolute path under db/ directory
+        pure_db_name = lib.replace(".lib", ".db")
+        abs_db_path = os.path.join(db_dir, pure_db_name)
         
         tcl_lines.append(f"read_lib {lib}")
-        tcl_lines.append(f'echo "Writing database for library: {current_lib} -> {db_name}"')
-        tcl_lines.append(f"write_lib -format db {current_lib} -output {db_name}")
+        tcl_lines.append(f'echo "Writing database for library: {current_lib} -> db/{pure_db_name}"')
+        tcl_lines.append(f"write_lib -format db {current_lib} -output {abs_db_path}")
         tcl_lines.append(f"remove_lib {current_lib}")
     
     tcl_lines.append("exit")
@@ -241,29 +247,30 @@ def auto_convert_lib_to_db(base_run_dir: str):
     with open(tcl_filename, "w") as f:
         f.write(tcl_content)
 
-    # 执行转化命令
+    # Execute conversion command
     if eda_cmd == "lc_shell":
         run_args = ["lc_shell", "-f", tcl_filename]
     else:
         run_args = ["dc_shell", "-tcl_mode", "-f", tcl_filename]
 
-    print(f"[RUN] [{eda_cmd}] 执行格式转换...")
+    print(f"[RUN] [{eda_cmd}] LIB2DB Format Conversion...")
     res = subprocess.run(run_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
     
-    # 将转换日志记入 liberty 目录下供排查
-    with open("lib2db_conversion.log", "w") as log_f:
+    # Write conversion log to the specified db/ directory for troubleshooting
+    log_path = os.path.join(db_dir, "lib2db_conversion.log")
+    with open(log_path, "w") as log_f:
         log_f.write(res.stdout)
 
     if res.returncode != 0:
-        print(f"  [WARN] .lib to .db conversion failed. Check liberty/lib2db_conversion.log")
+        print(f"  [WARN] .lib to .db conversion failed. Check db/lib2db_conversion.log")
     else:
-        print(f"  [OK]   所有 .db 文件已成功生成在 liberty/ 子目录下。")
+        print(f"  [OK] .db File & Conversion Log Generated in db/ Successfully.")
 
-    # 清理掉生成的临时 TCL 脚本
+    # Clean up temporary TCL script generated in liberty directory
     if os.path.exists(tcl_filename):
         os.remove(tcl_filename)
 
-    # 切回主目录
+    # Switch back to root directory
     os.chdir(base_run_dir)
 
 
@@ -294,21 +301,21 @@ def main():
         if not os.path.isfile(gen):
             print(f"[WARN] generator not found: {gen}")
 
-    # 1. 产生 CPU RAM 所有 views 并分流
+    # 1. Generate all views for CPU RAM and dispatch outputs
     for cpu_ram in cpu_ram_defs:
         instname = make_cpu_instname("sram", cpu_ram.Name, cpu_ram.NumWords, cpu_ram.DataWidth)
         for target in targets:
             cmd = build_cpu_ram_cmd(cpu_ram, target)
             run_cmd_in_target_dir(cmd, target, instname, base_run_dir)
 
-    # 2. 产生 CPU RF 所有 views 并分流
+    # 2. Generate all views for CPU RF and dispatch outputs
     for cpu_rf in cpu_rf_defs:
         instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
         for target in targets:
             cmd = build_cpu_rf_cmd(cpu_rf, target)
             run_cmd_in_target_dir(cmd, target, instname, base_run_dir)
 
-    # 3. 融合步骤：所有 target 的文件生成完毕后，如果跑了 liberty，就地启动 lib2db 转换
+    # 3. Integration Step: Once files for all targets are generated, trigger lib2db conversion inline if liberty view was run
     if "liberty" in targets:
         auto_convert_lib_to_db(base_run_dir)
 
