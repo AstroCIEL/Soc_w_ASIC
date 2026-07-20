@@ -5,17 +5,14 @@
 #   - Liberty view: ccs_tnv (was nldm)
 #   - PDK root is a variable (env TSMC22_PDK_ROOT / CLI --pdk-root), not hardcoded
 #   - Corners: ssg m40c/125c, ffg m40c, tt 25c only
-#
-# Usage:
-#   export TSMC22_PDK_ROOT=/path/to/TSMC_22NM_RF_ULL
-#   cd <output_dir> && python3 <path>/gen_sram2.py
-#   # or:
-#   python3 gen_sram2.py --pdk-root /path/to/TSMC_22NM_RF_ULL
+#   - File Organization: Outputs and logs are placed in their respective target/ subdirectories.
+#   - Integrated lib2db: Automatically converts generated .lib files to .db inside the liberty/ directory.
 #
 # Check before run: sizes, GENERATOR revisions, frequency, corners.
 
 import argparse
 import os
+import shutil
 import subprocess
 from collections import namedtuple
 from typing import List
@@ -32,27 +29,16 @@ GB_RAM_DEF = namedtuple("GB_RAM_DEF", ["Name", "NumWords", "DataWidth"])
 # SOC/CPU macros only (L2 + CVA6 cache + Ara VRF).
 cpu_ram_defs = [
     CPU_RAM_DEF("l2", 4096, 64),  # sram_l2_4096x64
-#    CPU_RAM_DEF("l2", 16384, 64),  # sram_l2_16384x64
+#   CPU_RAM_DEF("l2", 16384, 64),  # sram_l2_16384x64
 ]
 
 cpu_rf_defs = [
-#    CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
-#    CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
-#    CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
-#    CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
-#    CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
+#   CPU_RF_DEF("dcache_half", 64, 128),  # rf_dcache_half_64x128 (2x → 256b)
+#   CPU_RF_DEF("icache", 64, 128),       # rf_icache_64x128
+#   CPU_RF_DEF("vrf", 64, 64),           # rf_vrf_64x64
+#   CPU_RF_DEF("icache_tag", 64, 48),    # rf_icache_tag_64x48
+#   CPU_RF_DEF("dcache_tag", 64, 46),    # rf_dcache_tag_64x46
 ]
-
-# Custom IP macros — disabled
-# ram_defs = [
-#     RAM_DEF("sramdp", 272, 16),
-# ]
-# rf_defs = [
-#     RF_DEF("rf2p", 256, 128),
-# ]
-# gb_ram_defs = [
-#     GB_RAM_DEF("sp", 4096, 64),
-# ]
 
 # Relative paths under PDK_ROOT (filled in resolve_generators).
 _CPU_RAM_REL = "IP/Memory_Compiler/sram_sp_hde_shvt_mvt/r5p0/bin/sram_sp_hde_shvt_mvt"
@@ -73,13 +59,9 @@ targets = [
     "gds2",
     "lef-fp",
     "lvs",
+    "postscript",
 ]
 
-# User shorthand → Memory Compiler full corner names:
-#   ssg_0p72v_m40c  → ssg_cworstt_0p72v_0p72v_m40c
-#   ssg_0p72v_125c  → ssg_cworstt_0p72v_0p72v_125c
-#   ffg_0p88v_m40c  → ffg_cbestt_0p88v_0p88v_m40c
-#   tt_0p80v_25c    → tt_typical_0p80v_0p80v_25c
 corners = ",".join(
     [
         "ssg_cworstt_0p72v_0p72v_m40c",
@@ -90,7 +72,6 @@ corners = ",".join(
 )
 
 LIBERTY_VIEW = "ccs_tnv"
-LOG_DIR = "logs"
 
 
 def resolve_generators(pdk_root: str) -> None:
@@ -105,14 +86,6 @@ def resolve_generators(pdk_root: str) -> None:
 
 def make_cpu_instname(prefix, name, num_words, data_width):
     return f"{prefix}_{name}_{num_words}x{data_width}"
-
-
-def make_gb_instname(prefix, name, num_words, data_width):
-    return f"{prefix}{name}_{num_words}_{data_width}"
-
-
-def make_instname(name, num_words, data_width):
-    return f"{name}_{num_words}_{data_width}"
 
 
 def build_cpu_ram_cmd(ram: CPU_RAM_DEF, target: str) -> List[str]:
@@ -147,47 +120,6 @@ def build_cpu_ram_cmd(ram: CPU_RAM_DEF, target: str) -> List[str]:
         "-mux", "16",
         "-rows_p_bl", "256",
         "-flexible_banking", "4",
-        "-ema", "on",
-        "-back_biasing", "off",
-        "-vmin_assist", "on",
-        "-corners", corners,
-    ]
-
-
-def build_gb_ram_cmd(ram: GB_RAM_DEF, target: str) -> List[str]:
-    instname = make_gb_instname("sram", ram.Name, ram.NumWords, ram.DataWidth)
-    return [
-        GB_RAM_GENERATOR, target,
-        "-name_case", "lower",
-        "-mvt", "BASE",
-        "-bus_notation", "on",
-        "-ser", "none",
-        "-site_def", "off",
-        "-check_instname", "off",
-        "-frequency", "1000",
-        "-bmux", "off",
-        "-diodes", "on",
-        "-activity_factor", "50",
-        "-words", str(ram.NumWords),
-        "-bits", str(ram.DataWidth),
-        "-drive", "6",
-        "-write_mask", "off",
-        "-redundancy", "off",
-        "-instname", instname,
-        "-libname", instname,
-        "-cust_comment", "",
-        "-prefix", "",
-        "-retention", "on",
-        "-atf", "off",
-        "-libertyviewstyle", LIBERTY_VIEW,
-        "-left_bus_delim", "[",
-        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
-        "-right_bus_delim", "]",
-        "-rows_p_bl", "256",
-        "-flexible_banking", "4",
-        "-power_gating", "off",
-        "-write_thru", "off",
-        "-mux", "16",
         "-ema", "on",
         "-back_biasing", "off",
         "-vmin_assist", "on",
@@ -234,101 +166,105 @@ def build_cpu_rf_cmd(rf: CPU_RF_DEF, target: str) -> List[str]:
     ]
 
 
-def build_ram_cmd(ram: RAM_DEF, target: str) -> List[str]:
-    instname = make_instname(ram.Name, ram.NumWords, ram.DataWidth)
-    return [
-        RAM_GENERATOR, target,
-        "-name_case", "lower",
-        "-mvt", "LL",
-        "-ser", "none",
-        "-bus_notation", "on",
-        "-site_def", "off",
-        "-check_instname", "off",
-        "-frequency", "1000",
-        "-bmux", "on",
-        "-diodes", "on",
-        "-activity_factor", "50",
-        "-words", str(ram.NumWords),
-        "-drive", "6",
-        "-power_type", "otc",
-        "-bits", str(ram.DataWidth),
-        "-instname", instname,
-        "-retention", "on",
-        "-libertyviewstyle", LIBERTY_VIEW,
-        "-write_mask", "off",
-        "-atf", "off",
-        "-left_bus_delim", "[",
-        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
-        "-right_bus_delim", "]",
-        "-rows_p_bl", "256",
-        "-redundancy", "off",
-        "-libname", instname,
-        "-write_thru", "off",
-        "-cust_comment", "This is a memory instance",
-        "-pipeline", "off",
-        "-mux", "4",
-        "-top_layer", "m5-m10",
-        "-power_gating", "off",
-        "-back_biasing", "off",
-        "-ema", "on",
-        "-wa", "off",
-        "-corners", corners,
-    ]
-
-
-def build_rf_cmd(rf: RF_DEF, target: str) -> List[str]:
-    instname = make_instname(rf.Name, rf.NumWords, rf.DataWidth)
-    return [
-        RF_GENERATOR, target,
-        "-name_case", "lower",
-        "-mvt", "HP",
-        "-ser", "none",
-        "-bus_notation", "on",
-        "-site_def", "off",
-        "-check_instname", "on",
-        "-frequency", "1000",
-        "-bmux", "off",
-        "-diodes", "on",
-        "-activity_factor", "50",
-        "-words", str(rf.NumWords),
-        "-bits", str(rf.DataWidth),
-        "-drive", "6",
-        "-instname", instname,
-        "-retention", "on",
-        "-libertyviewstyle", LIBERTY_VIEW,
-        "-write_mask", "on",
-        "-atf", "off",
-        "-left_bus_delim", "[",
-        "-pwr_gnd_rename", "vddpe:VDDPE,vddce:VDDCE,vsse:VSSE",
-        "-right_bus_delim", "]",
-        "-flexible_banking", "2",
-        "-redundancy", "off",
-        "-wp_size", "1",
-        "-libname", instname,
-        "-cust_comment", "",
-        "-pipeline", "off",
-        "-prefix", "",
-        "-mux", "2",
-        "-power_gating", "off",
-        "-back_biasing", "off",
-        "-ema", "on",
-        "-vmin_assist", "off",
-        "-corners", corners,
-    ]
-
-
-def run_cmd(cmd: List[str], log_path: str):
+def run_cmd_in_target_dir(cmd: List[str], target: str, instname: str, base_run_dir: str):
+    """切换到对应的 target/ 目录下执行 Memory Compiler 命令"""
+    target_dir = os.path.join(base_run_dir, target)
+    os.makedirs(target_dir, exist_ok=True)
+    
+    os.chdir(target_dir)
+    log_name = f"{instname}_{target}.log"
     cmd_str = " ".join(cmd)
-    print(f"[RUN] {cmd_str}")
-    os.makedirs(os.path.dirname(log_path) or ".", exist_ok=True)
-    with open(log_path, "w") as log_f:
+    print(f"[RUN] [{target}/] {cmd_str}")
+    
+    with open(log_name, "w") as log_f:
         log_f.write(f"CMD: {cmd_str}\n\n")
         log_f.flush()
         result = subprocess.run(cmd, stdout=log_f, stderr=subprocess.STDOUT, universal_newlines=True)
+        
     if result.returncode != 0:
-        print(f"  [WARN] non-zero exit code {result.returncode}, see {log_path}")
+        print(f"  [WARN] non-zero exit code {result.returncode}, see {target}/{log_name}")
     else:
-        print(f"  [OK]  log -> {log_path}")
+        print(f"  [OK]   outputs & log -> {target}/{log_name}")
+        
+    os.chdir(base_run_dir)
+
+
+def auto_convert_lib_to_db(base_run_dir: str):
+    """自动扫描 liberty/ 目录下的所有 .lib 文件，并融合转换为 .db 文件"""
+    liberty_dir = os.path.join(base_run_dir, "liberty")
+    if not os.path.isdir(liberty_dir):
+        return
+
+    # 检查 EDA 工具链环境
+    eda_cmd = ""
+    if shutil.which("lc_shell"):
+        eda_cmd = "lc_shell"
+    elif shutil.which("dc_shell"):
+        eda_cmd = "dc_shell"
+    else:
+        print("\n[WARNING] Neither lc_shell nor dc_shell found. Skipping .db conversion.")
+        return
+
+    print(f"\n=== [融合步骤] 开始将 liberty/ 目录下的 .lib 自动转换为 .db (使用 {eda_cmd}) ===")
+    
+    # 切换进 liberty 目录，让临时文件和输出的 .db 都在这个目录下产生
+    os.chdir(liberty_dir)
+
+    # 扫描当前的所有 .lib 文件
+    lib_files = [f for f in os.listdir(".") if f.endswith(".lib") or ".lib_" in f]
+    if not lib_files:
+        print("[INFO] No .lib files found in liberty/ directory.")
+        os.chdir(base_run_dir)
+        return
+
+    # 构建动态 TCL 脚本内容
+    tcl_lines = ["# Generated dynamically by gen_sram2.py"]
+    for lib in lib_files:
+        # 获取纯内部库名逻辑
+        if ".lib" in lib:
+            current_lib = lib.split(".lib")[0]
+        else:
+            current_lib = os.path.splitext(lib)[0]
+            
+        # 后缀替换生成目标 db 名字
+        db_name = lib.replace(".lib", ".db")
+        
+        tcl_lines.append(f"read_lib {lib}")
+        tcl_lines.append(f'echo "Writing database for library: {current_lib} -> {db_name}"')
+        tcl_lines.append(f"write_lib -format db {current_lib} -output {db_name}")
+        tcl_lines.append(f"remove_lib {current_lib}")
+    
+    tcl_lines.append("exit")
+    tcl_content = "\n".join(tcl_lines)
+
+    tcl_filename = "convert.tcl"
+    with open(tcl_filename, "w") as f:
+        f.write(tcl_content)
+
+    # 执行转化命令
+    if eda_cmd == "lc_shell":
+        run_args = ["lc_shell", "-f", tcl_filename]
+    else:
+        run_args = ["dc_shell", "-tcl_mode", "-f", tcl_filename]
+
+    print(f"[RUN] [{eda_cmd}] 执行格式转换...")
+    res = subprocess.run(run_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    
+    # 将转换日志记入 liberty 目录下供排查
+    with open("lib2db_conversion.log", "w") as log_f:
+        log_f.write(res.stdout)
+
+    if res.returncode != 0:
+        print(f"  [WARN] .lib to .db conversion failed. Check liberty/lib2db_conversion.log")
+    else:
+        print(f"  [OK]   所有 .db 文件已成功生成在 liberty/ 子目录下。")
+
+    # 清理掉生成的临时 TCL 脚本
+    if os.path.exists(tcl_filename):
+        os.remove(tcl_filename)
+
+    # 切回主目录
+    os.chdir(base_run_dir)
 
 
 def parse_args():
@@ -339,7 +275,7 @@ def parse_args():
         "--pdk-root",
         default=os.environ.get("TSMC22_PDK_ROOT", DEFAULT_PDK_ROOT),
         help="TSMC_22NM_RF_ULL root (env TSMC22_PDK_ROOT or this flag). "
-        f"Default: {DEFAULT_PDK_ROOT}",
+             f"Default: {DEFAULT_PDK_ROOT}",
     )
     return parser.parse_args()
 
@@ -347,6 +283,9 @@ def parse_args():
 def main():
     args = parse_args()
     resolve_generators(args.pdk_root)
+    
+    base_run_dir = os.getcwd()
+    
     print(f"[INFO] PDK_ROOT={os.path.abspath(os.path.expanduser(args.pdk_root))}")
     print(f"[INFO] libertyviewstyle={LIBERTY_VIEW}")
     print(f"[INFO] corners={corners}")
@@ -355,28 +294,24 @@ def main():
         if not os.path.isfile(gen):
             print(f"[WARN] generator not found: {gen}")
 
-    os.makedirs(LOG_DIR, exist_ok=True)
-
+    # 1. 产生 CPU RAM 所有 views 并分流
     for cpu_ram in cpu_ram_defs:
         instname = make_cpu_instname("sram", cpu_ram.Name, cpu_ram.NumWords, cpu_ram.DataWidth)
         for target in targets:
             cmd = build_cpu_ram_cmd(cpu_ram, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-            run_cmd(cmd, log_path)
+            run_cmd_in_target_dir(cmd, target, instname, base_run_dir)
 
+    # 2. 产生 CPU RF 所有 views 并分流
     for cpu_rf in cpu_rf_defs:
         instname = make_cpu_instname("rf", cpu_rf.Name, cpu_rf.NumWords, cpu_rf.DataWidth)
         for target in targets:
             cmd = build_cpu_rf_cmd(cpu_rf, target)
-            log_path = os.path.join(LOG_DIR, f"{instname}_{target}.log")
-            run_cmd(cmd, log_path)
+            run_cmd_in_target_dir(cmd, target, instname, base_run_dir)
 
-    # Custom IP macros — disabled
-    # for ram in ram_defs: ...
-    # for rf in rf_defs: ...
-    # for gb_ram in gb_ram_defs: ...
+    # 3. 融合步骤：所有 target 的文件生成完毕后，如果跑了 liberty，就地启动 lib2db 转换
+    if "liberty" in targets:
+        auto_convert_lib_to_db(base_run_dir)
 
 
 if __name__ == "__main__":
     main()
-
