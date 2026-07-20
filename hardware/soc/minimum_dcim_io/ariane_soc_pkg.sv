@@ -49,7 +49,7 @@ package ariane_soc;
   localparam logic[63:0] CtrlLength     = 64'h1000;
   localparam logic[63:0] DefaultSlaveLength = 64'h1000;
 
-  localparam logic[63:0] DRAMLength     = 64'h2_0000; // 128 kB
+  localparam logic[63:0] DRAMLength     = 64'h8000; // 32 kB → sram_l2_4096x64
 
   // MMIO window: ctrl + cfg + act/out/wei regions (adapt_decode uses axi_addr[19:17])
   localparam logic[63:0] DCIMLength		= 64'hA0000;	// 640 KiB
