@@ -2,3 +2,6 @@
 	path = syn
 	url = /data/home/za_xiao31/scripts/syn/
 	branch = main
+[submodule "pnr"]
+	path = pnr
+	url = /data/home/za_xiao31/scripts/pnr/

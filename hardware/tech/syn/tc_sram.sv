@@ -73,7 +73,7 @@ module tc_sram #(
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (3'b00        )        // write-assist mode bits (default)
+      .WABLM (2'b00        )        // write-assist mode bits (default)
     );    //WABLM对于shvt推荐值为3'b001;svt推荐值为2'b00(位宽不一样)
 	// SVT 0.8v: EMA 100 EMAW 01 EMAS 0 RAWL 0 RAWLM 00 WABL 1 WABLM 00
 	//SHVT 0.8v: EMA 100 EMAW 00 EMAS 0 RAWL 0 RAWLM 00 WABL 1 WABLM 001
@@ -103,7 +103,7 @@ module tc_sram #(
       .RAWL  (1'b0         ),       // read-assist off (default)
       .RAWLM (2'b00        ),       // read-assist mode bits (default)
       .WABL  (1'b1         ),       // write-assist bypass (STA: selects valid addr setup arc)
-      .WABLM (3'b00        )        // write-assist mode bits (default)
+      .WABLM (2'b00        )        // write-assist mode bits (default)
     ); //WABLM对于shvt推荐值为3'b001;svt推荐值为2'b00(位宽不一样)，这里用的是shvt的设置
 	// SVT 0.8v: EMA 100 EMAW 01 EMAS 0 RAWL 0 RAWLM 00 WABL 1 WABLM 00
 	//SHVT 0.8v: EMA 100 EMAW 00 EMAS 0 RAWL 0 RAWLM 00 WABL 1 WABLM 001
